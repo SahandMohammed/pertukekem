@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "191799804294",
+    "project_id": "pertukekem-3fbd4",
+    "storage_bucket": "pertukekem-3fbd4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:191799804294:android:2dee76f1941fa13d562c07",
+        "android_client_info": {
+          "package_name": "com.logicbloom.pertukekem"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "191799804294-bqkf0mgpo4sl415qj8b4v0tpf3c1a5h8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.logicbloom.pertukekem",
+            "certificate_hash": "1fdddef7af19a33280cbebfef1358da888dfa95f"
+          }
+        },
+        {
+          "client_id": "191799804294-n2a2j84a3kc9lt00bj59eskllr0hn9je.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx9IDnSnGAxhLlbUv_E-3ibHolFwyzxFU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "191799804294-i0nc2ba5v6qktn77jc0kalchn8smpsm7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

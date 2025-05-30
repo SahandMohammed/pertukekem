@@ -1,0 +1,29 @@
+import 'package:flutter/material.dart';
+import '../../features/authentication/screens/verify_phone_screen.dart';
+import '../../features/authentication/screens/auth_wrapper.dart';
+import '../../features/dashboards/store/screens/store_setup_screen.dart';
+
+class AppRouter {
+  static Route<dynamic> generateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case '/':
+        return MaterialPageRoute(builder: (_) => const AuthWrapper());
+      case '/verify-phone':
+        final verificationId = settings.arguments as String;
+        return MaterialPageRoute(
+          builder: (_) => VerifyPhoneScreen(verificationId: verificationId),
+        );
+      case '/store-setup':
+        return MaterialPageRoute(builder: (_) => const StoreSetupScreen());
+      default:
+        return MaterialPageRoute(
+          builder:
+              (_) => Scaffold(
+                body: Center(
+                  child: Text('No route defined for ${settings.name}'),
+                ),
+              ),
+        );
+    }
+  }
+}
