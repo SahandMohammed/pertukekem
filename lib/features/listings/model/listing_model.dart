@@ -86,7 +86,6 @@ class Listing {
       updatedAt: data?['updatedAt'] as Timestamp?,
     );
   }
-
   Map<String, dynamic> toFirestore() {
     return {
       if (id != null) 'id': id,
@@ -110,5 +109,52 @@ class Listing {
       if (createdAt != null) 'createdAt': createdAt,
       if (updatedAt != null) 'updatedAt': updatedAt,
     };
+  }
+
+  /// Create a copy of this Listing with the given fields updated
+  Listing copyWith({
+    String? id,
+    DocumentReference? sellerRef,
+    String? sellerType,
+    String? title,
+    String? author,
+    String? condition,
+    double? price,
+    List<String>? category,
+    String? isbn,
+    String? coverUrl,
+    String? description,
+    String? publisher,
+    String? language,
+    int? pageCount,
+    int? year,
+    String? format,
+    String? bookType,
+    String? ebookUrl,
+    Timestamp? createdAt,
+    Timestamp? updatedAt,
+  }) {
+    return Listing(
+      id: id ?? this.id,
+      sellerRef: sellerRef ?? this.sellerRef,
+      sellerType: sellerType ?? this.sellerType,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      condition: condition ?? this.condition,
+      price: price ?? this.price,
+      category: category ?? this.category,
+      isbn: isbn ?? this.isbn,
+      coverUrl: coverUrl ?? this.coverUrl,
+      description: description ?? this.description,
+      publisher: publisher ?? this.publisher,
+      language: language ?? this.language,
+      pageCount: pageCount ?? this.pageCount,
+      year: year ?? this.year,
+      format: format ?? this.format,
+      bookType: bookType ?? this.bookType,
+      ebookUrl: ebookUrl ?? this.ebookUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 }

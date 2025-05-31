@@ -5,30 +5,41 @@ import '../../store/models/store_model.dart';
 class CustomerHomeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Get recently listed items (from last 30 days, sorted by creation date)
+  /// Get recently listed items (sorted by creation date)
   Future<List<Listing>> getRecentlyListedItems({int limit = 10}) async {
     try {
-      // Calculate the date 30 days ago
-      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-      final thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
+      print('DEBUG: Fetching recent listings by createdAt...');
+      print('DEBUG: Limit set to: $limit');
 
       final querySnapshot =
           await _firestore
               .collection('listings')
-              .where(
-                'createdAt',
-                isGreaterThanOrEqualTo: thirtyDaysAgoTimestamp,
-              )
               .orderBy('createdAt', descending: true)
               .limit(limit)
               .get();
-      return querySnapshot.docs.map((doc) {
-        return Listing.fromFirestore(
-          doc as DocumentSnapshot<Map<String, dynamic>>,
-          null,
+
+      print('DEBUG: Found ${querySnapshot.docs.length} recent listings');
+
+      final listings =
+          querySnapshot.docs.map((doc) {
+            return Listing.fromFirestore(
+              doc as DocumentSnapshot<Map<String, dynamic>>,
+              null,
+            );
+          }).toList();
+
+      // Debug logging
+      for (final listing in listings) {
+        final listingDate = listing.createdAt?.toDate();
+        print('DEBUG: Listing ${listing.id}: ${listing.title}');
+        print(
+          'DEBUG:   - Created: ${listing.createdAt} (${listingDate ?? 'No date'})',
         );
-      }).toList();
+      }
+
+      return listings;
     } catch (e) {
+      print('DEBUG: Error in getRecentlyListedItems: $e');
       throw Exception('Failed to fetch recently listed items: $e');
     }
   }
@@ -148,7 +159,6 @@ class CustomerHomeService {
               .orderBy('createdAt', descending: true)
               .limit(limit)
               .get();
-
       return querySnapshot.docs.map((doc) {
         final data = doc.data();
         return StoreModel.fromMap(data);

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import '../model/listing_model.dart';
 import '../model/review_model.dart';
 import '../../dashboards/store/models/store_model.dart';
 import '../../../core/services/review_service.dart';
+import '../../authentication/viewmodels/auth_viewmodel.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final Listing listing;
@@ -715,23 +717,35 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   Widget _buildContactSellerButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      child: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Implement contact seller functionality
-          _showContactDialog(context);
-        },
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        elevation: 8,
-        label: const Text(
-          'Contact Seller',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        icon: const Icon(Icons.message_outlined),
-      ),
+    return Consumer<AuthViewModel>(
+      builder: (context, authViewModel, child) {
+        final userRoles = authViewModel.user?.roles ?? [];
+        final isCustomer = userRoles.contains('customer');
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              if (isCustomer) {
+                _showBuyNowDialog(context);
+              } else {
+                _showContactDialog(context);
+              }
+            },
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            elevation: 8,
+            label: Text(
+              isCustomer ? 'Buy Now' : 'Contact Seller',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            icon: Icon(
+              isCustomer ? Icons.shopping_cart : Icons.message_outlined,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -751,6 +765,59 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               ),
             ],
           ),
+    );
+  }
+
+  void _showBuyNowDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Purchase Book'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Book: ${listing.title}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text('Price: RM ${listing.price.toStringAsFixed(2)}'),
+                const SizedBox(height: 16),
+                const Text(
+                  'Are you sure you want to purchase this book?',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _processPurchase(context);
+                },
+                child: const Text('Confirm Purchase'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _processPurchase(BuildContext context) {
+    // TODO: Implement actual purchase logic with payment processing
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Purchase functionality will be implemented with payment gateway integration.',
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 

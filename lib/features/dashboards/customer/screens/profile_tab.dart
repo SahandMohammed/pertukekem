@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../authentication/viewmodels/auth_viewmodel.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -338,15 +340,23 @@ class ProfileTab extends StatelessWidget {
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  // TODO: Implement sign out logic
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sign out functionality (Coming Soon)'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  try {
+                    await Provider.of<AuthViewModel>(
+                      context,
+                      listen: false,
+                    ).signOut();
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error signing out: ${e.toString()}'),
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: const Text('Sign Out'),
               ),

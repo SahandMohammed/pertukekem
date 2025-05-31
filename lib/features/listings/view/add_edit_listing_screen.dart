@@ -396,9 +396,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
           final String sellerType = storeDoc.exists ? 'store' : 'user';
           final DocumentReference sellerRef = FirebaseFirestore.instance
               .collection(sellerType == 'store' ? 'stores' : 'users')
-              .doc(currentUser.uid);
-
-          // Create the listing object
+              .doc(currentUser.uid); // Create the listing object
           final listing = Listing(
             id: widget.listing?.id,
             sellerRef: sellerRef,
@@ -424,8 +422,9 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             format: _selectedFormat,
             bookType: _selectedBookType,
             ebookUrl: ebookFileUrl,
-            createdAt: widget.listing?.createdAt ?? Timestamp.now(),
-            updatedAt: Timestamp.now(),
+            // Keep existing createdAt for updates, let service handle timestamps
+            createdAt: widget.listing?.createdAt,
+            updatedAt: widget.listing?.updatedAt,
           );
 
           if (widget.listing != null) {

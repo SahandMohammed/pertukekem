@@ -102,15 +102,18 @@ class ListingService {
     // Generate the next sequential ID
     final newId = await _generateNextListingId();
 
-    // Create the document with our custom ID
+    // Create the document with our custom ID and set timestamps
     final docRef = _listingsRef.doc(newId);
-    await docRef.set(
-      listing.copyWith(
-        id: newId,
-        updatedAt: FieldValue.serverTimestamp(),
-        createdAt: FieldValue.serverTimestamp(),
-      ),
+    final now = Timestamp.now();
+
+    // Create listing with timestamps
+    final listingWithTimestamps = listing.copyWith(
+      id: newId,
+      createdAt: now,
+      updatedAt: now,
     );
+
+    await docRef.set(listingWithTimestamps);
   }
 
   Future<void> updateListing(Listing listing) async {
@@ -139,14 +142,10 @@ class ListingService {
       throw Exception('User not authorized to update this listing.');
     }
 
-    // Use a batch or transaction to update only the provided fields and set updatedAt.
-    // For simplicity, here we are setting the whole object, but ideally, you'd only update changed fields.
-    // Firestore's `update` method only updates specified fields.
-    // However, toFirestore() currently includes all fields.
-    // A more robust `toFirestoreForUpdate()` method in the model could be used.
-    await docRef.update(
-      listing.copyWith(updatedAt: FieldValue.serverTimestamp()).toFirestore(),
-    );
+    // Update listing with new timestamp
+    final updatedListing = listing.copyWith(updatedAt: Timestamp.now());
+
+    await docRef.update(updatedListing.toFirestore());
   }
 
   Future<void> deleteListing(String listingId) async {
@@ -181,62 +180,11 @@ class ListingService {
     final sellerDocRef = _firestore
         .collection(sellerType == 'user' ? 'users' : 'stores')
         .doc(sellerId);
-
     final snapshot =
         await _listingsRef
             .where('sellerRef', isEqualTo: sellerDocRef)
             .where('sellerType', isEqualTo: sellerType)
             .get();
     return snapshot.docs.map((doc) => doc.data()).toList();
-  }
-}
-
-// Extension to add copyWith to Listing model for easier updates
-extension on Listing {
-  Listing copyWith({
-    String? id,
-    DocumentReference? sellerRef,
-    String? sellerType,
-    String? title,
-    String? author,
-    String? condition,
-    double? price,
-    List<String>? category,
-    String? isbn,
-    String? coverUrl,
-    String? description,
-    String? publisher,
-    String? language,
-    int? pageCount,
-    int? year,
-    String? format,
-    String? bookType,
-    String? ebookUrl,
-    FieldValue? createdAt, // Allow FieldValue for server timestamps
-    FieldValue? updatedAt, // Allow FieldValue for server timestamps
-  }) {
-    return Listing(
-      id: id ?? this.id,
-      sellerRef: sellerRef ?? this.sellerRef,
-      sellerType: sellerType ?? this.sellerType,
-      title: title ?? this.title,
-      author: author ?? this.author,
-      condition: condition ?? this.condition,
-      price: price ?? this.price,
-      category: category ?? this.category,
-      isbn: isbn ?? this.isbn,
-      coverUrl: coverUrl ?? this.coverUrl,
-      description: description ?? this.description,
-      publisher: publisher ?? this.publisher,
-      language: language ?? this.language,
-      pageCount: pageCount ?? this.pageCount,
-      year: year ?? this.year,
-      format: format ?? this.format,
-      bookType: bookType ?? this.bookType,
-      ebookUrl: ebookUrl ?? this.ebookUrl,
-      // Keep existing Timestamp if FieldValue is not provided for update
-      createdAt: createdAt == null ? this.createdAt : null,
-      updatedAt: updatedAt == null ? this.updatedAt : null,
-    );
   }
 }
