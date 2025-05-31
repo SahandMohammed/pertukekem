@@ -215,6 +215,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       });
     }
   }
+
   Future<void> _pickEbookFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -225,13 +226,15 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
       if (result != null && result.files.single.path != null) {
         File file = File(result.files.single.path!);
-        
+
         // Check file size (limit to 50MB)
         int fileSizeInBytes = await file.length();
         double fileSizeInMB = fileSizeInBytes / (1024 * 1024);
-        
+
         if (fileSizeInMB > 50) {
-          _showErrorSnackBar('File size too large. Please select a file smaller than 50MB.');
+          _showErrorSnackBar(
+            'File size too large. Please select a file smaller than 50MB.',
+          );
           return;
         }
 
@@ -239,12 +242,15 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
           _ebookFile = file;
         });
 
-        _showSuccessSnackBar('eBook file selected successfully! (${fileSizeInMB.toStringAsFixed(2)} MB)');
+        _showSuccessSnackBar(
+          'eBook file selected successfully! (${fileSizeInMB.toStringAsFixed(2)} MB)',
+        );
       }
     } catch (e) {
       _showErrorSnackBar('Error selecting eBook file: ${e.toString()}');
     }
   }
+
   Future<String?> _uploadEbookFile(File ebookFile) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -265,7 +271,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       // Get file extension to determine content type
       String fileName = ebookFile.path.split('/').last;
       String extension = fileName.split('.').last.toLowerCase();
-      
+
       String contentType;
       switch (extension) {
         case 'pdf':
@@ -284,7 +290,8 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
           contentType = 'application/octet-stream';
       }
 
-      String storagePath = 'ebooks/${currentUser.uid}_${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      String storagePath =
+          'ebooks/${currentUser.uid}_${DateTime.now().millisecondsSinceEpoch}_$fileName';
       firebase_storage.Reference ref = firebase_storage.FirebaseStorage.instance
           .ref()
           .child(storagePath);
@@ -303,7 +310,9 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       firebase_storage.UploadTask uploadTask = ref.putFile(ebookFile, metadata);
 
       // Listen to upload progress
-      uploadTask.snapshotEvents.listen((firebase_storage.TaskSnapshot snapshot) {
+      uploadTask.snapshotEvents.listen((
+        firebase_storage.TaskSnapshot snapshot,
+      ) {
         double progress = snapshot.bytesTransferred / snapshot.totalBytes;
         print('eBook Upload progress: ${(progress * 100).toStringAsFixed(2)}%');
       });
@@ -324,11 +333,14 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       });
     }
   }
+
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       // Additional validation for eBook files
-      if (_selectedBookType == 'ebook' && _ebookFile == null &&
-          (widget.listing?.ebookUrl == null || widget.listing!.ebookUrl!.isEmpty)) {
+      if (_selectedBookType == 'ebook' &&
+          _ebookFile == null &&
+          (widget.listing?.ebookUrl == null ||
+              widget.listing!.ebookUrl!.isEmpty)) {
         _showErrorSnackBar('Please select an eBook file for eBook listings');
         return;
       }
@@ -477,6 +489,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       );
     }
   }
+
   void _nextStep() {
     // Validate current step before proceeding
     if (_currentStep == 1) {
@@ -486,8 +499,10 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
         _showErrorSnackBar('Please add a book cover image');
         return;
       }
-      if (_selectedBookType == 'ebook' && _ebookFile == null && 
-          (widget.listing?.ebookUrl == null || widget.listing!.ebookUrl!.isEmpty)) {
+      if (_selectedBookType == 'ebook' &&
+          _ebookFile == null &&
+          (widget.listing?.ebookUrl == null ||
+              widget.listing!.ebookUrl!.isEmpty)) {
         _showErrorSnackBar('Please select an eBook file');
         return;
       }
@@ -1139,7 +1154,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                   onTap: () => _pickImage(ImageSource.gallery),
                 ),
               ],
-            ),              // eBook File Upload Section (only for eBooks)
+            ), // eBook File Upload Section (only for eBooks)
             if (_selectedBookType == 'ebook') ...[
               const SizedBox(height: 32),
               const Divider(),
@@ -1160,13 +1175,17 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color:
-                        _ebookFile != null || (widget.listing?.ebookUrl != null && widget.listing!.ebookUrl!.isNotEmpty)
+                        _ebookFile != null ||
+                                (widget.listing?.ebookUrl != null &&
+                                    widget.listing!.ebookUrl!.isNotEmpty)
                             ? Colors.green.shade50
                             : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color:
-                          _ebookFile != null || (widget.listing?.ebookUrl != null && widget.listing!.ebookUrl!.isNotEmpty)
+                          _ebookFile != null ||
+                                  (widget.listing?.ebookUrl != null &&
+                                      widget.listing!.ebookUrl!.isNotEmpty)
                               ? Colors.green.shade300
                               : Colors.grey.shade300,
                       style: BorderStyle.solid,
@@ -1179,12 +1198,22 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                           : Column(
                             children: [
                               Icon(
-                                _ebookFile != null || (widget.listing?.ebookUrl != null && widget.listing!.ebookUrl!.isNotEmpty)
+                                _ebookFile != null ||
+                                        (widget.listing?.ebookUrl != null &&
+                                            widget
+                                                .listing!
+                                                .ebookUrl!
+                                                .isNotEmpty)
                                     ? Icons.check_circle
                                     : Icons.upload_file,
                                 size: 48,
                                 color:
-                                    _ebookFile != null || (widget.listing?.ebookUrl != null && widget.listing!.ebookUrl!.isNotEmpty)
+                                    _ebookFile != null ||
+                                            (widget.listing?.ebookUrl != null &&
+                                                widget
+                                                    .listing!
+                                                    .ebookUrl!
+                                                    .isNotEmpty)
                                         ? Colors.green.shade600
                                         : Colors.grey.shade400,
                               ),
@@ -1192,12 +1221,19 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                               Text(
                                 _ebookFile != null
                                     ? 'New eBook file selected: ${_ebookFile!.path.split('/').last}'
-                                    : (widget.listing?.ebookUrl != null && widget.listing!.ebookUrl!.isNotEmpty)
-                                        ? 'eBook file already uploaded (tap to replace)'
-                                        : 'Tap to select eBook file',
+                                    : (widget.listing?.ebookUrl != null &&
+                                        widget.listing!.ebookUrl!.isNotEmpty)
+                                    ? 'eBook file already uploaded (tap to replace)'
+                                    : 'Tap to select eBook file',
                                 style: TextStyle(
                                   color:
-                                      _ebookFile != null || (widget.listing?.ebookUrl != null && widget.listing!.ebookUrl!.isNotEmpty)
+                                      _ebookFile != null ||
+                                              (widget.listing?.ebookUrl !=
+                                                      null &&
+                                                  widget
+                                                      .listing!
+                                                      .ebookUrl!
+                                                      .isNotEmpty)
                                           ? Colors.green.shade700
                                           : Colors.grey.shade600,
                                   fontWeight: FontWeight.w500,
