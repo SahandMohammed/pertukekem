@@ -8,6 +8,7 @@ import '../model/review_model.dart';
 import '../../dashboards/store/models/store_model.dart';
 import '../../../core/services/review_service.dart';
 import '../../authentication/viewmodels/auth_viewmodel.dart';
+import '../../payments/screens/payment_screen.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final Listing listing;
@@ -769,51 +770,62 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   }
 
   void _showBuyNowDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Purchase Book'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Book: ${listing.title}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+    // Navigate to payment screen for eBooks
+    if (listing.bookType == 'ebook') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentScreen(listing: listing),
+        ),
+      );
+    } else {
+      // For physical books, show the existing dialog
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Purchase Book'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Book: ${listing.title}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Price: RM ${listing.price.toStringAsFixed(2)}'),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'For physical books, please contact the seller to arrange payment and delivery.',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
                 ),
-                const SizedBox(height: 8),
-                Text('Price: RM ${listing.price.toStringAsFixed(2)}'),
-                const SizedBox(height: 16),
-                const Text(
-                  'Are you sure you want to purchase this book?',
-                  style: TextStyle(fontSize: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _contactSeller(context);
+                  },
+                  child: const Text('Contact Seller'),
                 ),
               ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _processPurchase(context);
-                },
-                child: const Text('Confirm Purchase'),
-              ),
-            ],
-          ),
-    );
+      );
+    }
   }
 
-  void _processPurchase(BuildContext context) {
-    // TODO: Implement actual purchase logic with payment processing
+  void _contactSeller(BuildContext context) {
+    // TODO: Implement seller contact functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Purchase functionality will be implemented with payment gateway integration.',
+        content: const Text(
+          'Seller contact functionality will be implemented.',
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
         duration: const Duration(seconds: 3),
