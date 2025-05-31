@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:pertukekem/features/authentication/viewmodels/auth_viewmodel.dart';
 import 'package:pertukekem/features/listings/view/manage_listings_screen.dart';
 import 'package:pertukekem/features/orders/view/manage_orders_screen.dart';
+import '../widgets/dashboard_home_screen.dart';
+import '../services/notification_service.dart';
+import 'notifications_screen.dart';
 import 'profile_screen.dart';
 
 class StoreDashboard extends StatefulWidget {
@@ -14,6 +17,7 @@ class StoreDashboard extends StatefulWidget {
 
 class _StoreDashboardState extends State<StoreDashboard> {
   int _selectedIndex = 0;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   Widget build(BuildContext context) {
@@ -31,15 +35,28 @@ class _StoreDashboardState extends State<StoreDashboard> {
               title: Text('Welcome, $storeName'),
               centerTitle: false,
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {
-                    // TODO: Show notifications
+                FutureBuilder<int>(
+                  future: _notificationService.getUnreadCount(),
+                  builder: (context, snapshot) {
+                    final unreadCount = snapshot.data ?? 0;                    return Badge(
+                      isLabelVisible: unreadCount > 0,
+                      label: Text(unreadCount.toString()),
+                      child: IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    );
                   },
                 ),
               ],
             ),
-            body: const Center(child: Text('Home Screen (To be implemented)')),
+            body: const DashboardHomeScreen(),
           ),
           // Listings Tab
           const ManageListingsScreen(),

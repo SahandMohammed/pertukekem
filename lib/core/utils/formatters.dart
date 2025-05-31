@@ -64,11 +64,11 @@ class DateUtils {
 /// Currency formatting utilities
 class CurrencyUtils {
   static final NumberFormat _currencyFormatter = NumberFormat.currency(
-    symbol: 'RM ',
+    symbol: '\$',
     decimalDigits: 2,
   );
 
-  /// Format amount to currency string (e.g., "RM 25.50")
+  /// Format amount to currency string (e.g., "$25.50")
   static String formatCurrency(double amount) {
     return _currencyFormatter.format(amount);
   }
