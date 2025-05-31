@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pertukekem/features/dashboards/customer/screens/customer_dashboard.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import 'admin_dashboard.dart';
-import 'customer_dashboard.dart';
 import '../../dashboards/store/screens/store_dashboard.dart';
 import '../../dashboards/store/screens/store_setup_screen.dart';
 import 'login_screen.dart';
@@ -29,7 +29,7 @@ class AuthWrapper extends StatelessWidget {
         if (!authViewModel.isPhoneVerified) {
           // Note: cleanup is handled in AuthViewModel.handleUnverifiedUser
           return const LoginScreen();
-        }        // Only show dashboard if user is fully verified
+        } // Only show dashboard if user is fully verified
         // Check user role and redirect accordingly
         if (authViewModel.user!.roles.contains('admin')) {
           return const AdminDashboard();
