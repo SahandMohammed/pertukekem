@@ -38,7 +38,8 @@ class _StoreDashboardState extends State<StoreDashboard> {
                 FutureBuilder<int>(
                   future: _notificationService.getUnreadCount(),
                   builder: (context, snapshot) {
-                    final unreadCount = snapshot.data ?? 0;                    return Badge(
+                    final unreadCount = snapshot.data ?? 0;
+                    return Badge(
                       isLabelVisible: unreadCount > 0,
                       label: Text(unreadCount.toString()),
                       child: IconButton(

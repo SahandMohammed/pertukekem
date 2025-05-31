@@ -8,11 +8,8 @@ import '../../../orders/model/order_model.dart' as order_model;
 
 class DashboardHomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToOrders;
-  
-  const DashboardHomeScreen({
-    super.key,
-    this.onNavigateToOrders,
-  });
+
+  const DashboardHomeScreen({super.key, this.onNavigateToOrders});
 
   @override
   State<DashboardHomeScreen> createState() => _DashboardHomeScreenState();
@@ -254,15 +251,20 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),                TextButton(
-                  onPressed: widget.onNavigateToOrders ?? () {
-                    // Default: show a message if no callback provided
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Navigate to Orders tab to see all orders'),
-                      ),
-                    );
-                  },
+                ),
+                TextButton(
+                  onPressed:
+                      widget.onNavigateToOrders ??
+                      () {
+                        // Default: show a message if no callback provided
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Navigate to Orders tab to see all orders',
+                            ),
+                          ),
+                        );
+                      },
                   child: const Text('View All'),
                 ),
               ],
@@ -355,7 +357,8 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),            TextButton(
+            ),
+            TextButton(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
