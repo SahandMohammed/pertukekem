@@ -32,39 +32,48 @@ class HomeTab extends StatelessWidget {
                   elevation: 0,
                   backgroundColor: colorScheme.surface,
                   flexibleSpace: FlexibleSpaceBar(
-                    background: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Discover Books',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
+                    background: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Discover Books',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          SearchBar(
-                            controller: searchController,
-                            hintText: 'Search books, authors, ISBN...',
-                            leading: const Icon(Icons.search),
-                            shape: WidgetStatePropertyAll(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 44,
+                              child: SearchBar(
+                                controller: searchController,
+                                hintText: 'Search books, authors, ISBN...',
+                                leading: const Icon(Icons.search),
+                                shape: WidgetStatePropertyAll(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                ),
+                                onTap: () {
+                                  onTabChange(1); // Switch to search tab
+                                },
+                                onSubmitted: (query) {
+                                  onTabChange(1); // Switch to search tab
+                                  viewModel.searchListings(query);
+                                },
                               ),
                             ),
-                            onTap: () {
-                              onTabChange(1); // Switch to search tab
-                            },
-                            onSubmitted: (query) {
-                              onTabChange(1); // Switch to search tab
-                              viewModel.searchListings(query);
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
