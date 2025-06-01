@@ -61,6 +61,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       setState(() => _isLoadingStore = false);
     }
   }
+
   Future<void> _loadReviewStats() async {
     setState(() => _isLoadingReviews = true);
     try {
@@ -734,6 +735,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       ],
     );
   }
+
   Widget _buildContactSellerButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -744,12 +746,14 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
 
         // Determine button appearance based on ownership status
         final bool showOwnershipInfo = isCustomer && _userOwnsBook;
-        final Color buttonColor = showOwnershipInfo 
-            ? colorScheme.surfaceVariant 
-            : colorScheme.primary;
-        final Color textColor = showOwnershipInfo 
-            ? colorScheme.onSurfaceVariant 
-            : colorScheme.onPrimary;
+        final Color buttonColor =
+            showOwnershipInfo
+                ? colorScheme.surfaceVariant
+                : colorScheme.primary;
+        final Color textColor =
+            showOwnershipInfo
+                ? colorScheme.onSurfaceVariant
+                : colorScheme.onPrimary;
 
         return Container(
           width: double.infinity,
@@ -760,7 +764,10 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               // Show ownership indicator if user owns the book
               if (showOwnershipInfo) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer.withOpacity(0.3),
@@ -790,7 +797,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                   ),
                 ),
               ],
-              
+
               FloatingActionButton.extended(
                 onPressed: () {
                   if (isCustomer) {
@@ -803,15 +810,20 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 foregroundColor: textColor,
                 elevation: showOwnershipInfo ? 2 : 8,
                 label: Text(
-                  showOwnershipInfo 
-                      ? 'View in Library' 
+                  showOwnershipInfo
+                      ? 'View in Library'
                       : (isCustomer ? 'Buy Now' : 'Contact Seller'),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 icon: Icon(
-                  showOwnershipInfo 
-                      ? Icons.library_books 
-                      : (isCustomer ? Icons.shopping_cart : Icons.message_outlined),
+                  showOwnershipInfo
+                      ? Icons.library_books
+                      : (isCustomer
+                          ? Icons.shopping_cart
+                          : Icons.message_outlined),
                 ),
               ),
             ],
@@ -839,6 +851,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
           ),
     );
   }
+
   void _showBuyNowDialog(BuildContext context) {
     // Check if user already owns this book
     if (_userOwnsBook) {
@@ -900,78 +913,77 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.library_books,
-              color: colorScheme.primary,
-              size: 24,
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.library_books, color: colorScheme.primary, size: 24),
+                const SizedBox(width: 8),
+                const Text('Already Owned'),
+              ],
             ),
-            const SizedBox(width: 8),
-            const Text('Already Owned'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You already own "${listing.title}" in your library.',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.3),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You already own "${listing.title}" in your library.',
+                  style: const TextStyle(fontSize: 16),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'You can access this book anytime from your library.',
-                      style: TextStyle(
-                        color: colorScheme.onSurface,
-                        fontSize: 14,
-                      ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colorScheme.primary.withOpacity(0.3),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Navigate to library or show access to the book
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Navigate to library feature will be implemented.'),
-                  backgroundColor: colorScheme.primary,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You can access this book anytime from your library.',
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
-            child: const Text('Go to Library'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to library or show access to the book
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Navigate to library feature will be implemented.',
+                      ),
+                      backgroundColor: colorScheme.primary,
+                    ),
+                  );
+                },
+                child: const Text('Go to Library'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 

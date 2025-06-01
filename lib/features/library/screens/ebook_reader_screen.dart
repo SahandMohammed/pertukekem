@@ -30,15 +30,18 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
     super.initState();
     _currentPage = widget.book.currentPage ?? 1;
     _totalPages = widget.book.totalPages ?? 0;
-    _fileExtension = widget.book.localFilePath != null ? 
-        path.extension(widget.book.localFilePath!).toLowerCase() : '';
+    _fileExtension =
+        widget.book.localFilePath != null
+            ? path.extension(widget.book.localFilePath!).toLowerCase()
+            : '';
 
     // Hide status bar for immersive reading
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    
+
     // Check file existence once
     _checkFileExistence();
   }
+
   @override
   void dispose() {
     // Restore status bar
@@ -47,14 +50,15 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
   }
 
   Future<void> _checkFileExistence() async {
-    if (widget.book.localFilePath == null || widget.book.localFilePath!.isEmpty) {
+    if (widget.book.localFilePath == null ||
+        widget.book.localFilePath!.isEmpty) {
       setState(() {
         _fileExists = false;
         _fileCheckComplete = true;
       });
       return;
     }
-    
+
     try {
       final file = File(widget.book.localFilePath!);
       final exists = await file.exists();
@@ -190,8 +194,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
       );
     }
 
-    final fileExtension = widget.book.localFilePath!.toLowerCase();
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar:
@@ -261,7 +263,8 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                   ),
                 ],
               )
-              : null,      body: GestureDetector(
+              : null,
+      body: GestureDetector(
         onTap: _toggleAppBarVisibility,
         child: Stack(
           children: [
@@ -324,70 +327,71 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
         ),
       ),
     );
-  }  Widget _buildPDFReader() {
+  }
+
+  Widget _buildPDFReader() {
     // Show loading while checking file existence
     if (!_fileCheckComplete) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     // Check if file exists
     if (!_fileExists) {
       return _buildFileNotAvailable();
-    }        return Stack(
-          children: [
-            RepaintBoundary(
-              child: PDFView(
-                key: ValueKey(widget.book.localFilePath),
-                filePath: widget.book.localFilePath!,
-                enableSwipe: true,
-                swipeHorizontal: false,
-                autoSpacing: true,
-                pageFling: true,
-                pageSnap: true,
-                defaultPage: (_currentPage - 1).clamp(0, _totalPages - 1),
-                fitPolicy: FitPolicy.BOTH,
-                preventLinkNavigation: false,
-                onRender: (pages) {
-                  if (mounted) {
-                    setState(() {
-                      _totalPages = pages ?? 0;
-                      _isLoading = false;
-                    });
-                  }
-                },
-                onError: (error) {
-                  debugPrint('PDF Error: $error');
-                  if (mounted) {
-                    setState(() {
-                      _isLoading = false;
-                    });
-                  }
-                },
-                onPageError: (page, error) {
-                  debugPrint('PDF Page Error: $error');
-                },
-                onViewCreated: (PDFViewController controller) {
-                  if (mounted) {
-                    setState(() {
-                      _pdfController = controller;
-                    });
-                  }
-                },
-                onPageChanged: (page, total) {
-                  if (mounted) {
-                    _onPageChanged((page ?? 0) + 1); // Convert to 1-indexed
-                  }
-                },
-              ),
-            ),
-            // Loading indicator
-            if (_isLoading)
-              Container(
-                color: Colors.white,
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
+    }
+    return Stack(
+      children: [
+        RepaintBoundary(
+          child: PDFView(
+            key: ValueKey(widget.book.localFilePath),
+            filePath: widget.book.localFilePath!,
+            enableSwipe: true,
+            swipeHorizontal: false,
+            autoSpacing: true,
+            pageFling: true,
+            pageSnap: true,
+            defaultPage: (_currentPage - 1).clamp(0, _totalPages - 1),
+            fitPolicy: FitPolicy.BOTH,
+            preventLinkNavigation: false,
+            onRender: (pages) {
+              if (mounted) {
+                setState(() {
+                  _totalPages = pages ?? 0;
+                  _isLoading = false;
+                });
+              }
+            },
+            onError: (error) {
+              debugPrint('PDF Error: $error');
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
+            onPageError: (page, error) {
+              debugPrint('PDF Page Error: $error');
+            },
+            onViewCreated: (PDFViewController controller) {
+              if (mounted) {
+                setState(() {
+                  _pdfController = controller;
+                });
+              }
+            },
+            onPageChanged: (page, total) {
+              if (mounted) {
+                _onPageChanged((page ?? 0) + 1); // Convert to 1-indexed
+              }
+            },
+          ),
+        ),
+        // Loading indicator
+        if (_isLoading)
+          Container(
+            color: Colors.white,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
       ],
     );
   }
@@ -399,11 +403,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.download_rounded,
-              size: 64,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.download_rounded, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             const Text(
               'File Not Available',
@@ -417,10 +417,7 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             const Text(
               'This book needs to be downloaded first before it can be read.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -430,7 +427,10 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
               icon: const Icon(Icons.arrow_back),
               label: const Text('Back to Library'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],

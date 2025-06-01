@@ -171,7 +171,7 @@ class LibraryViewModel extends ChangeNotifier {
         libraryBookId: libraryBookId,
         localFilePath: localFilePath,
       );
-      
+
       // Reload library to reflect changes
       await loadLibrary();
     } catch (e) {
@@ -185,7 +185,7 @@ class LibraryViewModel extends ChangeNotifier {
   Future<void> removeDownload(String libraryBookId) async {
     try {
       await _libraryService.removeDownload(libraryBookId);
-      
+
       // Reload library to reflect changes
       await loadLibrary();
     } catch (e) {
@@ -215,12 +215,9 @@ class LibraryViewModel extends ChangeNotifier {
 
   // Refresh all data
   Future<void> refreshAll() async {
-    await Future.wait([
-      loadLibrary(),
-      loadCurrentlyReading(),
-      loadStats(),
-    ]);
+    await Future.wait([loadLibrary(), loadCurrentlyReading(), loadStats()]);
   }
+
   // Add book to library (called after purchase)
   Future<void> addBookToLibrary({
     required String userId,

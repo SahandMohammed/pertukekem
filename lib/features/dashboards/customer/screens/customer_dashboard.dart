@@ -36,7 +36,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           index: _selectedIndex,
           children: [
             // Home Tab - Comprehensive Bookstore Screen
-            _buildBookstoreHome(),            // Search Tab - Search with Results
+            _buildBookstoreHome(), // Search Tab - Search with Results
             SearchTab(searchController: _searchController),
             // Library Tab - User's Library
             const LibraryTab(),
@@ -61,7 +61,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               icon: Icon(Icons.search_outlined),
               selectedIcon: Icon(Icons.search),
               label: 'Search',
-            ),            NavigationDestination(
+            ),
+            NavigationDestination(
               icon: Icon(Icons.library_books_outlined),
               selectedIcon: Icon(Icons.library_books),
               label: 'Library',

@@ -14,13 +14,13 @@ class LibraryBook {
   final String transactionId;
   final String sellerId;
   final String sellerName;
-  
+
   // Reading progress (for ebooks)
   final int? currentPage;
   final int? totalPages;
   final DateTime? lastReadDate;
   final bool isCompleted;
-  
+
   // Download information (for ebooks)
   final String? downloadUrl;
   final bool isDownloaded;
@@ -76,7 +76,8 @@ class LibraryBook {
       isbn: data['isbn'],
       bookType: data['bookType'] ?? 'physical',
       purchasePrice: (data['purchasePrice'] ?? 0.0).toDouble(),
-      purchaseDate: (data['purchaseDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      purchaseDate:
+          (data['purchaseDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       transactionId: data['transactionId'] ?? '',
       sellerId: data['sellerId'] ?? '',
       sellerName: data['sellerName'] ?? '',
@@ -107,7 +108,8 @@ class LibraryBook {
       'sellerName': sellerName,
       'currentPage': currentPage,
       'totalPages': totalPages,
-      'lastReadDate': lastReadDate != null ? Timestamp.fromDate(lastReadDate!) : null,
+      'lastReadDate':
+          lastReadDate != null ? Timestamp.fromDate(lastReadDate!) : null,
       'isCompleted': isCompleted,
       'downloadUrl': downloadUrl,
       'isDownloaded': isDownloaded,

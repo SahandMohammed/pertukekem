@@ -5,7 +5,8 @@ import '../../listings/model/listing_model.dart';
 
 class LibraryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;  // Add a book to user's library after purchase
+  final FirebaseAuth _auth =
+      FirebaseAuth.instance; // Add a book to user's library after purchase
   Future<void> addBookToLibrary({
     required String userId,
     required Listing listing,
@@ -31,9 +32,7 @@ class LibraryService {
       downloadUrl: listing.ebookUrl,
     );
 
-    await _firestore
-        .collection('user_library')
-        .add(libraryBook.toMap());
+    await _firestore.collection('user_library').add(libraryBook.toMap());
   }
 
   // Get user's library books
@@ -75,15 +74,16 @@ class LibraryService {
       throw Exception('User not authenticated');
     }
 
-    final snapshot = await _firestore
-        .collection('user_library')
-        .where('userId', isEqualTo: currentUser.uid)
-        .where('bookType', isEqualTo: 'ebook')
-        .where('isCompleted', isEqualTo: false)
-        .where('currentPage', isGreaterThan: 0)
-        .orderBy('lastReadDate', descending: true)
-        .limit(limit)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('user_library')
+            .where('userId', isEqualTo: currentUser.uid)
+            .where('bookType', isEqualTo: 'ebook')
+            .where('isCompleted', isEqualTo: false)
+            .where('currentPage', isGreaterThan: 0)
+            .orderBy('lastReadDate', descending: true)
+            .limit(limit)
+            .get();
 
     return snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList();
   }
@@ -105,12 +105,13 @@ class LibraryService {
       return false;
     }
 
-    final snapshot = await _firestore
-        .collection('user_library')
-        .where('userId', isEqualTo: currentUser.uid)
-        .where('bookId', isEqualTo: bookId)
-        .limit(1)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('user_library')
+            .where('userId', isEqualTo: currentUser.uid)
+            .where('bookId', isEqualTo: bookId)
+            .limit(1)
+            .get();
 
     return snapshot.docs.isNotEmpty;
   }
@@ -122,12 +123,13 @@ class LibraryService {
       return null;
     }
 
-    final snapshot = await _firestore
-        .collection('user_library')
-        .where('userId', isEqualTo: currentUser.uid)
-        .where('bookId', isEqualTo: bookId)
-        .limit(1)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('user_library')
+            .where('userId', isEqualTo: currentUser.uid)
+            .where('bookId', isEqualTo: bookId)
+            .limit(1)
+            .get();
 
     if (snapshot.docs.isNotEmpty) {
       return LibraryBook.fromFirestore(snapshot.docs.first);
@@ -161,10 +163,7 @@ class LibraryService {
     required String libraryBookId,
     required String localFilePath,
   }) async {
-    await _firestore
-        .collection('user_library')
-        .doc(libraryBookId)
-        .update({
+    await _firestore.collection('user_library').doc(libraryBookId).update({
       'isDownloaded': true,
       'localFilePath': localFilePath,
     });
@@ -172,10 +171,7 @@ class LibraryService {
 
   // Remove download information
   Future<void> removeDownload(String libraryBookId) async {
-    await _firestore
-        .collection('user_library')
-        .doc(libraryBookId)
-        .update({
+    await _firestore.collection('user_library').doc(libraryBookId).update({
       'isDownloaded': false,
       'localFilePath': FieldValue.delete(),
     });
@@ -188,20 +184,32 @@ class LibraryService {
       throw Exception('User not authenticated');
     }
 
-    final snapshot = await _firestore
-        .collection('user_library')
-        .where('userId', isEqualTo: currentUser.uid)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('user_library')
+            .where('userId', isEqualTo: currentUser.uid)
+            .get();
 
-    final books = snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList();
+    final books =
+        snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList();
 
     final totalBooks = books.length;
     final ebooks = books.where((book) => book.isEbook).length;
     final physicalBooks = books.where((book) => book.isPhysicalBook).length;
     final completedBooks = books.where((book) => book.isCompleted).length;
-    final inProgressBooks = books.where((book) => 
-        book.isEbook && !book.isCompleted && (book.currentPage ?? 0) > 0).length;
-    final totalSpent = books.fold<double>(0.0, (sum, book) => sum + book.purchasePrice);
+    final inProgressBooks =
+        books
+            .where(
+              (book) =>
+                  book.isEbook &&
+                  !book.isCompleted &&
+                  (book.currentPage ?? 0) > 0,
+            )
+            .length;
+    final totalSpent = books.fold<double>(
+      0.0,
+      (sum, book) => sum + book.purchasePrice,
+    );
 
     return LibraryStats(
       totalBooks: totalBooks,
@@ -223,7 +231,7 @@ class LibraryService {
     // Get all user's books first, then filter locally
     // Firestore doesn't support advanced text search natively
     final allBooks = await getUserLibrary();
-    
+
     final lowercaseQuery = query.toLowerCase();
     return allBooks.where((book) {
       return book.title.toLowerCase().contains(lowercaseQuery) ||
@@ -234,10 +242,7 @@ class LibraryService {
 
   // Remove book from library (if needed)
   Future<void> removeFromLibrary(String libraryBookId) async {
-    await _firestore
-        .collection('user_library')
-        .doc(libraryBookId)
-        .delete();
+    await _firestore.collection('user_library').doc(libraryBookId).delete();
   }
 
   // Stream user's library for real-time updates
@@ -256,7 +261,9 @@ class LibraryService {
       query = query.where('bookType', isEqualTo: bookType);
     }
 
-    return query.snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList());
+    return query.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList(),
+    );
   }
 }

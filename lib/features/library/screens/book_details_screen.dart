@@ -29,7 +29,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
   Future<void> _checkFileAvailability() async {
     if (widget.book.isEbook && widget.book.localFilePath != null) {
-      final available = await _downloadService.isFileDownloaded(widget.book.localFilePath);
+      final available = await _downloadService.isFileDownloaded(
+        widget.book.localFilePath,
+      );
       setState(() {
         _isFileAvailable = available;
       });
@@ -86,7 +88,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
     try {
       await _downloadService.deleteFile(widget.book.localFilePath!);
-      
+
       // Update library service
       final viewModel = context.read<LibraryViewModel>();
       await viewModel.removeDownload(widget.book.id);
@@ -117,19 +119,13 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
@@ -179,15 +175,21 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: widget.book.coverUrl != null && widget.book.coverUrl!.isNotEmpty
-                                ? Image.network(
-                                    widget.book.coverUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return _buildCoverPlaceholder();
-                                    },
-                                  )
-                                : _buildCoverPlaceholder(),
+                            child:
+                                widget.book.coverUrl != null &&
+                                        widget.book.coverUrl!.isNotEmpty
+                                    ? Image.network(
+                                      widget.book.coverUrl!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (
+                                        context,
+                                        error,
+                                        stackTrace,
+                                      ) {
+                                        return _buildCoverPlaceholder();
+                                      },
+                                    )
+                                    : _buildCoverPlaceholder(),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -222,20 +224,27 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: widget.book.isEbook ? Colors.blue : Colors.orange,
+                                  color:
+                                      widget.book.isEbook
+                                          ? Colors.blue
+                                          : Colors.orange,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      widget.book.isEbook ? Icons.tablet_mac : Icons.menu_book,
+                                      widget.book.isEbook
+                                          ? Icons.tablet_mac
+                                          : Icons.menu_book,
                                       size: 16,
                                       color: Colors.white,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      widget.book.isEbook ? 'E-Book' : 'Physical Book',
+                                      widget.book.isEbook
+                                          ? 'E-Book'
+                                          : 'Physical Book',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 12,
@@ -266,9 +275,10 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                     _buildEbookActions(),
                     const SizedBox(height: 24),
                   ],
-                  
+
                   // Reading Progress (for ebooks)
-                  if (widget.book.isEbook && widget.book.totalPages != null) ...[
+                  if (widget.book.isEbook &&
+                      widget.book.totalPages != null) ...[
                     _buildReadingProgress(),
                     const SizedBox(height: 24),
                   ],
@@ -291,11 +301,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   Widget _buildCoverPlaceholder() {
     return Container(
       color: Colors.grey.shade300,
-      child: Icon(
-        Icons.book,
-        size: 60,
-        color: Colors.grey.shade500,
-      ),
+      child: Icon(Icons.book, size: 60, color: Colors.grey.shade500),
     );
   }
 
@@ -310,9 +316,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           children: [
             Text(
               'E-Book Actions',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (_isDownloading)
@@ -321,7 +327,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                   LinearProgressIndicator(
                     value: _downloadProgress,
                     backgroundColor: Colors.grey.shade300,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.blue.shade600,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -396,9 +404,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           children: [
             Text(
               'Reading Progress',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             LinearProgressIndicator(
@@ -427,10 +435,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
               const SizedBox(height: 8),
               Text(
                 'Last read: ${DateFormat('MMM dd, yyyy').format(widget.book.lastReadDate!)}',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ],
           ],
@@ -450,16 +455,19 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           children: [
             Text(
               'Book Information',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildInfoRow('Title', widget.book.title),
             _buildInfoRow('Author', widget.book.author),
             if (widget.book.isbn != null && widget.book.isbn!.isNotEmpty)
               _buildInfoRow('ISBN', widget.book.isbn!),
-            _buildInfoRow('Type', widget.book.isEbook ? 'E-Book' : 'Physical Book'),
+            _buildInfoRow(
+              'Type',
+              widget.book.isEbook ? 'E-Book' : 'Physical Book',
+            ),
             if (widget.book.totalPages != null)
               _buildInfoRow('Pages', widget.book.totalPages.toString()),
           ],
@@ -479,9 +487,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           children: [
             Text(
               'Purchase Information',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
@@ -490,7 +498,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             ),
             _buildInfoRow(
               'Price Paid',
-              NumberFormat.currency(symbol: '\$').format(widget.book.purchasePrice),
+              NumberFormat.currency(
+                symbol: '\$',
+              ).format(widget.book.purchasePrice),
             ),
             if (widget.book.transactionId.isNotEmpty)
               _buildInfoRow('Transaction ID', widget.book.transactionId),

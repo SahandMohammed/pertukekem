@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../viewmodels/library_viewmodel.dart';
 import '../models/library_model.dart';
 import 'book_details_screen.dart';
@@ -216,25 +217,30 @@ class _LibraryTabState extends State<LibraryTab>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Book Cover
-              ClipRRect(
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(12),
-                ),
-                child: SizedBox(
-                  width: 100,
-                  height: 140, // Fixed height for consistent card size
-                  child:
-                      book.coverUrl != null && book.coverUrl!.isNotEmpty
-                          ? Image.network(
-                            book.coverUrl!,
-                            fit: BoxFit.cover,
-                            width: 100,
-                            height: 140,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildBookPlaceholder();
-                            },
-                          )
-                          : _buildBookPlaceholder(),
+              SizedBox(
+                width: 100,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(12),
+                    ),
+                    color: Colors.grey.shade200,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(12),
+                    ),
+                    child:
+                        book.coverUrl != null && book.coverUrl!.isNotEmpty
+                            ? Image.network(
+                              book.coverUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildBookPlaceholder();
+                              },
+                            )
+                            : _buildBookPlaceholder(),
+                  ),
                 ),
               ),
               // Book Info
@@ -248,7 +254,7 @@ class _LibraryTabState extends State<LibraryTab>
                         book.title,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 16,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -257,7 +263,7 @@ class _LibraryTabState extends State<LibraryTab>
                       Text(
                         book.author,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           color: Colors.grey.shade600,
                         ),
                         maxLines: 1,
@@ -267,51 +273,39 @@ class _LibraryTabState extends State<LibraryTab>
                         const SizedBox(height: 8),
                         LinearProgressIndicator(
                           value: book.readingProgress,
-                          backgroundColor: Colors.grey.shade300,
+                          backgroundColor: Colors.grey.shade200,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.blue.shade600,
+                            Colors.blue.shade400,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${(book.readingProgress * 100).toInt()}% Complete',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Icon(
-                                  book.isEbook
-                                      ? Icons.tablet_mac
-                                      : Icons.menu_book,
-                                  size: 12,
-                                  color:
-                                      book.isEbook
-                                          ? Colors.blue
-                                          : Colors.orange,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  book.isEbook ? 'E-Book' : 'Physical',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color:
-                                        book.isEbook
-                                            ? Colors.blue
-                                            : Colors.orange,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        Text(
+                          '${(book.readingProgress * 100).toInt()}% Complete',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ],
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Icon(
+                            book.isEbook ? Icons.tablet_mac : Icons.menu_book,
+                            size: 16,
+                            color: book.isEbook ? Colors.blue : Colors.orange,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            book.isEbook ? 'E-Book' : 'Physical',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: book.isEbook ? Colors.blue : Colors.orange,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -325,12 +319,8 @@ class _LibraryTabState extends State<LibraryTab>
 
   Widget _buildBookPlaceholder() {
     return Container(
-      width: 100,
-      height: 140,
-      color: Colors.grey.shade200,
-      child: Center(
-        child: Icon(Icons.book, size: 40, color: Colors.grey.shade400),
-      ),
+      color: Colors.grey.shade300,
+      child: Icon(Icons.book, size: 40, color: Colors.grey.shade400),
     );
   }
 

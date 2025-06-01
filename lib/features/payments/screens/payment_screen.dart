@@ -1010,7 +1010,7 @@ class _PaymentScreenState extends State<PaymentScreen>
       } catch (e) {
         debugPrint('Error creating transaction: $e');
         // Continue with payment flow even if transaction logging fails
-      }      // Simulate payment processing
+      } // Simulate payment processing
       await Future.delayed(const Duration(seconds: 2));
 
       // Mark transaction as completed
@@ -1028,7 +1028,9 @@ class _PaymentScreenState extends State<PaymentScreen>
         orderId = await _orderService.createOrder(
           buyerId: authViewModel.user!.userId,
           sellerRef: widget.listing.sellerRef,
-          listingRef: widget.listing.sellerRef.collection('listings').doc(widget.listing.id),
+          listingRef: widget.listing.sellerRef
+              .collection('listings')
+              .doc(widget.listing.id),
           totalAmount: widget.listing.price,
           quantity: 1,
         );

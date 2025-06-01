@@ -18,7 +18,7 @@ class DownloadService {
       // Get the app's documents directory
       final appDir = await getApplicationDocumentsDirectory();
       final booksDir = Directory(path.join(appDir.path, 'books'));
-      
+
       // Create books directory if it doesn't exist
       if (!await booksDir.exists()) {
         await booksDir.create(recursive: true);
@@ -26,17 +26,15 @@ class DownloadService {
 
       // Create file path with book ID to avoid conflicts
       final fileExtension = path.extension(fileName);
-      final localFileName = '${bookId}_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
+      final localFileName =
+          '${bookId}_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
       final filePath = path.join(booksDir.path, localFileName);
       final file = File(filePath);
 
       // Start download
       final response = await http.get(
         Uri.parse(downloadUrl),
-        headers: {
-          'Accept': '*/*',
-          'User-Agent': 'Pertukekem App',
-        },
+        headers: {'Accept': '*/*', 'User-Agent': 'Pertukekem App'},
       );
 
       if (response.statusCode != 200) {
@@ -45,20 +43,21 @@ class DownloadService {
 
       final bytes = response.bodyBytes;
       final totalBytes = bytes.length;
-      
+
       // Write file in chunks to track progress
       await file.create();
       final sink = file.openWrite();
-      
+
       try {
         int bytesWritten = 0;
         for (int i = 0; i < bytes.length; i += _chunkSize) {
-          final end = (i + _chunkSize < bytes.length) ? i + _chunkSize : bytes.length;
+          final end =
+              (i + _chunkSize < bytes.length) ? i + _chunkSize : bytes.length;
           final chunk = bytes.sublist(i, end);
-          
+
           sink.add(chunk);
           bytesWritten += chunk.length;
-          
+
           // Report progress
           if (onProgress != null) {
             final progress = bytesWritten / totalBytes;
@@ -81,7 +80,7 @@ class DownloadService {
     if (localFilePath == null || localFilePath.isEmpty) {
       return false;
     }
-    
+
     final file = File(localFilePath);
     return await file.exists();
   }

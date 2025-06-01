@@ -102,19 +102,20 @@ class OrderService {
         .where('buyerRef', isEqualTo: buyerRef)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs.map((doc) => doc.data()).toList(),
-        );
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
   // Get delivered orders for a buyer (for library purposes)
-  Future<List<order_model.Order>> getDeliveredOrdersForBuyer(String buyerId) async {
+  Future<List<order_model.Order>> getDeliveredOrdersForBuyer(
+    String buyerId,
+  ) async {
     final buyerRef = _firestore.collection('users').doc(buyerId);
 
-    final snapshot = await _ordersRef
-        .where('buyerRef', isEqualTo: buyerRef)
-        .where('status', isEqualTo: order_model.OrderStatus.delivered.name)
-        .get();
+    final snapshot =
+        await _ordersRef
+            .where('buyerRef', isEqualTo: buyerRef)
+            .where('status', isEqualTo: order_model.OrderStatus.delivered.name)
+            .get();
 
     return snapshot.docs.map((doc) => doc.data()).toList();
   }
