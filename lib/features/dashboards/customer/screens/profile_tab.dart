@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../authentication/viewmodels/auth_viewmodel.dart';
+import '../../../payments/screens/user_cards_screen.dart';
+import '../../../payments/screens/user_transaction_history_screen.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -147,10 +149,29 @@ class ProfileTab extends StatelessWidget {
                 onTap: () => _showComingSoon(context, 'Saved Books'),
               ),
               _MenuOption(
+                icon: Icons.credit_card_outlined,
+                title: 'My Cards',
+                subtitle: 'Manage saved payment cards',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const UserCardsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _MenuOption(
                 icon: Icons.history,
-                title: 'Purchase History',
-                subtitle: 'View your past orders',
-                onTap: () => _showComingSoon(context, 'Purchase History'),
+                title: 'Transaction History',
+                subtitle: 'View your payment history',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (context) => const UserTransactionHistoryScreen(),
+                    ),
+                  );
+                },
               ),
               _MenuOption(
                 icon: Icons.notifications_outlined,

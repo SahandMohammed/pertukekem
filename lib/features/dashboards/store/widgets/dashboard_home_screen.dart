@@ -5,6 +5,7 @@ import '../services/notification_service.dart';
 import '../models/notification_model.dart';
 import '../screens/notifications_screen.dart';
 import '../../../orders/model/order_model.dart' as order_model;
+import '../../../payments/screens/store_transactions_screen.dart';
 
 class DashboardHomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToOrders;
@@ -36,6 +37,8 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
               _buildWelcomeSection(),
               const SizedBox(height: 24),
               _buildSummaryCards(),
+              const SizedBox(height: 24),
+              _buildQuickActions(),
               const SizedBox(height: 24),
               _buildRecentOrdersSection(),
               const SizedBox(height: 24),
@@ -127,12 +130,21 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
               mainAxisSpacing: 16,
               childAspectRatio: 1.2,
               children: [
-                _buildSummaryCard(
-                  title: 'Total Revenue',
-                  value: _currencyFormat.format(summary.totalRevenue),
-                  icon: Icons.attach_money,
-                  color: Colors.green,
-                  subtitle: 'All time',
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const StoreTransactionsScreen(),
+                      ),
+                    );
+                  },
+                  child: _buildSummaryCard(
+                    title: 'Total Revenue',
+                    value: _currencyFormat.format(summary.totalRevenue),
+                    icon: Icons.attach_money,
+                    color: Colors.green,
+                    subtitle: 'All time • Tap to view transactions',
+                  ),
                 ),
                 _buildSummaryCard(
                   title: 'Monthly Revenue',
@@ -221,6 +233,101 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Quick Actions',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickActionCard(
+                title: 'Sales Report',
+                subtitle: 'View your transactions',
+                icon: Icons.receipt_long,
+                color: Colors.green,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const StoreTransactionsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildQuickActionCard(
+                title: 'Analytics',
+                subtitle: 'Performance insights',
+                icon: Icons.analytics,
+                color: Colors.blue,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Analytics coming soon!')),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              ),
+            ],
+          ),
         ),
       ),
     );

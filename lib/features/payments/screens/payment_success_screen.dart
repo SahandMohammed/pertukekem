@@ -223,7 +223,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                                 const SizedBox(height: 8),
 
                                 Text(
-                                  'RM ${widget.listing.price.toStringAsFixed(2)}',
+                                  '\$ ${widget.listing.price.toStringAsFixed(2)}',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     color: colorScheme.primary,
                                     fontWeight: FontWeight.bold,

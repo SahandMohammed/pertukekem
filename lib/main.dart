@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:pertukekem/core/services/firebase_options.dart';
 import 'package:pertukekem/core/theme/app_theme.dart';
 import 'package:pertukekem/features/dashboards/customer/viewmodels/customer_home_viewmodel.dart';
+import 'package:pertukekem/features/library/viewmodels/library_viewmodel.dart';
 import 'package:pertukekem/features/listings/viewmodel/manage_listings_viewmodel.dart';
 import 'package:pertukekem/features/orders/viewmodel/order_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ManageListingsViewModel()),
         ChangeNotifierProvider(create: (_) => OrderViewModel()),
         ChangeNotifierProvider(create: (_) => CustomerHomeViewModel()),
+        ChangeNotifierProvider(create: (_) => LibraryViewModel()),
       ],
       child: const MyApp(),
     ),

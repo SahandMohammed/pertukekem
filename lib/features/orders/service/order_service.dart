@@ -16,6 +16,45 @@ class OrderService {
         );
   }
 
+  // Create a new order
+  Future<String> createOrder({
+    required String buyerId,
+    required DocumentReference sellerRef,
+    required DocumentReference listingRef,
+    required double totalAmount,
+    int quantity = 1,
+    String? shippingAddress,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      final buyerRef = _firestore.collection('users').doc(buyerId);
+      final now = Timestamp.now();
+
+      final order = order_model.Order(
+        id: '', // Will be set by Firestore
+        buyerRef: buyerRef,
+        sellerRef: sellerRef,
+        listingRef: listingRef,
+        totalAmount: totalAmount,
+        quantity: quantity,
+        status: order_model.OrderStatus.pending,
+        shippingAddress: shippingAddress,
+        trackingNumber: null,
+        createdAt: now,
+        updatedAt: null,
+      );
+
+      final docRef = await _ordersRef.add(order);
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Failed to create order: $e');
+    }
+  }
+
   Stream<List<order_model.Order>> getSellerOrders() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -33,6 +72,7 @@ class OrderService {
           }
 
           final storeId = userDoc.data()?['storeId'];
+
           if (storeId == null || storeId.isEmpty) {
             throw Exception('Store ID not found');
           }
@@ -47,6 +87,36 @@ class OrderService {
                 (snapshot) => snapshot.docs.map((doc) => doc.data()).toList(),
               );
         });
+  }
+
+  // Get orders for a buyer (customer)
+  Stream<List<order_model.Order>> getBuyerOrders() {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final buyerRef = _firestore.collection('users').doc(currentUser.uid);
+
+    return _ordersRef
+        .where('buyerRef', isEqualTo: buyerRef)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs.map((doc) => doc.data()).toList(),
+        );
+  }
+
+  // Get delivered orders for a buyer (for library purposes)
+  Future<List<order_model.Order>> getDeliveredOrdersForBuyer(String buyerId) async {
+    final buyerRef = _firestore.collection('users').doc(buyerId);
+
+    final snapshot = await _ordersRef
+        .where('buyerRef', isEqualTo: buyerRef)
+        .where('status', isEqualTo: order_model.OrderStatus.delivered.name)
+        .get();
+
+    return snapshot.docs.map((doc) => doc.data()).toList();
   }
 
   Future<void> updateOrderStatus(

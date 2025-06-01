@@ -9,6 +9,7 @@ import '../../dashboards/store/models/store_model.dart';
 import '../../../core/services/review_service.dart';
 import '../../authentication/viewmodels/auth_viewmodel.dart';
 import '../../payments/screens/payment_screen.dart';
+import '../../library/services/library_service.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final Listing listing;
@@ -21,18 +22,21 @@ class ListingDetailsScreen extends StatefulWidget {
 
 class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   final ReviewService _reviewService = ReviewService();
+  final LibraryService _libraryService = LibraryService();
   StoreModel? _storeInfo;
   Map<String, dynamic>? _reviewStats;
   bool _isLoadingStore = false;
   bool _isLoadingReviews = false;
+  bool _isCheckingOwnership = false;
+  bool _userOwnsBook = false;
 
   Listing get listing => widget.listing;
-
   @override
   void initState() {
     super.initState();
     _loadStoreInfo();
     _loadReviewStats();
+    _checkBookOwnership();
   }
 
   Future<void> _loadStoreInfo() async {
@@ -57,7 +61,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       setState(() => _isLoadingStore = false);
     }
   }
-
   Future<void> _loadReviewStats() async {
     setState(() => _isLoadingReviews = true);
     try {
@@ -69,6 +72,23 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       debugPrint('Error loading review stats: $e');
     } finally {
       setState(() => _isLoadingReviews = false);
+    }
+  }
+
+  Future<void> _checkBookOwnership() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || listing.id == null) return;
+
+    setState(() => _isCheckingOwnership = true);
+    try {
+      final ownsBook = await _libraryService.userOwnsBook(listing.id!);
+      setState(() {
+        _userOwnsBook = ownsBook;
+      });
+    } catch (e) {
+      debugPrint('Error checking book ownership: $e');
+    } finally {
+      setState(() => _isCheckingOwnership = false);
     }
   }
 
@@ -714,7 +734,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       ],
     );
   }
-
   Widget _buildContactSellerButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -723,27 +742,79 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         final userRoles = authViewModel.user?.roles ?? [];
         final isCustomer = userRoles.contains('customer');
 
+        // Determine button appearance based on ownership status
+        final bool showOwnershipInfo = isCustomer && _userOwnsBook;
+        final Color buttonColor = showOwnershipInfo 
+            ? colorScheme.surfaceVariant 
+            : colorScheme.primary;
+        final Color textColor = showOwnershipInfo 
+            ? colorScheme.onSurfaceVariant 
+            : colorScheme.onPrimary;
+
         return Container(
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          child: FloatingActionButton.extended(
-            onPressed: () {
-              if (isCustomer) {
-                _showBuyNowDialog(context);
-              } else {
-                _showContactDialog(context);
-              }
-            },
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            elevation: 8,
-            label: Text(
-              isCustomer ? 'Buy Now' : 'Contact Seller',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            icon: Icon(
-              isCustomer ? Icons.shopping_cart : Icons.message_outlined,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Show ownership indicator if user owns the book
+              if (showOwnershipInfo) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.library_books,
+                        color: colorScheme.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'You own this book',
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
+              FloatingActionButton.extended(
+                onPressed: () {
+                  if (isCustomer) {
+                    _showBuyNowDialog(context);
+                  } else {
+                    _showContactDialog(context);
+                  }
+                },
+                backgroundColor: buttonColor,
+                foregroundColor: textColor,
+                elevation: showOwnershipInfo ? 2 : 8,
+                label: Text(
+                  showOwnershipInfo 
+                      ? 'View in Library' 
+                      : (isCustomer ? 'Buy Now' : 'Contact Seller'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                icon: Icon(
+                  showOwnershipInfo 
+                      ? Icons.library_books 
+                      : (isCustomer ? Icons.shopping_cart : Icons.message_outlined),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -768,8 +839,13 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
           ),
     );
   }
-
   void _showBuyNowDialog(BuildContext context) {
+    // Check if user already owns this book
+    if (_userOwnsBook) {
+      _showAlreadyOwnedDialog(context);
+      return;
+    }
+
     // Navigate to payment screen for eBooks
     if (listing.bookType == 'ebook') {
       Navigator.push(
@@ -818,6 +894,85 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
             ),
       );
     }
+  }
+
+  void _showAlreadyOwnedDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.library_books,
+              color: colorScheme.primary,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text('Already Owned'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You already own "${listing.title}" in your library.',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You can access this book anytime from your library.',
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to library or show access to the book
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Navigate to library feature will be implemented.'),
+                  backgroundColor: colorScheme.primary,
+                ),
+              );
+            },
+            child: const Text('Go to Library'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _contactSeller(BuildContext context) {

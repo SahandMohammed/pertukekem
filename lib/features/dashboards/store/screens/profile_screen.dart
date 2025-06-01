@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pertukekem/features/authentication/viewmodels/auth_viewmodel.dart';
+import '../../../payments/screens/store_transactions_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -183,6 +184,62 @@ class ProfileScreen extends StatelessWidget {
                           'Security',
                           () {
                             // TODO: Navigate to security settings
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Business section
+                  Text(
+                    'Business',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Card(
+                    margin: EdgeInsets.zero,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildProfileListItem(
+                          context,
+                          Icons.receipt_long_outlined,
+                          'Sales Transactions',
+                          () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        const StoreTransactionsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildProfileListItem(
+                          context,
+                          Icons.analytics_outlined,
+                          'Performance Analytics',
+                          () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Analytics coming soon!'),
+                              ),
+                            );
                           },
                         ),
                       ],

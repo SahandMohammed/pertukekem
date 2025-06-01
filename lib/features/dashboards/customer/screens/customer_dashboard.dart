@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/customer_home_viewmodel.dart';
 import 'search_tab.dart';
-import 'stores_tab.dart';
 import 'profile_tab.dart';
+import '../../../library/screens/library_tab.dart';
 import '../../../listings/view/listing_details_screen.dart';
 
 class CustomerDashboard extends StatefulWidget {
@@ -36,11 +36,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           index: _selectedIndex,
           children: [
             // Home Tab - Comprehensive Bookstore Screen
-            _buildBookstoreHome(),
-            // Search Tab - Search with Results
+            _buildBookstoreHome(),            // Search Tab - Search with Results
             SearchTab(searchController: _searchController),
-            // Stores Tab - All Stores
-            const StoresTab(),
+            // Library Tab - User's Library
+            const LibraryTab(),
             // Profile Tab
             const ProfileTab(),
           ],
@@ -62,11 +61,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               icon: Icon(Icons.search_outlined),
               selectedIcon: Icon(Icons.search),
               label: 'Search',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.store_outlined),
-              selectedIcon: Icon(Icons.store),
-              label: 'Stores',
+            ),            NavigationDestination(
+              icon: Icon(Icons.library_books_outlined),
+              selectedIcon: Icon(Icons.library_books),
+              label: 'Library',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),

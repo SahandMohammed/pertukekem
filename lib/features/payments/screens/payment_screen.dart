@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../listings/model/listing_model.dart';
+import '../../authentication/viewmodels/auth_viewmodel.dart';
+import '../models/payment_card_model.dart';
+import '../services/transaction_service.dart';
+import '../services/payment_card_service.dart';
+import '../../orders/service/order_service.dart';
+import '../../library/services/library_service.dart';
 import 'payment_success_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -29,7 +36,14 @@ class _PaymentScreenState extends State<PaymentScreen>
   String _selectedPaymentMethod = 'credit_card';
   bool _isProcessing = false;
   bool _saveCard = false;
-
+  bool _isLoadingCards = false;
+  bool _showSavedCards = false;
+  List<PaymentCard> _savedCards = [];
+  PaymentCard? _selectedSavedCard;
+  final TransactionService _transactionService = TransactionService();
+  final PaymentCardService _paymentCardService = PaymentCardService();
+  final OrderService _orderService = OrderService();
+  final LibraryService _libraryService = LibraryService();
   @override
   void initState() {
     super.initState();
@@ -57,6 +71,41 @@ class _PaymentScreenState extends State<PaymentScreen>
     // Start animations
     _fadeController.forward();
     _slideController.forward();
+
+    // Load saved cards
+    _loadSavedCards();
+  }
+
+  Future<void> _loadSavedCards() async {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    if (authViewModel.user == null) return;
+
+    setState(() {
+      _isLoadingCards = true;
+    });
+
+    try {
+      final cards = await _paymentCardService.getUserPaymentCards(
+        authViewModel.user!.userId,
+      );
+      setState(() {
+        _savedCards = cards;
+        _showSavedCards = cards.isNotEmpty;
+        // Auto-select the default card if available
+        if (cards.isNotEmpty) {
+          _selectedSavedCard = cards.firstWhere(
+            (card) => card.isDefault,
+            orElse: () => cards.first,
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint('Error loading saved cards: $e');
+    } finally {
+      setState(() {
+        _isLoadingCards = false;
+      });
+    }
   }
 
   @override
@@ -104,10 +153,10 @@ class _PaymentScreenState extends State<PaymentScreen>
 
                   // Payment Methods
                   _buildPaymentMethods(context),
-                  const SizedBox(height: 24),
-
-                  // Payment Form
+                  const SizedBox(height: 24), // Payment Form
                   if (_selectedPaymentMethod == 'credit_card') ...[
+                    _buildSavedCardsSection(context),
+                    const SizedBox(height: 16),
                     _buildCreditCardForm(context),
                     const SizedBox(height: 24),
                   ],
@@ -380,9 +429,236 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
+  Widget _buildSavedCardsSection(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_isLoadingCards) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceVariant.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_showSavedCards || _savedCards.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Saved Cards',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedSavedCard = null;
+                  _showSavedCards = false;
+                });
+              },
+              child: const Text('Use New Card'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceVariant.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            children:
+                _savedCards
+                    .map((card) => _buildSavedCardTile(context, card))
+                    .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSavedCardTile(BuildContext context, PaymentCard card) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isSelected = _selectedSavedCard?.id == card.id;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedSavedCard = card;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color:
+              isSelected
+                  ? colorScheme.primary.withOpacity(0.1)
+                  : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color:
+                isSelected
+                    ? colorScheme.primary
+                    : colorScheme.outline.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 25,
+              decoration: BoxDecoration(
+                color: _getCardColor(card.cardType),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Center(
+                child: Text(
+                  _getCardDisplayName(card.cardType),
+                  style: textTheme.labelSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 8,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    card.maskedCardNumber,
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${card.cardHolderName} • Expires ${card.formattedExpiry}',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (card.isDefault)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Default',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: colorScheme.primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getCardColor(String cardType) {
+    switch (cardType.toLowerCase()) {
+      case 'visa':
+        return const Color(0xFF1A1F71);
+      case 'mastercard':
+        return const Color(0xFFEB001B);
+      case 'amex':
+        return const Color(0xFF006FCF);
+      case 'discover':
+        return const Color(0xFFFF6000);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getCardDisplayName(String cardType) {
+    switch (cardType.toLowerCase()) {
+      case 'visa':
+        return 'VISA';
+      case 'mastercard':
+        return 'MC';
+      case 'amex':
+        return 'AMEX';
+      case 'discover':
+        return 'DISC';
+      default:
+        return 'CARD';
+    }
+  }
+
   Widget _buildCreditCardForm(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Hide form if a saved card is selected
+    if (_selectedSavedCard != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CVV for Selected Card',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: TextFormField(
+              controller: _cvvController,
+              decoration: InputDecoration(
+                labelText: 'CVV',
+                hintText: '123',
+                prefixIcon: const Icon(Icons.lock),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+              validator: (value) {
+                if (value == null || value.length < 3) {
+                  return 'Invalid CVV';
+                }
+                return null;
+              },
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,28 +772,31 @@ class _PaymentScreenState extends State<PaymentScreen>
                 },
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _saveCard,
-                    onChanged: (value) {
-                      setState(() {
-                        _saveCard = value ?? false;
-                      });
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+              // Only show save card option when using new card
+              if (_selectedSavedCard == null) ...[
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _saveCard,
+                      onChanged: (value) {
+                        setState(() {
+                          _saveCard = value ?? false;
+                        });
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Save card for future purchases',
-                      style: textTheme.bodyMedium,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Save card for future purchases',
+                        style: textTheme.bodyMedium,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -649,28 +928,159 @@ class _PaymentScreenState extends State<PaymentScreen>
       return;
     }
 
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    if (authViewModel.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to continue')),
+      );
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
 
-    // Simulate payment processing
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
+    try {
       // Generate transaction ID
       final transactionId = 'TXN${DateTime.now().millisecondsSinceEpoch}';
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => PaymentSuccessScreen(
-                listing: widget.listing,
-                transactionId: transactionId,
-                paymentMethod: _selectedPaymentMethod,
-              ),
-        ),
-      );
+      // Get seller information from the listing
+      final sellerRef = widget.listing.sellerRef;
+      final sellerDoc = await sellerRef.get();
+      final sellerId = sellerDoc.id;
+
+      // Save card if requested and using new card
+      if (_saveCard &&
+          _selectedSavedCard == null &&
+          _selectedPaymentMethod == 'credit_card') {
+        try {
+          await _paymentCardService.savePaymentCard(
+            userId: authViewModel.user!.userId,
+            cardNumber: _cardNumberController.text,
+            cardHolderName: _nameController.text,
+            expiryMonth: _expiryController.text.split('/')[0],
+            expiryYear: _expiryController.text.split('/')[1],
+            cvv: _cvvController.text,
+            setAsDefault: _savedCards.isEmpty, // Make first card default
+          );
+          debugPrint('Card saved successfully');
+        } catch (e) {
+          debugPrint('Error saving card: $e');
+          // Don't fail payment if card saving fails
+        }
+      }
+
+      // Update last used date for selected saved card
+      if (_selectedSavedCard != null) {
+        try {
+          await _paymentCardService.updateCardLastUsed(_selectedSavedCard!.id);
+        } catch (e) {
+          debugPrint('Error updating card last used: $e');
+        }
+      }
+
+      // Create transaction record
+      String? transactionDocId;
+      try {
+        transactionDocId = await _transactionService.createTransaction(
+          transactionId: transactionId,
+          buyerId: authViewModel.user!.userId,
+          sellerId: sellerId,
+          listingId: widget.listing.id ?? '',
+          listingTitle: widget.listing.title,
+          amount: widget.listing.price,
+          paymentMethod: _selectedPaymentMethod,
+          paymentDetails: {
+            'cardType':
+                _selectedSavedCard?.cardType ??
+                PaymentCard.determineCardType(_cardNumberController.text),
+            'lastFourDigits':
+                _selectedSavedCard?.lastFourDigits ??
+                _cardNumberController.text
+                    .replaceAll(' ', '')
+                    .substring(
+                      _cardNumberController.text.replaceAll(' ', '').length - 4,
+                    ),
+            'email': _emailController.text,
+            'usedSavedCard': _selectedSavedCard != null,
+          },
+        );
+
+        debugPrint('Transaction created with ID: $transactionDocId');
+      } catch (e) {
+        debugPrint('Error creating transaction: $e');
+        // Continue with payment flow even if transaction logging fails
+      }      // Simulate payment processing
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Mark transaction as completed
+      if (transactionDocId != null) {
+        try {
+          await _transactionService.completeTransaction(transactionDocId);
+        } catch (e) {
+          debugPrint('Error completing transaction: $e');
+        }
+      }
+
+      // Create order record
+      String? orderId;
+      try {
+        orderId = await _orderService.createOrder(
+          buyerId: authViewModel.user!.userId,
+          sellerRef: widget.listing.sellerRef,
+          listingRef: widget.listing.sellerRef.collection('listings').doc(widget.listing.id),
+          totalAmount: widget.listing.price,
+          quantity: 1,
+        );
+        debugPrint('Order created with ID: $orderId');
+      } catch (e) {
+        debugPrint('Error creating order: $e');
+        // Continue with payment flow even if order creation fails
+      }
+
+      // Add book to user's library (especially important for eBooks)
+      try {
+        await _libraryService.addBookToLibrary(
+          userId: authViewModel.user!.userId,
+          listing: widget.listing,
+          purchaseDate: DateTime.now(),
+          orderId: orderId,
+          transactionId: transactionId,
+        );
+        debugPrint('Book added to library successfully');
+      } catch (e) {
+        debugPrint('Error adding book to library: $e');
+        // Continue with payment flow even if library addition fails
+      }
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => PaymentSuccessScreen(
+                  listing: widget.listing,
+                  transactionId: transactionId,
+                  paymentMethod: _selectedPaymentMethod,
+                ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
     }
   }
 }
