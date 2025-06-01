@@ -5,8 +5,9 @@ import '../../listings/model/listing_model.dart';
 
 class LibraryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth =
-      FirebaseAuth.instance; // Add a book to user's library after purchase
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Add a book to user's library after purchase
   Future<void> addBookToLibrary({
     required String userId,
     required Listing listing,
@@ -15,7 +16,7 @@ class LibraryService {
     String? transactionId,
   }) async {
     final libraryBook = LibraryBook(
-      id: '', // Will be set by Firestore
+      id: listing.id ?? '',
       userId: userId,
       bookId: listing.id ?? '',
       title: listing.title,
@@ -27,12 +28,17 @@ class LibraryService {
       purchaseDate: purchaseDate,
       transactionId: transactionId ?? '',
       sellerId: listing.sellerRef.id,
-      sellerName: '', // We can get this later if needed
+      sellerName: '',
       totalPages: listing.pageCount,
       downloadUrl: listing.ebookUrl,
     );
 
-    await _firestore.collection('user_library').add(libraryBook.toMap());
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('library')
+        .doc(libraryBook.id)
+        .set(libraryBook.toMap());
   }
 
   // Get user's library books
@@ -46,8 +52,9 @@ class LibraryService {
     }
 
     Query query = _firestore
-        .collection('user_library')
-        .where('userId', isEqualTo: currentUser.uid)
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('library')
         .orderBy('purchaseDate', descending: true);
 
     if (bookType != null) {
@@ -76,8 +83,9 @@ class LibraryService {
 
     final snapshot =
         await _firestore
-            .collection('user_library')
-            .where('userId', isEqualTo: currentUser.uid)
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('library')
             .where('bookType', isEqualTo: 'ebook')
             .where('isCompleted', isEqualTo: false)
             .where('currentPage', isGreaterThan: 0)
@@ -107,8 +115,9 @@ class LibraryService {
 
     final snapshot =
         await _firestore
-            .collection('user_library')
-            .where('userId', isEqualTo: currentUser.uid)
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('library')
             .where('bookId', isEqualTo: bookId)
             .limit(1)
             .get();
@@ -125,8 +134,9 @@ class LibraryService {
 
     final snapshot =
         await _firestore
-            .collection('user_library')
-            .where('userId', isEqualTo: currentUser.uid)
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('library')
             .where('bookId', isEqualTo: bookId)
             .limit(1)
             .get();
@@ -143,6 +153,11 @@ class LibraryService {
     required int currentPage,
     bool? isCompleted,
   }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
     final updateData = {
       'currentPage': currentPage,
       'lastReadDate': Timestamp.fromDate(DateTime.now()),
@@ -153,7 +168,9 @@ class LibraryService {
     }
 
     await _firestore
-        .collection('user_library')
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('library')
         .doc(libraryBookId)
         .update(updateData);
   }
@@ -163,15 +180,22 @@ class LibraryService {
     required String libraryBookId,
     required String localFilePath,
   }) async {
-    await _firestore.collection('user_library').doc(libraryBookId).update({
-      'isDownloaded': true,
-      'localFilePath': localFilePath,
-    });
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    await _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('library')
+        .doc(libraryBookId)
+        .update({'isDownloaded': true, 'localFilePath': localFilePath});
   }
 
   // Remove download information
   Future<void> removeDownload(String libraryBookId) async {
-    await _firestore.collection('user_library').doc(libraryBookId).update({
+    await _firestore.collection('users').doc(libraryBookId).update({
       'isDownloaded': false,
       'localFilePath': FieldValue.delete(),
     });
@@ -186,8 +210,9 @@ class LibraryService {
 
     final snapshot =
         await _firestore
-            .collection('user_library')
-            .where('userId', isEqualTo: currentUser.uid)
+            .collection('users')
+            .doc(currentUser.uid)
+            .collection('library')
             .get();
 
     final books =
@@ -242,7 +267,7 @@ class LibraryService {
 
   // Remove book from library (if needed)
   Future<void> removeFromLibrary(String libraryBookId) async {
-    await _firestore.collection('user_library').doc(libraryBookId).delete();
+    await _firestore.collection('users').doc(libraryBookId).delete();
   }
 
   // Stream user's library for real-time updates
@@ -253,8 +278,9 @@ class LibraryService {
     }
 
     Query query = _firestore
-        .collection('user_library')
-        .where('userId', isEqualTo: currentUser.uid)
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('library')
         .orderBy('purchaseDate', descending: true);
 
     if (bookType != null) {

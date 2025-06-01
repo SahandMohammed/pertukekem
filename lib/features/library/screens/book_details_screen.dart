@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/library_model.dart';
 import '../viewmodels/library_viewmodel.dart';
 import '../services/download_service.dart';
@@ -133,168 +134,73 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            backgroundColor: colorScheme.primary,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      colorScheme.primary,
-                      colorScheme.primary.withOpacity(0.8),
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(widget.book.userId)
+              .collection('library')
+              .doc(widget.book.id)
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return Scaffold(
+            appBar: AppBar(title: Text(widget.book.title)),
+            body: const Center(child: Text('Book not found.')),
+          );
+        }
+
+        final bookData = snapshot.data!.data() as Map<String, dynamic>;
+        final updatedBook = widget.book.copyWith(
+          currentPage: bookData['currentPage'],
+          totalPages: bookData['totalPages'],
+          isCompleted: bookData['isCompleted'],
+        );
+
+        return Scaffold(
+          backgroundColor: Colors.grey.shade50,
+          body: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 300,
+                pinned: true,
+                backgroundColor: colorScheme.primary,
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Text(updatedBook.title),
+                  background:
+                      updatedBook.coverUrl != null
+                          ? Image.network(
+                            updatedBook.coverUrl!,
+                            fit: BoxFit.cover,
+                          )
+                          : _buildCoverPlaceholder(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildReadingProgress(updatedBook),
+                      const SizedBox(height: 16),
+                      _buildBookInformation(updatedBook),
+                      const SizedBox(height: 16),
+                      _buildPurchaseInformation(updatedBook),
+                      if (updatedBook.isEbook) const SizedBox(height: 16),
+                      if (updatedBook.isEbook) _buildEbookActions(updatedBook),
                     ],
                   ),
                 ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Book Cover
-                        Container(
-                          width: 120,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child:
-                                widget.book.coverUrl != null &&
-                                        widget.book.coverUrl!.isNotEmpty
-                                    ? Image.network(
-                                      widget.book.coverUrl!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) {
-                                        return _buildCoverPlaceholder();
-                                      },
-                                    )
-                                    : _buildCoverPlaceholder(),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Book Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 20),
-                              Text(
-                                widget.book.title,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                widget.book.author,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      widget.book.isEbook
-                                          ? Colors.blue
-                                          : Colors.orange,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      widget.book.isEbook
-                                          ? Icons.tablet_mac
-                                          : Icons.menu_book,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      widget.book.isEbook
-                                          ? 'E-Book'
-                                          : 'Physical Book',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ),
-            ),
+            ],
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Action Buttons
-                  if (widget.book.isEbook) ...[
-                    _buildEbookActions(),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // Reading Progress (for ebooks)
-                  if (widget.book.isEbook &&
-                      widget.book.totalPages != null) ...[
-                    _buildReadingProgress(),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // Book Information
-                  _buildBookInformation(),
-                  const SizedBox(height: 24),
-
-                  // Purchase Information
-                  _buildPurchaseInformation(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -305,7 +211,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     );
   }
 
-  Widget _buildEbookActions() {
+  Widget _buildEbookActions(LibraryBook book) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -389,10 +295,10 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     );
   }
 
-  Widget _buildReadingProgress() {
-    final progress = widget.book.readingProgress;
-    final currentPage = widget.book.currentPage ?? 0;
-    final totalPages = widget.book.totalPages ?? 0;
+  Widget _buildReadingProgress(LibraryBook book) {
+    final progress = book.readingProgress;
+    final currentPage = book.currentPage ?? 0;
+    final totalPages = book.totalPages ?? 0;
 
     return Card(
       elevation: 2,
@@ -431,10 +337,10 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                 ),
               ],
             ),
-            if (widget.book.lastReadDate != null) ...[
+            if (book.lastReadDate != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Last read: ${DateFormat('MMM dd, yyyy').format(widget.book.lastReadDate!)}',
+                'Last read: ${DateFormat('MMM dd, yyyy').format(book.lastReadDate!)}',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
             ],
@@ -444,7 +350,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     );
   }
 
-  Widget _buildBookInformation() {
+  Widget _buildBookInformation(LibraryBook book) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -460,23 +366,20 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('Title', widget.book.title),
-            _buildInfoRow('Author', widget.book.author),
-            if (widget.book.isbn != null && widget.book.isbn!.isNotEmpty)
-              _buildInfoRow('ISBN', widget.book.isbn!),
-            _buildInfoRow(
-              'Type',
-              widget.book.isEbook ? 'E-Book' : 'Physical Book',
-            ),
-            if (widget.book.totalPages != null)
-              _buildInfoRow('Pages', widget.book.totalPages.toString()),
+            _buildInfoRow('Title', book.title),
+            _buildInfoRow('Author', book.author),
+            if (book.isbn != null && book.isbn!.isNotEmpty)
+              _buildInfoRow('ISBN', book.isbn!),
+            _buildInfoRow('Type', book.isEbook ? 'E-Book' : 'Physical Book'),
+            if (book.totalPages != null)
+              _buildInfoRow('Pages', book.totalPages.toString()),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPurchaseInformation() {
+  Widget _buildPurchaseInformation(LibraryBook book) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -494,16 +397,14 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             const SizedBox(height: 16),
             _buildInfoRow(
               'Purchase Date',
-              DateFormat('MMM dd, yyyy').format(widget.book.purchaseDate),
+              DateFormat('MMM dd, yyyy').format(book.purchaseDate),
             ),
             _buildInfoRow(
               'Price Paid',
-              NumberFormat.currency(
-                symbol: '\$',
-              ).format(widget.book.purchasePrice),
+              NumberFormat.currency(symbol: '\$').format(book.purchasePrice),
             ),
-            if (widget.book.transactionId.isNotEmpty)
-              _buildInfoRow('Transaction ID', widget.book.transactionId),
+            if (book.transactionId.isNotEmpty)
+              _buildInfoRow('Transaction ID', book.transactionId),
           ],
         ),
       ),

@@ -1,10 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/library_viewmodel.dart';
 import '../models/library_model.dart';
 import 'book_details_screen.dart';
-import 'ebook_reader_screen.dart';
 
 class LibraryTab extends StatefulWidget {
   const LibraryTab({super.key});
@@ -202,11 +200,7 @@ class _LibraryTabState extends State<LibraryTab>
   Widget _buildBookCard(LibraryBook book, {bool showProgress = false}) {
     return GestureDetector(
       onTap: () {
-        if (book.isEbook) {
-          _openEbookReader(book);
-        } else {
-          _showBookDetails(book);
-        }
+        _showBookDetails(book);
       },
       child: Card(
         elevation: 2,
@@ -475,35 +469,6 @@ class _LibraryTabState extends State<LibraryTab>
         ),
       ),
     );
-  }
-
-  Future<void> _openEbookReader(LibraryBook book) async {
-    // Check if it's an ebook and if it's downloaded
-    if (book.isEbook) {
-      if (book.localFilePath == null || book.localFilePath!.isEmpty) {
-        // File not downloaded, show book details to allow download
-        _showBookDetails(book);
-        return;
-      }
-
-      // Check if file actually exists
-      final file = File(book.localFilePath!);
-      final fileExists = await file.exists();
-
-      if (!fileExists) {
-        // File doesn't exist locally, show book details
-        _showBookDetails(book);
-        return;
-      }
-
-      // File exists, open reader
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => EbookReaderScreen(book: book)),
-      );
-    } else {
-      // For physical books, show book details
-      _showBookDetails(book);
-    }
   }
 
   void _showBookDetails(LibraryBook book) {
