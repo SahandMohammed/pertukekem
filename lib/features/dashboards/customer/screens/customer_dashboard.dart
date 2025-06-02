@@ -555,17 +555,18 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   ),
                 ),
                 TextButton(
-                  onPressed: viewModel.currentlyReadingBooks.isNotEmpty
-                      ? () {
-                          // Navigate to library tab
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LibraryTab(),
-                            ),
-                          );
-                        }
-                      : null,
+                  onPressed:
+                      viewModel.currentlyReadingBooks.isNotEmpty
+                          ? () {
+                            // Navigate to library tab
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LibraryTab(),
+                              ),
+                            );
+                          }
+                          : null,
                   child: const Text('See all'),
                 ),
               ],
@@ -580,7 +581,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: const Center(child: CircularProgressIndicator())
+                child: const Center(child: CircularProgressIndicator()),
               )
             else if (viewModel.currentlyReadingBooks.isEmpty)
               Container(
@@ -601,7 +602,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                       const SizedBox(height: 12),
                       Text(
                         'Continue Reading',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(
                           color: Colors.grey.shade600,
                           fontWeight: FontWeight.w500,
                         ),
@@ -609,10 +612,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                       const SizedBox(height: 4),
                       Text(
                         'Start reading an ebook to see your progress here!',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: Colors.grey.shade500),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -693,12 +695,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
       ],
     );
   }
+
   Widget _buildCurrentlyReadingCard(LibraryBook book) {
-    final progressPercentage = book.totalPages != null && 
-        book.totalPages! > 0 && 
-        book.currentPage != null
-        ? (book.currentPage! / book.totalPages!) * 100
-        : 0.0;
+    final progressPercentage =
+        book.totalPages != null &&
+                book.totalPages! > 0 &&
+                book.currentPage != null
+            ? (book.currentPage! / book.totalPages!) * 100
+            : 0.0;
 
     return GestureDetector(
       onTap: () {
@@ -706,9 +710,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         if (book.downloadUrl != null && book.downloadUrl!.isNotEmpty) {
           Navigator.push(
             context,
-            MaterialPageRoute(              builder: (context) => EbookReaderScreen(
-                book: book,
-              ),
+            MaterialPageRoute(
+              builder: (context) => EbookReaderScreen(book: book),
             ),
           );
         } else {
@@ -752,23 +755,24 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(16),
                     ),
-                    child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                        ? Image.network(
-                            book.coverUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.book,
-                                size: 48,
-                                color: Colors.grey.shade400,
-                              );
-                            },
-                          )
-                        : Icon(
-                            Icons.book,
-                            size: 48,
-                            color: Colors.grey.shade400,
-                          ),
+                    child:
+                        book.coverUrl != null && book.coverUrl!.isNotEmpty
+                            ? Image.network(
+                              book.coverUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.book,
+                                  size: 48,
+                                  color: Colors.grey.shade400,
+                                );
+                              },
+                            )
+                            : Icon(
+                              Icons.book,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
                   ),
                 ),
                 // Reading progress overlay
@@ -835,10 +839,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   const SizedBox(height: 4),
                   Text(
                     'by ${book.author}',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

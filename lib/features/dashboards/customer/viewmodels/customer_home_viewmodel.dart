@@ -132,6 +132,7 @@ class CustomerHomeViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   /// Clear search results
   void clearSearch() {
     _searchQuery = '';
