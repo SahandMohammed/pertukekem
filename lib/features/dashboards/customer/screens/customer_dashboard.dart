@@ -222,30 +222,33 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.search, color: Colors.grey.shade600),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search for books, authors, or stores...',
-                hintStyle: TextStyle(color: Colors.grey.shade600),
-                border: InputBorder.none,
-                isDense: true,
+    return GestureDetector(
+      onTap: () {
+        // Navigate to search tab when search bar is tapped
+        setState(() {
+          _selectedIndex = 1; // Index 1 is the Search tab
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search, color: Colors.grey.shade600),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Search for books, authors, or stores...',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
               ),
             ),
-          ),
-          Icon(Icons.tune, color: Colors.grey.shade600),
-        ],
+            Icon(Icons.tune, color: Colors.grey.shade600),
+          ],
+        ),
       ),
     );
   }

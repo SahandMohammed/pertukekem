@@ -1,12 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/customer_home_viewmodel.dart';
 import '../widgets/home_widgets.dart';
 
-class SearchTab extends StatelessWidget {
+class SearchTab extends StatefulWidget {
   final TextEditingController searchController;
 
   const SearchTab({super.key, required this.searchController});
+
+  @override
+  State<SearchTab> createState() => _SearchTabState();
+}
+
+class _SearchTabState extends State<SearchTab> {
+  Timer? _debounceTimer;
 
   @override
   Widget build(BuildContext context) {
@@ -21,13 +29,22 @@ class SearchTab extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: SearchBar(
-                  controller: searchController,
+                  controller: widget.searchController,
                   hintText: 'Search books, authors, ISBN...',
                   leading: const Icon(Icons.search),
-                  onSubmitted: (query) => viewModel.searchListings(query),
                   onChanged: (query) {
                     if (query.isEmpty) {
                       viewModel.clearSearch();
+                    } else {
+                      // Cancel previous timer if it exists
+                      _debounceTimer?.cancel();
+                      // Start a new timer
+                      _debounceTimer = Timer(
+                        const Duration(milliseconds: 300),
+                        () {
+                          viewModel.searchListings(query);
+                        },
+                      );
                     }
                   },
                 ),

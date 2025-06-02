@@ -71,47 +71,105 @@ class CustomerHomeService {
     }
   }
 
-  /// Search listings by title, author, or category
+  /// Search listings by title, author, or category using case-insensitive local filtering
   Future<List<Listing>> searchListings(String query, {int limit = 20}) async {
     try {
       if (query.isEmpty) return [];
 
-      // Firestore doesn't support full-text search, so we'll search by title and author
-      // For a production app, consider using Algolia or Elasticsearch
-      final titleResults =
+      print('DEBUG: Searching for query: "$query"');
+
+      // Convert query to lowercase for case-insensitive search
+      final lowerQuery = query.toLowerCase();
+      print('DEBUG: Using lowercase query: "$lowerQuery"');
+
+      // Fetch all listings and filter locally for true case-insensitive search
+      // This is more efficient than multiple Firestore queries and provides better results
+      final allListingsSnapshot =
           await _firestore
               .collection('listings')
-              .where('title', isGreaterThanOrEqualTo: query)
-              .where('title', isLessThanOrEqualTo: query + '\uf8ff')
-              .limit(limit ~/ 2)
+              .limit(100) // Increased limit to get more comprehensive results
               .get();
 
-      final authorResults =
-          await _firestore
-              .collection('listings')
-              .where('author', isGreaterThanOrEqualTo: query)
-              .where('author', isLessThanOrEqualTo: query + '\uf8ff')
-              .limit(limit ~/ 2)
-              .get();
+      print(
+        'DEBUG: Total listings in database: ${allListingsSnapshot.docs.length}',
+      );
 
-      final Set<String> seenIds = {};
-      final List<Listing> allResults = [];
+      final List<Listing> matchingResults = [];
 
-      // Combine results and remove duplicates
-      for (final doc in [...titleResults.docs, ...authorResults.docs]) {
-        if (!seenIds.contains(doc.id)) {
-          seenIds.add(doc.id);
-          allResults.add(
-            Listing.fromFirestore(
-              doc as DocumentSnapshot<Map<String, dynamic>>,
-              null,
-            ),
+      for (final doc in allListingsSnapshot.docs) {
+        final data = doc.data();
+        final title = (data['title'] as String? ?? '').toLowerCase();
+        final author = (data['author'] as String? ?? '').toLowerCase();
+        final isbn = (data['isbn'] as String? ?? '').toLowerCase();
+        final description =
+            (data['description'] as String? ?? '').toLowerCase();
+
+        // Get categories and convert to lowercase
+        final categories =
+            (data['category'] as List<dynamic>? ?? [])
+                .map((cat) => cat.toString().toLowerCase())
+                .toList();
+
+        // Check if query matches any searchable field (case-insensitive)
+        final bool matches =
+            title.contains(lowerQuery) ||
+            author.contains(lowerQuery) ||
+            isbn.contains(lowerQuery) ||
+            description.contains(lowerQuery) ||
+            categories.any((cat) => cat.contains(lowerQuery));
+
+        if (matches) {
+          final listing = Listing.fromFirestore(
+            doc as DocumentSnapshot<Map<String, dynamic>>,
+            null,
           );
+          matchingResults.add(listing);
+          print('DEBUG: Found match: "${listing.title}" by ${listing.author}');
         }
       }
 
-      return allResults;
+      // Sort results by relevance (exact matches first, then partial matches)
+      matchingResults.sort((a, b) {
+        final aTitle = a.title.toLowerCase();
+        final bTitle = b.title.toLowerCase();
+        final aAuthor = a.author.toLowerCase();
+        final bAuthor = b.author.toLowerCase();
+
+        // Exact title matches first
+        if (aTitle == lowerQuery && bTitle != lowerQuery) return -1;
+        if (bTitle == lowerQuery && aTitle != lowerQuery) return 1;
+
+        // Exact author matches next
+        if (aAuthor == lowerQuery && bAuthor != lowerQuery) return -1;
+        if (bAuthor == lowerQuery && aAuthor != lowerQuery) return 1;
+
+        // Title starts with query
+        if (aTitle.startsWith(lowerQuery) && !bTitle.startsWith(lowerQuery))
+          return -1;
+        if (bTitle.startsWith(lowerQuery) && !aTitle.startsWith(lowerQuery))
+          return 1;
+
+        // Author starts with query
+        if (aAuthor.startsWith(lowerQuery) && !bAuthor.startsWith(lowerQuery))
+          return -1;
+        if (bAuthor.startsWith(lowerQuery) && !aAuthor.startsWith(lowerQuery))
+          return 1;
+
+        // Default alphabetical by title
+        return aTitle.compareTo(bTitle);
+      });
+
+      // Limit results
+      final limitedResults = matchingResults.take(limit).toList();
+
+      print('DEBUG: Total search results: ${limitedResults.length}');
+      for (final result in limitedResults) {
+        print('DEBUG: Result: "${result.title}" by ${result.author}');
+      }
+
+      return limitedResults;
     } catch (e) {
+      print('DEBUG: Search error: $e');
       throw Exception('Failed to search listings: $e');
     }
   }
