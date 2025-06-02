@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../listings/model/listing_model.dart';
 import '../../store/models/store_model.dart';
 import '../services/customer_home_service.dart';
+import '../../../library/models/library_model.dart';
+import '../../../library/services/library_service.dart';
 
 class CustomerHomeViewModel extends ChangeNotifier {
   final CustomerHomeService _homeService = CustomerHomeService();
+  final LibraryService _libraryService = LibraryService();
 
   // Recently listed items
   List<Listing> _recentlyListedItems = [];
@@ -22,6 +25,10 @@ class CustomerHomeViewModel extends ChangeNotifier {
   List<Listing> _searchResults = [];
   List<Listing> get searchResults => _searchResults;
 
+  // Currently reading books
+  List<LibraryBook> _currentlyReadingBooks = [];
+  List<LibraryBook> get currentlyReadingBooks => _currentlyReadingBooks;
+
   // Loading states
   bool _isLoadingRecentItems = false;
   bool get isLoadingRecentItems => _isLoadingRecentItems;
@@ -34,6 +41,9 @@ class CustomerHomeViewModel extends ChangeNotifier {
 
   bool _isSearching = false;
   bool get isSearching => _isSearching;
+
+  bool _isLoadingCurrentlyReading = false;
+  bool get isLoadingCurrentlyReading => _isLoadingCurrentlyReading;
 
   // Error states
   String? _errorMessage;
@@ -122,7 +132,6 @@ class CustomerHomeViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
   /// Clear search results
   void clearSearch() {
     _searchQuery = '';
@@ -130,9 +139,32 @@ class CustomerHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Load currently reading books
+  Future<void> loadCurrentlyReadingBooks() async {
+    _isLoadingCurrentlyReading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _currentlyReadingBooks = await _libraryService.getCurrentlyReading(
+        limit: 5,
+      );
+    } catch (e) {
+      _errorMessage = 'Failed to load currently reading books: $e';
+      debugPrint(_errorMessage);
+    } finally {
+      _isLoadingCurrentlyReading = false;
+      notifyListeners();
+    }
+  }
+
   /// Refresh all data
   Future<void> refreshAll() async {
-    await Future.wait([loadRecentlyListedItems(), loadRecentlyJoinedStores()]);
+    await Future.wait([
+      loadRecentlyListedItems(),
+      loadRecentlyJoinedStores(),
+      loadCurrentlyReadingBooks(),
+    ]);
   }
 
   /// Clear error message

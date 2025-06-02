@@ -4,6 +4,8 @@ import '../viewmodels/customer_home_viewmodel.dart';
 import 'search_tab.dart';
 import 'profile_tab.dart';
 import '../../../library/screens/library_tab.dart';
+import '../../../library/screens/ebook_reader_screen.dart';
+import '../../../library/models/library_model.dart';
 import '../../../listings/view/listing_details_screen.dart';
 
 class CustomerDashboard extends StatefulWidget {
@@ -30,7 +32,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           (context) =>
               CustomerHomeViewModel()
                 ..loadRecentlyListedItems()
-                ..loadRecentlyJoinedStores(),
+                ..loadRecentlyJoinedStores()
+                ..loadCurrentlyReadingBooks(),
       child: Scaffold(
         body: IndexedStack(
           index: _selectedIndex,
@@ -536,59 +539,101 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   Widget _buildContinueReading() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Consumer<CustomerHomeViewModel>(
+      builder: (context, viewModel, child) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Continue Reading',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            TextButton(onPressed: () {}, child: const Text('See all')),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Center(
-            child: Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.auto_stories_outlined,
-                  size: 48,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 12),
                 Text(
                   'Continue Reading',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'This section will show your reading progress',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
-                  textAlign: TextAlign.center,
+                TextButton(
+                  onPressed: viewModel.currentlyReadingBooks.isNotEmpty
+                      ? () {
+                          // Navigate to library tab
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LibraryTab(),
+                            ),
+                          );
+                        }
+                      : null,
+                  child: const Text('See all'),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 12),
+            if (viewModel.isLoadingCurrentlyReading)
+              Container(
+                height: 200,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: const Center(child: CircularProgressIndicator())
+              )
+            else if (viewModel.currentlyReadingBooks.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.auto_stories_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Continue Reading',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Start reading an ebook to see your progress here!',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey.shade500),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: 280,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: viewModel.currentlyReadingBooks.length,
+                  itemBuilder: (context, index) {
+                    final book = viewModel.currentlyReadingBooks[index];
+                    return _buildCurrentlyReadingCard(book);
+                  },
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -646,6 +691,185 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           ),
         ),
       ],
+    );
+  }
+  Widget _buildCurrentlyReadingCard(LibraryBook book) {
+    final progressPercentage = book.totalPages != null && 
+        book.totalPages! > 0 && 
+        book.currentPage != null
+        ? (book.currentPage! / book.totalPages!) * 100
+        : 0.0;
+
+    return GestureDetector(
+      onTap: () {
+        // Navigate to ebook reader
+        if (book.downloadUrl != null && book.downloadUrl!.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(              builder: (context) => EbookReaderScreen(
+                book: book,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Book file not available for reading'),
+            ),
+          );
+        }
+      },
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Book Cover
+            Stack(
+              children: [
+                Container(
+                  height: 160,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+                        ? Image.network(
+                            book.coverUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.book,
+                                size: 48,
+                                color: Colors.grey.shade400,
+                              );
+                            },
+                          )
+                        : Icon(
+                            Icons.book,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
+                  ),
+                ),
+                // Reading progress overlay
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${progressPercentage.round()}% complete',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(
+                          value: progressPercentage / 100,
+                          backgroundColor: Colors.white.withOpacity(0.3),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).primaryColor,
+                          ),
+                          minHeight: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Book Details
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'by ${book.author}',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Page ${book.currentPage}',
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (book.totalPages != null)
+                        Text(
+                          'of ${book.totalPages}',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
