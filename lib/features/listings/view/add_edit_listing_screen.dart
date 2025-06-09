@@ -1872,7 +1872,8 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
               controller: _priceController,
               label: 'Price',
               hint: 'Enter the selling price',
-              icon: Icons.attach_money,              keyboardType: const TextInputType.numberWithOptions(
+              icon: Icons.attach_money,
+              keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               prefixText: r'$ ',

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../services/cart_service.dart';
 import '../models/cart_item_model.dart';
+import '../../checkout/screens/checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -80,15 +81,11 @@ class _CartScreenState extends State<CartScreen> {
               context,
             ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade500),
           ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Continue Shopping'),
-          ),
         ],
       ),
     );
   }
+
   Widget _buildCartItem(
     BuildContext context,
     CartItem item,
@@ -234,7 +231,8 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _buildBottomSummary(
     BuildContext context,
-    Cart cart,    CartService cartService,
+    Cart cart,
+    CartService cartService,
   ) {
     final currencyFormat = NumberFormat.currency(
       symbol: r'$',
@@ -300,23 +298,10 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _proceedToCheckout(BuildContext context, Cart cart) {
-    // For now, we'll show a simple dialog
-    // In the future, this would navigate to a proper checkout screen
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Checkout'),            content: Text(
-              'Total: ${NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(cart.totalAmount)}\n\n'
-              'Cart checkout functionality will be implemented next.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+    // Navigate to checkout screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => CheckoutScreen(cart: cart)),
     );
   }
 }

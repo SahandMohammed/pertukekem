@@ -841,7 +841,8 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),                Text(
+                const SizedBox(height: 4),
+                Text(
                   '\$${listing.price.toStringAsFixed(2)}',
                   style: textTheme.headlineMedium?.copyWith(
                     color: colorScheme.onPrimaryContainer,
@@ -1246,21 +1247,32 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Text(
-                            showOwnershipInfo
-                                ? 'View in Library'
-                                : (isCustomer
-                                    ? (listing.bookType == 'physical'
-                                        ? 'Add to Cart'
-                                        : 'Buy Now')
-                                    : 'Contact Seller'),
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                              letterSpacing: 0.5,
-                            ),
-                            textAlign: TextAlign.center,
+                          child: Consumer<CartService>(
+                            builder: (context, cartService, child) {
+                              final isInCart =
+                                  isCustomer && listing.bookType == 'physical'
+                                      ? cartService.isInCart(listing.id ?? '')
+                                      : false;
+
+                              return Text(
+                                showOwnershipInfo
+                                    ? 'View in Library'
+                                    : (isCustomer
+                                        ? (listing.bookType == 'physical'
+                                            ? (isInCart
+                                                ? 'View Cart'
+                                                : 'Add to Cart')
+                                            : 'Buy Now')
+                                        : 'Contact Seller'),
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                  letterSpacing: 0.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              );
+                            },
                           ),
                         ),
                         Container(
@@ -1318,128 +1330,18 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         ),
       );
     } else {
-      // For physical books, show add to cart or buy now options
-      _showPhysicalBookDialog(context);
-    }
-  }
-  void _showPhysicalBookDialog(BuildContext context) {
-    final cartService = context.read<CartService>();
-    final currencyFormat = NumberFormat.currency(
-      symbol: r'$',
-      decimalDigits: 2,
-    );
-    final isInCart = cartService.isInCart(listing.id ?? '');
-    final cartQuantity = cartService.getItemQuantity(listing.id ?? '');
+      // For physical books, check if already in cart
+      final cartService = context.read<CartService>();
+      final isInCart = cartService.isInCart(listing.id ?? '');
 
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text(listing.title),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    listing.coverUrl,
-                    height: 120,
-                    width: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 120,
-                        width: 80,
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.book, color: Colors.grey),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'by ${listing.author}',
-                  style: const TextStyle(fontStyle: FontStyle.italic),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Condition: ${listing.condition}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Price: ${currencyFormat.format(listing.price)}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                if (isInCart) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.shopping_cart,
-                          color: Theme.of(context).primaryColor,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Already in cart ($cartQuantity)',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              if (isInCart) ...[
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _navigateToCart(context);
-                  },
-                  child: const Text('View Cart'),
-                ),
-              ] else ...[
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    await _addToCart(context);
-                  },
-                  child: const Text('Add to Cart'),
-                ),
-              ],
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _contactSeller(context);
-                },
-                child: const Text('Contact Seller'),
-              ),
-            ],
-          ),
-    );
+      if (isInCart) {
+        // If already in cart, navigate to cart
+        _navigateToCart(context);
+      } else {
+        // If not in cart, add it immediately
+        _addToCart(context);
+      }
+    }
   }
 
   Future<void> _addToCart(BuildContext context) async {
@@ -1607,19 +1509,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               ),
             ],
           ),
-    );
-  }
-
-  void _contactSeller(BuildContext context) {
-    // TODO: Implement seller contact functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Seller contact functionality will be implemented.',
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        duration: const Duration(seconds: 3),
-      ),
     );
   }
 
