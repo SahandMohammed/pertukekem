@@ -462,9 +462,8 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
                                               ),
                                             ),
                                           ),
-                                          const Spacer(),
-                                          Text(
-                                            'USD ${listing.price.toStringAsFixed(2)}',
+                                          const Spacer(),                                          Text(
+                                            '\$${listing.price.toStringAsFixed(2)}',
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,

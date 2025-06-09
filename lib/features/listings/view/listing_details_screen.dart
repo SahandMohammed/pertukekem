@@ -841,9 +841,8 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'USD ${listing.price.toStringAsFixed(2)}',
+                const SizedBox(height: 4),                Text(
+                  '\$${listing.price.toStringAsFixed(2)}',
                   style: textTheme.headlineMedium?.copyWith(
                     color: colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.bold,
@@ -1323,11 +1322,10 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       _showPhysicalBookDialog(context);
     }
   }
-
   void _showPhysicalBookDialog(BuildContext context) {
     final cartService = context.read<CartService>();
     final currencyFormat = NumberFormat.currency(
-      symbol: 'RM ',
+      symbol: r'$',
       decimalDigits: 2,
     );
     final isInCart = cartService.isInCart(listing.id ?? '');

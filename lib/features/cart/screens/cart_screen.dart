@@ -89,14 +89,13 @@ class _CartScreenState extends State<CartScreen> {
       ),
     );
   }
-
   Widget _buildCartItem(
     BuildContext context,
     CartItem item,
     CartService cartService,
   ) {
     final currencyFormat = NumberFormat.currency(
-      symbol: 'RM ',
+      symbol: r'$',
       decimalDigits: 2,
     );
 
@@ -235,11 +234,10 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _buildBottomSummary(
     BuildContext context,
-    Cart cart,
-    CartService cartService,
+    Cart cart,    CartService cartService,
   ) {
     final currencyFormat = NumberFormat.currency(
-      symbol: 'RM ',
+      symbol: r'$',
       decimalDigits: 2,
     );
 
@@ -308,9 +306,8 @@ class _CartScreenState extends State<CartScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Checkout'),
-            content: Text(
-              'Total: ${NumberFormat.currency(symbol: 'RM ', decimalDigits: 2).format(cart.totalAmount)}\n\n'
+            title: const Text('Checkout'),            content: Text(
+              'Total: ${NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(cart.totalAmount)}\n\n'
               'Cart checkout functionality will be implemented next.',
             ),
             actions: [

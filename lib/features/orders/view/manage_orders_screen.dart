@@ -171,9 +171,8 @@ class ManageOrdersScreen extends StatelessWidget {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'USD ${order.totalAmount.toStringAsFixed(2)}',
+                                    const SizedBox(height: 8),                                    Text(
+                                      '\$${order.totalAmount.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 14,

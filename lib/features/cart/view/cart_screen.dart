@@ -189,10 +189,9 @@ class _CartScreenState extends State<CartScreen> {
                   // Price and quantity controls
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
+                    children: [                      Text(
                         NumberFormat.currency(
-                          symbol: 'ETB ',
+                          symbol: r'$',
                         ).format(item.listing.price),
                         style: Theme.of(
                           context,
@@ -207,9 +206,8 @@ class _CartScreenState extends State<CartScreen> {
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total: ${NumberFormat.currency(symbol: 'ETB ').format(item.totalPrice)}',
+                    children: [                      Text(
+                        'Total: ${NumberFormat.currency(symbol: r'$').format(item.totalPrice)}',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -294,15 +292,14 @@ class _CartScreenState extends State<CartScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,              children: [
                 Text(
                   'Items (${cart.totalItems})',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 Text(
                   NumberFormat.currency(
-                    symbol: 'ETB ',
+                    symbol: r'$',
                   ).format(cart.totalAmount),
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
@@ -319,10 +316,9 @@ class _CartScreenState extends State<CartScreen> {
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(
+                ),                Text(
                   NumberFormat.currency(
-                    symbol: 'ETB ',
+                    symbol: r'$',
                   ).format(cart.totalAmount),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
