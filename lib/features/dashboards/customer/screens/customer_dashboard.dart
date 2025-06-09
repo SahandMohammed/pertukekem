@@ -10,6 +10,7 @@ import '../../../library/screens/ebook_reader_screen.dart';
 import '../../../library/models/library_model.dart';
 import '../../../listings/view/listing_details_screen.dart';
 import '../../../authentication/viewmodels/auth_viewmodel.dart';
+import '../../../cart/services/cart_service.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -277,18 +278,59 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               ),
               const SizedBox(width: 8),
               // Shopping Cart Icon
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.shopping_bag_outlined,
-                    color: Colors.black54,
-                    size: 20,
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/cart');
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Stack(
+                    children: [
+                      const Center(
+                        child: Icon(
+                          Icons.shopping_bag_outlined,
+                          color: Colors.black54,
+                          size: 20,
+                        ),
+                      ),
+                      Consumer<CartService>(
+                        builder: (context, cartService, child) {
+                          final totalItems = cartService.itemCount;
+                          if (totalItems > 0) {
+                            return Positioned(
+                              top: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  totalItems.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),

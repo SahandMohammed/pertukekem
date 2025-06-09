@@ -11,6 +11,8 @@ import '../../../core/services/review_service.dart';
 import '../../authentication/viewmodels/auth_viewmodel.dart';
 import '../../payments/screens/payment_screen.dart';
 import '../../library/services/library_service.dart';
+import '../../cart/services/cart_service.dart';
+import '../../cart/view/cart_screen.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final Listing listing;
@@ -41,6 +43,11 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     _loadStoreInfo();
     _loadReviewStats();
     _checkBookOwnership();
+
+    // Initialize cart service
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CartService>().initializeCart();
+    });
   }
 
   Future<void> _loadStoreInfo() async {
@@ -475,6 +482,67 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               ),
             ),
             actions: [
+              // Cart button - only show for customers
+              Consumer<AuthViewModel>(
+                builder: (context, authViewModel, child) {
+                  final userRoles = authViewModel.user?.roles ?? [];
+                  final isCustomer = userRoles.contains('customer');
+
+                  if (!isCustomer) return const SizedBox.shrink();
+
+                  return Consumer<CartService>(
+                    builder: (context, cartService, child) {
+                      return Container(
+                        margin: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            IconButton(
+                              onPressed: () => _navigateToCart(context),
+                              icon: const Icon(Icons.shopping_cart_outlined),
+                            ),
+                            if (cartService.itemCount > 0)
+                              Positioned(
+                                right: 8,
+                                top: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: Text(
+                                    '${cartService.itemCount}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
               Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -1169,7 +1237,9 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                             showOwnershipInfo
                                 ? Icons.library_books_rounded
                                 : (isCustomer
-                                    ? Icons.shopping_bag_rounded
+                                    ? (listing.bookType == 'physical'
+                                        ? Icons.shopping_cart_rounded
+                                        : Icons.shopping_bag_rounded)
                                     : Icons.message_rounded),
                             color: textColor,
                             size: 20,
@@ -1180,7 +1250,11 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                           child: Text(
                             showOwnershipInfo
                                 ? 'View in Library'
-                                : (isCustomer ? 'Buy Now' : 'Contact Seller'),
+                                : (isCustomer
+                                    ? (listing.bookType == 'physical'
+                                        ? 'Add to Cart'
+                                        : 'Buy Now')
+                                    : 'Contact Seller'),
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
@@ -1245,45 +1319,219 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         ),
       );
     } else {
-      // For physical books, show the existing dialog
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Purchase Book'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Book: ${listing.title}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+      // For physical books, show add to cart or buy now options
+      _showPhysicalBookDialog(context);
+    }
+  }
+
+  void _showPhysicalBookDialog(BuildContext context) {
+    final cartService = context.read<CartService>();
+    final currencyFormat = NumberFormat.currency(
+      symbol: 'RM ',
+      decimalDigits: 2,
+    );
+    final isInCart = cartService.isInCart(listing.id ?? '');
+    final cartQuantity = cartService.getItemQuantity(listing.id ?? '');
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(listing.title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    listing.coverUrl,
+                    height: 120,
+                    width: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 120,
+                        width: 80,
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.book, color: Colors.grey),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 8),
-                  Text('Price: RM ${listing.price.toStringAsFixed(2)}'),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'by ${listing.author}',
+                  style: const TextStyle(fontStyle: FontStyle.italic),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Condition: ${listing.condition}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Price: ${currencyFormat.format(listing.price)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+                if (isInCart) ...[
                   const SizedBox(height: 16),
-                  const Text(
-                    'For physical books, please contact the seller to arrange payment and delivery.',
-                    style: TextStyle(fontSize: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.shopping_cart,
+                          color: Theme.of(context).primaryColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Already in cart ($cartQuantity)',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              if (isInCart) ...[
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _navigateToCart(context);
+                  },
+                  child: const Text('View Cart'),
+                ),
+              ] else ...[
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _addToCart(context);
+                  },
+                  child: const Text('Add to Cart'),
+                ),
+              ],
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _contactSeller(context);
+                },
+                child: const Text('Contact Seller'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _addToCart(BuildContext context) async {
+    // Capture references early to avoid context access after async operations
+    final cartService = context.read<CartService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      // Show loading indicator
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 16),
+                Text('Adding to cart...'),
+              ],
+            ),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      final success = await cartService.addToCart(listing);
+      if (mounted) {
+        if (success) {
+          scaffoldMessenger.hideCurrentSnackBar();
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 16),
+                  Expanded(child: Text('${listing.title} added to cart!')),
+                  TextButton(
+                    onPressed: () {
+                      scaffoldMessenger.hideCurrentSnackBar();
+                      _navigateToCart(context);
+                    },
+                    child: const Text(
+                      'VIEW CART',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _contactSeller(context);
-                  },
-                  child: const Text('Contact Seller'),
-                ),
-              ],
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
             ),
-      );
+          );
+        } else {
+          scaffoldMessenger.hideCurrentSnackBar();
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 16),
+                  const Text('Failed to add to cart. Please try again.'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+  }
+
+  void _navigateToCart(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CartScreen()),
+    );
   }
 
   void _showAlreadyOwnedDialog(BuildContext context) {

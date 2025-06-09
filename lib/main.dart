@@ -10,13 +10,13 @@ import 'package:provider/provider.dart';
 import 'features/authentication/viewmodels/auth_viewmodel.dart';
 import 'features/authentication/screens/auth_wrapper.dart';
 import 'features/dashboards/store/viewmodels/store_viewmodel.dart';
+import 'features/cart/services/cart_service.dart';
 import 'core/router/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   runApp(
     MultiProvider(
       providers: [
@@ -26,6 +26,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => OrderViewModel()),
         ChangeNotifierProvider(create: (_) => CustomerHomeViewModel()),
         ChangeNotifierProvider(create: (_) => LibraryViewModel()),
+        ChangeNotifierProvider(create: (_) => CartService()),
       ],
       child: const MyApp(),
     ),

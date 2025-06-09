@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pertukekem/features/cart/screens/cart_screen.dart';
 import '../../features/authentication/screens/verify_phone_screen.dart';
 import '../../features/authentication/screens/auth_wrapper.dart';
 import '../../features/dashboards/store/screens/store_setup_screen.dart';
@@ -15,6 +16,8 @@ class AppRouter {
         );
       case '/store-setup':
         return MaterialPageRoute(builder: (_) => const StoreSetupScreen());
+      case '/cart':
+        return MaterialPageRoute(builder: (_) => const CartScreen());
       default:
         return MaterialPageRoute(
           builder:
