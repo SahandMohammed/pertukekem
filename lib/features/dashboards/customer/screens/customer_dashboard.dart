@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../viewmodels/customer_home_viewmodel.dart';
 import 'search_tab.dart';
 import 'profile_tab.dart';
+import 'store_profile_screen.dart';
+import '../../store/viewmodels/store_rating_viewmodel.dart';
 import '../../../library/screens/library_tab.dart';
 import '../../../library/screens/ebook_reader_screen.dart';
 import '../../../library/models/library_model.dart';
@@ -373,74 +375,89 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   Widget _buildStoreCard(dynamic store) {
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade50, Colors.purple.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        // Navigate to store profile screen on tap with Provider wrapper
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => ChangeNotifierProvider(
+                  create: (context) => StoreRatingViewModel(),
+                  child: StoreProfileScreen(store: store),
+                ),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Store Logo/Avatar
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+        );
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [Colors.blue.shade50, Colors.purple.shade50],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Store Logo/Avatar
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.store, color: Colors.blue.shade600, size: 24),
+              ),
+              const SizedBox(height: 12),
+              // Store Name
+              Text(
+                store.storeName ?? 'Store Name',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Spacer(),
+              // Rating
+              Row(
+                children: [
+                  Icon(Icons.star, color: Colors.orange.shade400, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${store.rating ?? 0.0}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
-              child: Icon(Icons.store, color: Colors.blue.shade600, size: 24),
-            ),
-            const SizedBox(height: 12),
-            // Store Name
-            Text(
-              store.storeName ?? 'Store Name',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.black87,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const Spacer(),
-            // Rating
-            Row(
-              children: [
-                Icon(Icons.star, color: Colors.orange.shade400, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  '${store.rating ?? 0.0}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
