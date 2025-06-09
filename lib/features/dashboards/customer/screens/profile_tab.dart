@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../authentication/viewmodels/auth_viewmodel.dart';
 import '../../../payments/screens/user_cards_screen.dart';
 import '../../../payments/screens/user_transaction_history_screen.dart';
+import '../../../profile/screens/manage_address_screen.dart';
+import '../../../profile/viewmodels/profile_viewmodel.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -147,6 +149,28 @@ class ProfileTab extends StatelessWidget {
                 title: 'Saved Books',
                 subtitle: 'Your bookmarked items',
                 onTap: () => _showComingSoon(context, 'Saved Books'),
+              ),
+              _MenuOption(
+                icon: Icons.location_on_outlined,
+                title: 'Manage Addresses',
+                subtitle: 'Add and edit delivery addresses',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ChangeNotifierProvider(
+                            create: (context) {
+                              final profileViewModel = ProfileViewModel();
+                              final authViewModel =
+                                  context.read<AuthViewModel>();
+                              profileViewModel.setAuthViewModel(authViewModel);
+                              return profileViewModel;
+                            },
+                            child: const ManageAddressScreen(),
+                          ),
+                    ),
+                  );
+                },
               ),
               _MenuOption(
                 icon: Icons.credit_card_outlined,
