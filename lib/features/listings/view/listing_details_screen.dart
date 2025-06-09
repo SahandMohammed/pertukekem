@@ -251,11 +251,9 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 ),
               ),
             ),
-          ),
-        ],
+          ),        ],
       ),
-      floatingActionButton: _buildContactSellerButton(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      bottomNavigationBar: _buildContactSellerButton(context),
     );
   }
 
@@ -749,56 +747,29 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         final Color buttonColor =
             showOwnershipInfo
                 ? colorScheme.surfaceVariant
-                : colorScheme.primary;
-        final Color textColor =
+                : colorScheme.primary;        final Color textColor =
             showOwnershipInfo
                 ? colorScheme.onSurfaceVariant
-                : colorScheme.onPrimary;
-
-        return Container(
+                : colorScheme.onPrimary;        return Container(
           width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Show ownership indicator if user owns the book
-              if (showOwnershipInfo) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: colorScheme.primary.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.library_books,
-                        color: colorScheme.primary,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'You own this book',
-                        style: TextStyle(
-                          color: colorScheme.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colorScheme.surface.withOpacity(0.0),
+                colorScheme.surface.withOpacity(0.9),
+                colorScheme.surface,
               ],
-
-              FloatingActionButton.extended(
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          child: SafeArea(
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton.icon(
                 onPressed: () {
                   if (isCustomer) {
                     _showBuyNowDialog(context);
@@ -806,9 +777,14 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                     _showContactDialog(context);
                   }
                 },
-                backgroundColor: buttonColor,
-                foregroundColor: textColor,
-                elevation: showOwnershipInfo ? 2 : 8,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: buttonColor,
+                  foregroundColor: textColor,
+                  elevation: showOwnershipInfo ? 2 : 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
                 label: Text(
                   showOwnershipInfo
                       ? 'View in Library'
@@ -826,7 +802,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                           : Icons.message_outlined),
                 ),
               ),
-            ],
+            ),
           ),
         );
       },
