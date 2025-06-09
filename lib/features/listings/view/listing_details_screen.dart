@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../model/listing_model.dart';
 import '../model/review_model.dart';
 import '../../dashboards/store/models/store_model.dart';
@@ -25,12 +26,15 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   final LibraryService _libraryService = LibraryService();
   StoreModel? _storeInfo;
   Map<String, dynamic>? _reviewStats;
-  bool _isLoadingStore = false;
-  bool _isLoadingReviews = false;
-  bool _isCheckingOwnership = false;
+  bool _isLoadingStore = true;
+  bool _isLoadingReviews = true;
+  bool _isCheckingOwnership = true;
   bool _userOwnsBook = false;
 
   Listing get listing => widget.listing;
+
+  bool get _isAnyLoading =>
+      _isLoadingStore || _isLoadingReviews || _isCheckingOwnership;
   @override
   void initState() {
     super.initState();
@@ -40,7 +44,12 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   }
 
   Future<void> _loadStoreInfo() async {
-    if (listing.sellerType != 'store') return;
+    if (listing.sellerType != 'store') {
+      // Add a small delay to ensure shimmer shows for non-store listings too
+      await Future.delayed(const Duration(milliseconds: 500));
+      setState(() => _isLoadingStore = false);
+      return;
+    }
 
     setState(() => _isLoadingStore = true);
     try {
@@ -78,7 +87,12 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
 
   Future<void> _checkBookOwnership() async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null || listing.id == null) return;
+    if (currentUser == null || listing.id == null) {
+      // Add a small delay to ensure shimmer shows even when user isn't logged in
+      await Future.delayed(const Duration(milliseconds: 300));
+      setState(() => _isCheckingOwnership = false);
+      return;
+    }
 
     setState(() => _isCheckingOwnership = true);
     try {
@@ -93,10 +107,343 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     }
   }
 
+  Widget _buildShimmerPlaceholder() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: CustomScrollView(
+        slivers: [
+          // Shimmer App Bar with Cover Image
+          SliverAppBar(
+            expandedHeight: 400,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: colorScheme.surface,
+            foregroundColor: colorScheme.onSurface,
+            leading: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withOpacity(0.9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back),
+              ),
+            ),
+            actions: [
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.favorite_border),
+                ),
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colorScheme.surfaceVariant.withOpacity(0.3),
+                      colorScheme.surfaceVariant,
+                    ],
+                  ),
+                ),
+                child: Center(
+                  child: Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(
+                      width: 240,
+                      height: 320,
+                      margin: const EdgeInsets.only(top: 60),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceVariant,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Shimmer Content
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title shimmer
+                      Container(
+                        height: 32,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 20,
+                        width: 200,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Price and condition shimmer
+                      Container(
+                        height: 80,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Details shimmer
+                      ...List.generate(
+                        5,
+                        (index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Row(
+                            children: [
+                              Container(
+                                height: 16,
+                                width: 80,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Container(
+                                height: 16,
+                                width: 120,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Description shimmer
+                      Container(
+                        height: 20,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...List.generate(
+                        3,
+                        (index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Container(
+                            height: 16,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceVariant,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Reviews shimmer
+                      Container(
+                        height: 20,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ...List.generate(
+                        2,
+                        (index) => Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceVariant.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.surfaceVariant,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        height: 16,
+                                        width: 100,
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.surfaceVariant,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        height: 12,
+                                        width: 80,
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.surfaceVariant,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                height: 16,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                height: 16,
+                                width: 200,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceVariant,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildShimmerBottomButton(),
+    );
+  }
+
+  Widget _buildShimmerBottomButton() {
+    // final colorScheme = Theme.of(context).colorScheme; // No longer needed here if only used for shimmer
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color:
+            Colors
+                .white, // Consider using colorScheme.surface here if appropriate for the design
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 15,
+            offset: const Offset(0, -3),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 25,
+            offset: const Offset(0, -8),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      child: SafeArea(
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color:
+                  Colors
+                      .grey
+                      .shade300, // Also update the container's placeholder color
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Show shimmer while any loading state is active
+    if (_isAnyLoading) {
+      return _buildShimmerPlaceholder();
+    }
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
