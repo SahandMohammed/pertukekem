@@ -251,7 +251,8 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 ),
               ),
             ),
-          ),        ],
+          ),
+        ],
       ),
       bottomNavigationBar: _buildContactSellerButton(context),
     );
@@ -744,62 +745,115 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
 
         // Determine button appearance based on ownership status
         final bool showOwnershipInfo = isCustomer && _userOwnsBook;
-        final Color buttonColor =
-            showOwnershipInfo
-                ? colorScheme.surfaceVariant
-                : colorScheme.primary;        final Color textColor =
+
+        final Color textColor =
             showOwnershipInfo
                 ? colorScheme.onSurfaceVariant
-                : colorScheme.onPrimary;        return Container(
+                : colorScheme.onPrimary;
+        return Container(
           width: double.infinity,
+
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                colorScheme.surface.withOpacity(0.0),
-                colorScheme.surface.withOpacity(0.9),
-                colorScheme.surface,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 3,
+                offset: const Offset(0, -3),
+                spreadRadius: 0,
+              ),
+            ],
           ),
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: SafeArea(
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  if (isCustomer) {
-                    _showBuyNowDialog(context);
-                  } else {
-                    _showContactDialog(context);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: buttonColor,
-                  foregroundColor: textColor,
-                  elevation: showOwnershipInfo ? 2 : 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                gradient:
+                    showOwnershipInfo
+                        ? LinearGradient(
+                          colors: [
+                            colorScheme.surfaceVariant,
+                            colorScheme.surfaceVariant.withOpacity(0.8),
+                          ],
+                        )
+                        : LinearGradient(
+                          colors: [
+                            colorScheme.primary,
+                            colorScheme.primary.withOpacity(0.9),
+                          ],
+                        ),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        showOwnershipInfo
+                            ? colorScheme.surfaceVariant.withOpacity(0.3)
+                            : colorScheme.primary.withOpacity(0.4),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-                label: Text(
-                  showOwnershipInfo
-                      ? 'View in Library'
-                      : (isCustomer ? 'Buy Now' : 'Contact Seller'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                ],
+              ),
+              child: Material(
+                color: Colors.purple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(30),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  onTap: () {
+                    if (isCustomer) {
+                      _showBuyNowDialog(context);
+                    } else {
+                      _showContactDialog(context);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: textColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            showOwnershipInfo
+                                ? Icons.library_books_rounded
+                                : (isCustomer
+                                    ? Icons.shopping_bag_rounded
+                                    : Icons.message_rounded),
+                            color: textColor,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            showOwnershipInfo
+                                ? 'View in Library'
+                                : (isCustomer ? 'Buy Now' : 'Contact Seller'),
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                              letterSpacing: 0.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            color: textColor.withOpacity(0.8),
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                icon: Icon(
-                  showOwnershipInfo
-                      ? Icons.library_books
-                      : (isCustomer
-                          ? Icons.shopping_cart
-                          : Icons.message_outlined),
                 ),
               ),
             ),
