@@ -203,7 +203,7 @@ class OrderDetailsScreen extends StatelessWidget {
                   _buildSummaryRow(
                     context,
                     'Total Amount',
-                    'Ksh ${NumberFormat('#,##0.00').format(order.totalAmount)}',
+                    '\$${NumberFormat('#,##0.00').format(order.totalAmount)}',
                     isTotal: true,
                   ),
                 ],
@@ -663,7 +663,7 @@ class OrderDetailsScreen extends StatelessWidget {
             _buildDetailRow(
               context,
               'Total Amount',
-              'Ksh ${NumberFormat('#,##0.00').format(order.totalAmount)}',
+              '\$${NumberFormat('#,##0.00').format(order.totalAmount)}',
             ),
             if (order.updatedAt != null) ...[
               const SizedBox(height: 12),
