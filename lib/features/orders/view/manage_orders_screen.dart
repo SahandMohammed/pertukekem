@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../model/order_model.dart';
 import '../viewmodel/order_viewmodel.dart';
+import 'order_details_screen.dart';
 
 class ManageOrdersScreen extends StatefulWidget {
   const ManageOrdersScreen({super.key});
@@ -258,9 +259,12 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         ],
       ),
       child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showOrderDetails(context, order),
+        color: Colors.transparent,        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => OrderDetailsScreen(order: order),
+            ),
+          ),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -405,10 +409,13 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                 ],
                 const SizedBox(height: 16),
                 Row(
-                  children: [
-                    Expanded(
+                  children: [                    Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => _showOrderDetails(context, order),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => OrderDetailsScreen(order: order),
+                          ),
+                        ),
                         icon: const Icon(Icons.visibility_outlined, size: 16),
                         label: const Text('View Details'),
                         style: OutlinedButton.styleFrom(
@@ -605,7 +612,6 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       ),
     );
   }
-
   void _showFilterDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -630,78 +636,6 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                 const SizedBox(height: 20),
               ],
             ),
-          ),
-    );
-  }
-
-  void _showOrderDetails(BuildContext context, Order order) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder:
-          (context) => DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            maxChildSize: 0.9,
-            minChildSize: 0.5,
-            builder:
-                (context, scrollController) => Container(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Order Details',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          controller: scrollController,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Order ID: #${order.id.substring(0, 8).toUpperCase()}',
-                              ),
-                              const SizedBox(height: 8),
-                              Text('Status: ${_getStatusText(order.status)}'),
-                              const SizedBox(height: 8),
-                              Text('Quantity: ${order.quantity}'),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Total: \$${NumberFormat('#,##0.00').format(order.totalAmount)}',
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Date: ${DateFormat('MMM dd, yyyy • hh:mm a').format(order.createdAt.toDate())}',
-                              ),
-                              if (order.shippingAddress != null) ...[
-                                const SizedBox(height: 8),
-                                Text('Shipping: ${order.shippingAddress}'),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
           ),
     );
   }
