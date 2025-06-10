@@ -1,33 +1,37 @@
-// Firestore Security Rules for Payment Cards
+// Firestore Security Rules for Payment Cards (Subcollection Structure)
 // This is a sample - add these rules to your main firestore.rules file
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Payment cards collection - users can only access their own cards
-    match /payment_cards/{cardId} {
-      allow read, write: if request.auth != null 
-        && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null 
-        && request.auth.uid == request.resource.data.userId;
-    }
-    
-    // Alternative structure if using subcollections under users
-    match /users/{userId}/cards/{cardId} {
+    // Users collection - allow users to read/write their own document
+    match /users/{userId} {
       allow read, write: if request.auth != null 
         && request.auth.uid == userId;
+      
+      // Payment cards subcollection - users can only access their own cards
+      match /payment_cards/{cardId} {
+        allow read, write: if request.auth != null 
+          && request.auth.uid == userId;
+        
+        // Additional validation for card data
+        allow create, update: if request.auth != null 
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasAll(['cardHolderName', 'lastFourDigits', 'cardType', 'expiryMonth', 'expiryYear'])
+          && request.resource.data.lastFourDigits is string
+          && request.resource.data.lastFourDigits.size() == 4
+          && request.resource.data.expiryMonth is string
+          && request.resource.data.expiryYear is string
+          && request.resource.data.userId == userId;
+      }
     }
     
-    // Example of additional validation for card data
-    match /payment_cards/{cardId} {
-      allow create, update: if request.auth != null 
-        && request.auth.uid == request.resource.data.userId
-        && request.resource.data.keys().hasAll(['cardHolderName', 'lastFourDigits', 'cardType', 'expiryMonth', 'expiryYear'])
-        && request.resource.data.lastFourDigits is string
-        && request.resource.data.lastFourDigits.size() == 4
-        && request.resource.data.expiryMonth is string
-        && request.resource.data.expiryYear is string;
+    // Admin access for collection group queries (optional)
+    // Only allow admin users to perform collection group queries
+    match /{path=**}/payment_cards/{cardId} {
+      allow read: if request.auth != null 
+        && request.auth.token.admin == true;
     }
   }
 }

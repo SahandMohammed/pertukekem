@@ -158,8 +158,10 @@ class PaymentCardViewModel extends ChangeNotifier {
 
   // Update card last used
   Future<void> updateCardLastUsed(String cardId) async {
+    if (currentUserId == null) return;
+
     try {
-      await _cardService.updateCardLastUsed(cardId);
+      await _cardService.updateCardLastUsedWithUserId(currentUserId!, cardId);
       // Optionally reload cards if you want to show last used date
     } catch (e) {
       debugPrint('Error updating card last used: $e');

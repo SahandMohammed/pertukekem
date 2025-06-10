@@ -8,7 +8,21 @@ class PaymentCardService {
   PaymentCardService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String _collection = 'payment_cards';
+  final String _usersCollection = 'users';
+  final String _cardsSubcollection = 'payment_cards';
+
+  // Get user's cards collection reference
+  CollectionReference _getUserCardsCollection(String userId) {
+    return _firestore
+        .collection(_usersCollection)
+        .doc(userId)
+        .collection(_cardsSubcollection);
+  }
+
+  // Get user document reference
+  DocumentReference _getUserDocumentReference(String userId) {
+    return _firestore.collection(_usersCollection).doc(userId);
+  }
 
   // Save a new payment card
   Future<String> savePaymentCard({
@@ -21,6 +35,9 @@ class PaymentCardService {
     bool setAsDefault = false,
   }) async {
     try {
+      // Ensure user document exists
+      await _ensureUserDocumentExists(userId);
+
       // Extract last 4 digits and determine card type
       final lastFourDigits = cardNumber
           .replaceAll(' ', '')
@@ -48,9 +65,9 @@ class PaymentCardService {
         createdAt: DateTime.now(),
       );
 
-      final docRef = await _firestore
-          .collection(_collection)
-          .add(paymentCard.toFirestore());
+      final docRef = await _getUserCardsCollection(
+        userId,
+      ).add(paymentCard.toFirestore());
 
       debugPrint('Payment card saved with ID: ${docRef.id}');
       return docRef.id;
@@ -64,9 +81,7 @@ class PaymentCardService {
   Future<List<PaymentCard>> getUserPaymentCards(String userId) async {
     try {
       final querySnapshot =
-          await _firestore
-              .collection(_collection)
-              .where('userId', isEqualTo: userId)
+          await _getUserCardsCollection(userId)
               .orderBy('isDefault', descending: true)
               .orderBy('createdAt', descending: true)
               .get();
@@ -84,12 +99,9 @@ class PaymentCardService {
   Future<PaymentCard?> getUserDefaultCard(String userId) async {
     try {
       final querySnapshot =
-          await _firestore
-              .collection(_collection)
-              .where('userId', isEqualTo: userId)
-              .where('isDefault', isEqualTo: true)
-              .limit(1)
-              .get();
+          await _getUserCardsCollection(
+            userId,
+          ).where('isDefault', isEqualTo: true).limit(1).get();
 
       if (querySnapshot.docs.isNotEmpty) {
         return PaymentCard.fromFirestore(querySnapshot.docs.first);
@@ -102,9 +114,9 @@ class PaymentCardService {
   }
 
   // Get payment card by ID
-  Future<PaymentCard?> getPaymentCardById(String cardId) async {
+  Future<PaymentCard?> getPaymentCardById(String userId, String cardId) async {
     try {
-      final doc = await _firestore.collection(_collection).doc(cardId).get();
+      final doc = await _getUserCardsCollection(userId).doc(cardId).get();
 
       if (doc.exists) {
         return PaymentCard.fromFirestore(doc);
@@ -123,9 +135,9 @@ class PaymentCardService {
       await _unsetDefaultCards(userId);
 
       // Then set this card as default
-      await _firestore.collection(_collection).doc(cardId).update({
-        'isDefault': true,
-      });
+      await _getUserCardsCollection(
+        userId,
+      ).doc(cardId).update({'isDefault': true});
 
       debugPrint('Card $cardId set as default');
     } catch (e) {
@@ -136,10 +148,21 @@ class PaymentCardService {
 
   // Update last used date for a card
   Future<void> updateCardLastUsed(String cardId) async {
+    // This method needs userId parameter in the new structure
+    throw Exception(
+      'updateCardLastUsed requires userId parameter. Use updateCardLastUsedWithUserId instead.',
+    );
+  }
+
+  // Update last used date for a card with userId
+  Future<void> updateCardLastUsedWithUserId(
+    String userId,
+    String cardId,
+  ) async {
     try {
-      await _firestore.collection(_collection).doc(cardId).update({
-        'lastUsedAt': Timestamp.fromDate(DateTime.now()),
-      });
+      await _getUserCardsCollection(
+        userId,
+      ).doc(cardId).update({'lastUsedAt': Timestamp.fromDate(DateTime.now())});
 
       debugPrint('Card $cardId last used date updated');
     } catch (e) {
@@ -151,7 +174,7 @@ class PaymentCardService {
   // Delete a payment card
   Future<void> deletePaymentCard(String cardId, String userId) async {
     try {
-      final card = await getPaymentCardById(cardId);
+      final card = await getPaymentCardById(userId, cardId);
       if (card == null) {
         throw Exception('Card not found');
       }
@@ -166,7 +189,7 @@ class PaymentCardService {
         }
       }
 
-      await _firestore.collection(_collection).doc(cardId).delete();
+      await _getUserCardsCollection(userId).doc(cardId).delete();
 
       debugPrint('Payment card $cardId deleted');
     } catch (e) {
@@ -185,25 +208,20 @@ class PaymentCardService {
     return setCardAsDefault(cardId, userId);
   }
 
-  // Delete card - alias for compatibility
+  // Delete card - alias for compatibility - deprecated
   Future<void> deleteCard(String cardId) async {
-    // Get card to find userId
-    final card = await getPaymentCardById(cardId);
-    if (card == null) {
-      throw Exception('Card not found');
-    }
-    return deletePaymentCard(cardId, card.userId);
+    throw Exception(
+      'deleteCard requires userId parameter. Use deletePaymentCard instead.',
+    );
   }
 
   // Private method to unset all default cards for a user
   Future<void> _unsetDefaultCards(String userId) async {
     try {
       final querySnapshot =
-          await _firestore
-              .collection(_collection)
-              .where('userId', isEqualTo: userId)
-              .where('isDefault', isEqualTo: true)
-              .get();
+          await _getUserCardsCollection(
+            userId,
+          ).where('isDefault', isEqualTo: true).get();
 
       final batch = _firestore.batch();
       for (final doc in querySnapshot.docs) {
@@ -226,9 +244,7 @@ class PaymentCardService {
   }) async {
     try {
       final querySnapshot =
-          await _firestore
-              .collection(_collection)
-              .where('userId', isEqualTo: userId)
+          await _getUserCardsCollection(userId)
               .where('lastFourDigits', isEqualTo: lastFourDigits)
               .where('expiryMonth', isEqualTo: expiryMonth)
               .where('expiryYear', isEqualTo: expiryYear)
@@ -242,13 +258,17 @@ class PaymentCardService {
     }
   }
 
-  // Get card statistics for admin
+  // Get card statistics for admin (requires collection group query)
   Future<Map<String, dynamic>> getCardStatistics() async {
     try {
-      final allCards = await _firestore.collection(_collection).get();
+      // Use collection group query to get all cards across all users
+      final allCardsQuery =
+          await _firestore.collectionGroup(_cardsSubcollection).get();
 
       final cards =
-          allCards.docs.map((doc) => PaymentCard.fromFirestore(doc)).toList();
+          allCardsQuery.docs
+              .map((doc) => PaymentCard.fromFirestore(doc))
+              .toList();
 
       // Group by card type
       final cardTypeCount = <String, int>{};
@@ -285,7 +305,7 @@ class PaymentCardService {
 
       final batch = _firestore.batch();
       for (final card in expiredCards) {
-        final docRef = _firestore.collection(_collection).doc(card.id);
+        final docRef = _getUserCardsCollection(userId).doc(card.id);
         batch.delete(docRef);
       }
 
@@ -295,6 +315,25 @@ class PaymentCardService {
       );
     } catch (e) {
       debugPrint('Error removing expired cards: $e');
+      rethrow;
+    }
+  }
+
+  // Ensure user document exists
+  Future<void> _ensureUserDocumentExists(String userId) async {
+    try {
+      final userDoc = await _getUserDocumentReference(userId).get();
+      if (!userDoc.exists) {
+        // Create user document with minimal data
+        await _getUserDocumentReference(userId).set({
+          'id': userId,
+          'createdAt': Timestamp.fromDate(DateTime.now()),
+          'hasPaymentCards': true,
+        }, SetOptions(merge: true));
+        debugPrint('Created user document for $userId');
+      }
+    } catch (e) {
+      debugPrint('Error ensuring user document exists: $e');
       rethrow;
     }
   }
