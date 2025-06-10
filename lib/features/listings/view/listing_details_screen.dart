@@ -12,7 +12,7 @@ import '../../authentication/viewmodels/auth_viewmodel.dart';
 import '../../payments/screens/payment_screen.dart';
 import '../../library/services/library_service.dart';
 import '../../cart/services/cart_service.dart';
-import '../../cart/view/cart_screen.dart';
+import '../../cart/screens/cart_screen.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final Listing listing;
