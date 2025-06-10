@@ -11,14 +11,13 @@ class ListingCard extends StatelessWidget {
   final Listing listing;
 
   const ListingCard({super.key, required this.listing});
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Card(
-      elevation: 0,
+      elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colorScheme.outline.withOpacity(0.1), width: 1),
@@ -33,9 +32,7 @@ class ListingCard extends StatelessWidget {
           );
         },
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: 160,
-          height: 260,
+        child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,8 +47,8 @@ class ListingCard extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
@@ -118,13 +115,16 @@ class ListingCard extends StatelessWidget {
               // Price and Condition
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Price
-                  Text(
-                    '\$${listing.price.toStringAsFixed(2)}',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
+                  Flexible(
+                    child: Text(
+                      '\$${listing.price.toStringAsFixed(2)}',
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ),
                   // Condition Badge
