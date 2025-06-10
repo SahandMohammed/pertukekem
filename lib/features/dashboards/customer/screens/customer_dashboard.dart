@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/customer_home_viewmodel.dart';
 import 'search_tab.dart';
 import 'profile_tab.dart';
+import 'customer_orders_tab.dart';
 import 'store_profile_screen.dart';
 import '../../store/viewmodels/store_rating_viewmodel.dart';
 import '../../../library/screens/library_tab.dart';
@@ -43,8 +44,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           index: _selectedIndex,
           children: [
             // Home Tab - Comprehensive Bookstore Screen
-            _buildBookstoreHome(), // Search Tab - Search with Results
+            _buildBookstoreHome(),
+            // Search Tab - Search with Results
             SearchTab(searchController: _searchController),
+            // Orders Tab - Customer Orders
+            const CustomerOrdersTab(),
             // Library Tab - User's Library
             const LibraryTab(),
             // Profile Tab
@@ -68,6 +72,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               icon: Icon(Icons.search_outlined),
               selectedIcon: Icon(Icons.search),
               label: 'Search',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.shopping_bag_outlined),
+              selectedIcon: Icon(Icons.shopping_bag),
+              label: 'Orders',
             ),
             NavigationDestination(
               icon: Icon(Icons.library_books_outlined),
