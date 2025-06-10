@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/customer_orders_viewmodel.dart';
 import '../../../orders/model/order_model.dart';
+import 'order_details_screen.dart';
 
 class CustomerOrdersTab extends StatelessWidget {
   const CustomerOrdersTab({super.key});
@@ -358,10 +359,10 @@ class _CustomerOrdersContent extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      // TODO: Navigate to order details
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Order details coming soon!'),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (context) => OrderDetailsScreen(order: order),
                         ),
                       );
                     },
