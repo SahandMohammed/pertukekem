@@ -45,13 +45,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           children: [
             // Home Tab - Comprehensive Bookstore Screen
             _buildBookstoreHome(),
-            // Search Tab - Search with Results
-            SearchTab(searchController: _searchController),
-            // Orders Tab - Customer Orders
+            // Orders Tab - Customer Orders (previously index 2, now index 1)
             const CustomerOrdersTab(),
-            // Library Tab - User's Library
+            // Library Tab - User's Library (previously index 3, now index 2)
             const LibraryTab(),
-            // Profile Tab
+            // Profile Tab (previously index 4, now index 3)
             const ProfileTab(),
           ],
         ),
@@ -67,11 +65,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
               label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.search_outlined),
-              selectedIcon: Icon(Icons.search),
-              label: 'Search',
             ),
             NavigationDestination(
               icon: Icon(Icons.shopping_bag_outlined),
@@ -353,10 +346,17 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Widget _buildSearchBar() {
     return GestureDetector(
       onTap: () {
-        // Navigate to search tab when search bar is tapped
-        setState(() {
-          _selectedIndex = 1; // Index 1 is the Search tab
-        });
+        // Navigate to search screen when search bar is tapped
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => ChangeNotifierProvider(
+                  create: (context) => CustomerHomeViewModel(),
+                  child: SearchTab(searchController: _searchController),
+                ),
+          ),
+        );
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -705,13 +705,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   onPressed:
                       viewModel.currentlyReadingBooks.isNotEmpty
                           ? () {
-                            // Navigate to library tab
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LibraryTab(),
-                              ),
-                            );
+                            // Navigate to library tab (now at index 2)
+                            setState(() {
+                              _selectedIndex = 2;
+                            });
                           }
                           : null,
                   child: const Text('See all'),
