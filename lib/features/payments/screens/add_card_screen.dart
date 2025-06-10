@@ -21,11 +21,13 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   bool _setAsDefault = false;
   String _cardType = 'unknown';
-
   @override
   void initState() {
     super.initState();
     _cardNumberController.addListener(_onCardNumberChanged);
+    _cardHolderController.addListener(_onFieldChanged);
+    _expiryMonthController.addListener(_onFieldChanged);
+    _expiryYearController.addListener(_onFieldChanged);
   }
 
   @override
@@ -47,6 +49,11 @@ class _AddCardScreenState extends State<AddCardScreen> {
         _cardType = newCardType;
       });
     }
+  }
+
+  void _onFieldChanged() {
+    // Trigger rebuild to update the card preview
+    setState(() {});
   }
 
   Future<void> _saveCard() async {
@@ -238,7 +245,10 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_expiryMonthController.text.padLeft(2, '0')}/${_expiryYearController.text}',
+                    _expiryMonthController.text.isNotEmpty ||
+                            _expiryYearController.text.isNotEmpty
+                        ? '${_expiryMonthController.text.padLeft(2, '0')}/${_expiryYearController.text.padLeft(2, '0')}'
+                        : 'MM/YY',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -259,7 +269,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
       controller: _cardNumberController,
       decoration: InputDecoration(
         labelText: 'Card Number',
-        hintText: '4242 4242 4242 4242',
         prefixIcon: const Icon(Icons.credit_card),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         suffixIcon:
