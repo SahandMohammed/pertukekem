@@ -24,17 +24,17 @@ class ProfileViewModel extends ChangeNotifier {
 
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 
   void _setError(String? error) {
     _error = error;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 
   void clearError() {
     _error = null;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 
   // Load addresses from user document
@@ -300,6 +300,6 @@ class ProfileViewModel extends ChangeNotifier {
       if (!a.isDefault && b.isDefault) return 1;
       return b.createdAt.compareTo(a.createdAt);
     });
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 }

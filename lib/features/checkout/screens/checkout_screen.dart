@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../authentication/viewmodels/auth_viewmodel.dart';
 import '../../cart/models/cart_item_model.dart';
 import '../../cart/services/cart_service.dart';
+import '../../profile/models/address_model.dart';
+import '../../profile/viewmodels/profile_viewmodel.dart';
+import '../../profile/screens/manage_address_screen.dart';
+import '../../payments/models/payment_card_model.dart';
+import '../../payments/viewmodels/payment_card_viewmodel.dart';
+import '../../payments/screens/user_cards_screen.dart';
 import '../services/checkout_service.dart';
 import 'checkout_success_screen.dart';
 
@@ -37,17 +44,24 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   late AnimationController _fadeController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
-
   String _selectedPaymentMethod = 'card';
   bool _isProcessing = false;
-  bool _saveAddress = false;
   final CheckoutService _checkoutService = CheckoutService();
 
+  // Address and Payment Card related
+  List<AddressModel> _userAddresses = [];
+  List<PaymentCard> _userCards = [];
+  AddressModel? _selectedAddress;
+  PaymentCard? _selectedCard;
+  bool _isLoadingAddresses = false;
+  bool _isLoadingCards = false;
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _loadUserInfo();
+    _loadUserAddresses();
+    _loadUserCards();
   }
 
   void _initializeAnimations() {
@@ -82,6 +96,68 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       _nameController.text = '${user.firstName} ${user.lastName}';
       _emailController.text = user.email;
       _phoneController.text = user.phoneNumber;
+    }
+  }
+
+  Future<void> _loadUserAddresses() async {
+    final user = context.read<AuthViewModel>().user;
+    if (user == null) return;
+
+    setState(() {
+      _isLoadingAddresses = true;
+    });
+
+    try {
+      final profileViewModel = context.read<ProfileViewModel>();
+      profileViewModel.setAuthViewModel(context.read<AuthViewModel>());
+      await profileViewModel.loadAddresses(user);
+
+      setState(() {
+        _userAddresses = profileViewModel.addresses;
+        // Auto-select default address if available
+        _selectedAddress =
+            _userAddresses.isNotEmpty
+                ? _userAddresses.firstWhere(
+                  (addr) => addr.isDefault,
+                  orElse: () => _userAddresses.first,
+                )
+                : null;
+      });
+    } catch (e) {
+      debugPrint('Error loading addresses: $e');
+    } finally {
+      setState(() {
+        _isLoadingAddresses = false;
+      });
+    }
+  }
+
+  Future<void> _loadUserCards() async {
+    setState(() {
+      _isLoadingCards = true;
+    });
+
+    try {
+      final cardViewModel = context.read<PaymentCardViewModel>();
+      await cardViewModel.loadCards();
+
+      setState(() {
+        _userCards = cardViewModel.cards;
+        // Auto-select default card if available
+        _selectedCard =
+            _userCards.isNotEmpty
+                ? _userCards.firstWhere(
+                  (card) => card.isDefault,
+                  orElse: () => _userCards.first,
+                )
+                : null;
+      });
+    } catch (e) {
+      debugPrint('Error loading cards: $e');
+    } finally {
+      setState(() {
+        _isLoadingCards = false;
+      });
     }
   }
 
@@ -130,13 +206,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                       children: [
                         _buildOrderSummary(),
                         const SizedBox(height: 32),
-                        _buildShippingInformation(),
+                        _buildAddressSelection(),
                         const SizedBox(height: 32),
-                        _buildPaymentMethods(),
-                        if (_selectedPaymentMethod == 'card') ...[
-                          const SizedBox(height: 24),
-                          _buildPaymentForm(),
-                        ],
+                        _buildPaymentSelection(),
                         const SizedBox(height: 32),
                       ],
                     ),
@@ -300,179 +372,203 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildShippingInformation() {
+  Widget _buildAddressSelection() {
+    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Shipping Information',
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-
-        // Name and Email
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: const Icon(Icons.person),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
+            Text(
+              'Delivery Address',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  if (!RegExp(
-                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                  ).hasMatch(value)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-              ),
+            TextButton.icon(
+              onPressed: () => _navigateToManageAddresses(),
+              icon: Icon(Icons.settings, size: 18),
+              label: Text('Manage'),
+              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
             ),
           ],
         ),
         const SizedBox(height: 16),
 
-        // Phone
-        TextFormField(
-          controller: _phoneController,
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            labelText: 'Phone Number',
-            prefixIcon: const Icon(Icons.phone),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        if (_isLoadingAddresses)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 12),
+                Text('Loading addresses...'),
+              ],
+            ),
+          )
+        else if (_userAddresses.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.location_off, size: 48, color: colorScheme.primary),
+                const SizedBox(height: 12),
+                Text(
+                  'No saved addresses',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Add an address to continue with checkout',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _navigateToManageAddresses(),
+                  icon: Icon(Icons.add_location),
+                  label: Text('Add Address'),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Column(
+              children: [
+                DropdownButtonFormField<AddressModel>(
+                  value: _selectedAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Select Address',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items:
+                      _userAddresses.map((address) {
+                        return DropdownMenuItem<AddressModel>(
+                          value: address,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    address.name,
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (address.isDefault) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        'Default',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.onPrimary,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              Text(
+                                address.fullAddress,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                  onChanged: (AddressModel? newAddress) {
+                    setState(() {
+                      _selectedAddress = newAddress;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a delivery address';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your phone number';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-
-        // Address
-        TextFormField(
-          controller: _addressController,
-          maxLines: 2,
-          decoration: InputDecoration(
-            labelText: 'Street Address',
-            prefixIcon: const Icon(Icons.home),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Please enter your address';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-
-        // City and Postal Code
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: TextFormField(
-                controller: _cityController,
-                decoration: InputDecoration(
-                  labelText: 'City',
-                  prefixIcon: const Icon(Icons.location_city),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your city';
-                  }
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _postalCodeController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Postal Code',
-                  prefixIcon: const Icon(Icons.local_post_office),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter postal code';
-                  }
-                  return null;
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Save address checkbox
-        Row(
-          children: [
-            Checkbox(
-              value: _saveAddress,
-              onChanged: (value) {
-                setState(() {
-                  _saveAddress = value ?? false;
-                });
-              },
-            ),
-            const Text('Save this address for future orders'),
-          ],
-        ),
       ],
     );
   }
 
-  Widget _buildPaymentMethods() {
+  Widget _buildPaymentSelection() {
+    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Payment Method',
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Payment Method',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (_selectedPaymentMethod == 'card')
+              TextButton.icon(
+                onPressed: () => _navigateToManageCards(),
+                icon: Icon(Icons.settings, size: 18),
+                label: Text('Manage'),
+                style: TextButton.styleFrom(
+                  foregroundColor: colorScheme.primary,
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 16),
+
+        // Payment Method Selection
         Row(
           children: [
             Expanded(
@@ -492,8 +588,251 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             ),
           ],
         ),
+
+        if (_selectedPaymentMethod == 'card') ...[
+          const SizedBox(height: 24),
+
+          if (_isLoadingCards)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Loading payment cards...'),
+                ],
+              ),
+            )
+          else if (_userCards.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.credit_card_off,
+                    size: 48,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No saved cards',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Add a payment card to continue with checkout',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _navigateToManageCards(),
+                    icon: Icon(Icons.add_card),
+                    label: Text('Add Card'),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select Payment Card',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Cards list
+                  ...(_userCards.map((card) => _buildCardOption(card))),
+
+                  const SizedBox(height: 16),
+
+                  // CVV input for selected card
+                  if (_selectedCard != null) ...[
+                    TextFormField(
+                      controller: _cvvController,
+                      decoration: InputDecoration(
+                        labelText: 'CVV for ${_selectedCard!.maskedCardNumber}',
+                        hintText: '123',
+                        prefixIcon: Icon(Icons.lock),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(4),
+                      ],
+                      validator: (value) {
+                        if (value == null || value.length < 3) {
+                          return 'Please enter CVV';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
       ],
     );
+  }
+
+  Widget _buildCardOption(PaymentCard card) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isSelected = _selectedCard?.id == card.id;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedCard = card;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color:
+                isSelected
+                    ? colorScheme.primary.withOpacity(0.1)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isSelected
+                      ? colorScheme.primary
+                      : colorScheme.outline.withOpacity(0.3),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 25,
+                decoration: BoxDecoration(
+                  color: _getCardColor(card.cardType),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Center(
+                  child: Text(
+                    _getCardDisplayName(card.cardType),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      card.maskedCardNumber,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '${card.cardHolderName} • Expires ${card.formattedExpiry}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (card.isDefault)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Default',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              if (isSelected)
+                Icon(Icons.check_circle, color: colorScheme.primary, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getCardColor(String cardType) {
+    switch (cardType.toLowerCase()) {
+      case 'visa':
+        return const Color(0xFF1A1F71);
+      case 'mastercard':
+        return const Color(0xFFEB001B);
+      case 'amex':
+        return const Color(0xFF006FCF);
+      case 'discover':
+        return const Color(0xFFFF6000);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getCardDisplayName(String cardType) {
+    switch (cardType.toLowerCase()) {
+      case 'visa':
+        return 'VISA';
+      case 'mastercard':
+        return 'MC';
+      case 'amex':
+        return 'AMEX';
+      case 'discover':
+        return 'DISC';
+      default:
+        return 'CARD';
+    }
   }
 
   Widget _buildPaymentMethodCard(String method, String title, IconData icon) {
@@ -546,128 +885,40 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildPaymentForm() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Card Information',
-            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // Card Number
-          TextFormField(
-            controller: _cardNumberController,
-            decoration: InputDecoration(
-              labelText: 'Card Number',
-              hintText: '1234 5678 9012 3456',
-              prefixIcon: const Icon(Icons.credit_card),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+  Future<void> _navigateToManageAddresses() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => ChangeNotifierProvider(
+              create: (context) {
+                final profileViewModel = ProfileViewModel();
+                profileViewModel.setAuthViewModel(
+                  context.read<AuthViewModel>(),
+                );
+                return profileViewModel;
+              },
+              child: const ManageAddressScreen(),
             ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              _CardNumberInputFormatter(),
-            ],
-            validator: (value) {
-              if (value == null || value.length < 19) {
-                return 'Please enter a valid card number';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Expiry and CVV
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _expiryController,
-                  decoration: InputDecoration(
-                    labelText: 'MM/YY',
-                    hintText: '12/25',
-                    prefixIcon: const Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    _ExpiryDateInputFormatter(),
-                  ],
-                  validator: (value) {
-                    if (value == null || value.length < 5) {
-                      return 'Invalid expiry';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextFormField(
-                  controller: _cvvController,
-                  decoration: InputDecoration(
-                    labelText: 'CVV',
-                    hintText: '123',
-                    prefixIcon: const Icon(Icons.lock),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(3),
-                  ],
-                  validator: (value) {
-                    if (value == null || value.length < 3) {
-                      return 'Invalid CVV';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Cardholder Name
-          TextFormField(
-            controller: _cardNameController,
-            decoration: InputDecoration(
-              labelText: 'Cardholder Name',
-              hintText: 'John Doe',
-              prefixIcon: const Icon(Icons.person),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Please enter cardholder name';
-              }
-              return null;
-            },
-          ),
-        ],
       ),
     );
+
+    // Reload addresses when returning
+    if (result != null && mounted) {
+      _loadUserAddresses();
+    }
+  }
+
+  Future<void> _navigateToManageCards() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const UserCardsScreen()),
+    );
+
+    // Reload cards when returning
+    if (result != null && mounted) {
+      _loadUserCards();
+    }
   }
 
   Widget _buildBottomSection() {
@@ -795,13 +1046,41 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       return;
     }
 
+    // Validate required selections
+    if (_selectedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a delivery address')),
+      );
+      return;
+    }
+
+    if (_selectedPaymentMethod == 'card' && _selectedCard == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a payment card')),
+      );
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
+
     try {
-      // Create shipping address
-      final shippingAddress =
-          '${_addressController.text}, ${_cityController.text}, ${_postalCodeController.text}';
+      // Use selected address
+      final shippingAddress = _selectedAddress!.fullAddress;
+
+      // Prepare card info if using card payment
+      Map<String, String>? cardInfo;
+      if (_selectedPaymentMethod == 'card' && _selectedCard != null) {
+        cardInfo = {
+          'cardId': _selectedCard!.id,
+          'cardType': _selectedCard!.cardType,
+          'lastFourDigits': _selectedCard!.lastFourDigits,
+          'cardholderName': _selectedCard!.cardHolderName,
+          'expiry':
+              '${_selectedCard!.expiryMonth}/${_selectedCard!.expiryYear}',
+        };
+      }
 
       // Process each item in the cart
       final results = await _checkoutService.processCartCheckout(
@@ -813,16 +1092,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           'name': _nameController.text,
           'email': _emailController.text,
           'phone': _phoneController.text,
+          'addressId': _selectedAddress!.id,
+          'selectedCardId': _selectedCard?.id ?? '',
         },
-        cardInfo:
-            _selectedPaymentMethod == 'card'
-                ? {
-                  'cardNumber': _cardNumberController.text,
-                  'expiry': _expiryController.text,
-                  'cvv': _cvvController.text,
-                  'cardholderName': _cardNameController.text,
-                }
-                : null,
+        cardInfo: cardInfo,
       );
 
       // Clear cart after successful processing
@@ -858,54 +1131,5 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         });
       }
     }
-  }
-}
-
-// Custom input formatters
-class _CardNumberInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text.replaceAll(' ', '');
-    final buffer = StringBuffer();
-
-    for (int i = 0; i < text.length; i++) {
-      if (i > 0 && i % 4 == 0) {
-        buffer.write(' ');
-      }
-      buffer.write(text[i]);
-    }
-
-    final formatted = buffer.toString();
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
-
-class _ExpiryDateInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final text = newValue.text.replaceAll('/', '');
-    final buffer = StringBuffer();
-
-    for (int i = 0; i < text.length; i++) {
-      if (i == 2) {
-        buffer.write('/');
-      }
-      buffer.write(text[i]);
-    }
-
-    final formatted = buffer.toString();
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
   }
 }

@@ -177,7 +177,7 @@ class PaymentCardViewModel extends ChangeNotifier {
   // Private method to set loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 
   // Validate card number format (basic simulation validation)
