@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../authentication/viewmodels/auth_viewmodel.dart';
 import '../models/payment_card_model.dart';
-import '../services/payment_card_service.dart';
+import '../viewmodels/payment_card_viewmodel.dart';
+import 'add_card_screen.dart';
 
 class UserCardsScreen extends StatefulWidget {
   const UserCardsScreen({super.key});
@@ -12,62 +12,48 @@ class UserCardsScreen extends StatefulWidget {
 }
 
 class _UserCardsScreenState extends State<UserCardsScreen> {
-  final PaymentCardService _cardService = PaymentCardService();
-  List<PaymentCard> _cards = [];
-  bool _isLoading = false;
-  String? _error;
-
   @override
   void initState() {
     super.initState();
-    _loadCards();
-  }
-
-  Future<void> _loadCards() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+    // Load cards when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PaymentCardViewModel>(context, listen: false).loadCards();
     });
+  }
 
-    try {
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      if (authViewModel.user != null) {
-        _cards = await _cardService.getCardsByUserId(
-          authViewModel.user!.userId,
-        );
-      }
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+  Future<void> _navigateToAddCard() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddCardScreen()),
+    );
+
+    // If card was added successfully, reload cards
+    if (result == true && mounted) {
+      Provider.of<PaymentCardViewModel>(context, listen: false).loadCards();
     }
   }
 
-  Future<void> _setDefaultCard(String cardId) async {
-    try {
-      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-      if (authViewModel.user != null) {
-        await _cardService.setDefaultCard(authViewModel.user!.userId, cardId);
-        await _loadCards(); // Reload to update UI
+  Future<void> _setDefaultCard(
+    String cardId,
+    PaymentCardViewModel cardViewModel,
+  ) async {
+    final success = await cardViewModel.setCardAsDefault(cardId);
 
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Default card updated')));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+    if (success && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Default card updated')));
+    } else if (!success && mounted && cardViewModel.error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${cardViewModel.error}')));
     }
   }
 
-  Future<void> _deleteCard(String cardId) async {
+  Future<void> _deleteCard(
+    String cardId,
+    PaymentCardViewModel cardViewModel,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -89,21 +75,16 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
     );
 
     if (confirmed == true) {
-      try {
-        await _cardService.deleteCard(cardId);
-        await _loadCards(); // Reload to update UI
+      final success = await cardViewModel.deleteCard(cardId);
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Card removed successfully')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
-        }
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Card removed successfully')),
+        );
+      } else if (!success && mounted && cardViewModel.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${cardViewModel.error}')),
+        );
       }
     }
   }
@@ -116,38 +97,58 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadCards),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              Provider.of<PaymentCardViewModel>(
+                context,
+                listen: false,
+              ).loadCards();
+            },
+          ),
         ],
       ),
-      body: _buildBody(),
+      body: Consumer<PaymentCardViewModel>(
+        builder: (context, cardViewModel, child) {
+          return _buildBody(cardViewModel);
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToAddCard,
+        backgroundColor: Theme.of(context).primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
+  Widget _buildBody(PaymentCardViewModel cardViewModel) {
+    if (cardViewModel.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_error != null) {
+    if (cardViewModel.error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error, size: 64, color: Colors.red.shade300),
             const SizedBox(height: 16),
-            Text('Error: $_error'),
+            Text('Error: ${cardViewModel.error}'),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadCards, child: const Text('Retry')),
+            ElevatedButton(
+              onPressed: () => cardViewModel.loadCards(),
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
     }
 
-    if (_cards.isEmpty) {
+    if (cardViewModel.cards.isEmpty) {
       return _buildEmptyState();
     }
 
-    return _buildCardsList();
+    return _buildCardsList(cardViewModel);
   }
 
   Widget _buildEmptyState() {
@@ -169,29 +170,40 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add a card during checkout to save it for future purchases',
+            'Add a card to get started with secure payments',
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _navigateToAddCard,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Your First Card'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCardsList() {
+  Widget _buildCardsList(PaymentCardViewModel cardViewModel) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _cards.length,
+      itemCount: cardViewModel.cards.length,
       itemBuilder: (context, index) {
-        final card = _cards[index];
-        return _buildCardItem(card);
+        final card = cardViewModel.cards[index];
+        return _buildCardItem(card, cardViewModel);
       },
     );
   }
 
-  Widget _buildCardItem(PaymentCard card) {
+  Widget _buildCardItem(PaymentCard card, PaymentCardViewModel cardViewModel) {
     final isExpired = card.isExpired;
     final isExpiringSoon = card.isExpiringSoon;
 
@@ -239,10 +251,10 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
                   onSelected: (value) {
                     switch (value) {
                       case 'default':
-                        _setDefaultCard(card.id);
+                        _setDefaultCard(card.id, cardViewModel);
                         break;
                       case 'delete':
-                        _deleteCard(card.id);
+                        _deleteCard(card.id, cardViewModel);
                         break;
                     }
                   },
@@ -329,7 +341,7 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${card.expiryMonth.toString().padLeft(2, '0')}/${card.expiryYear.toString().substring(2)}',
+                      '${card.expiryMonth.toString().padLeft(2, '0')}/${card.expiryYear.toString().padLeft(2, '0')}',
                       style: TextStyle(
                         color: isExpired ? Colors.red.shade200 : Colors.white,
                         fontSize: 14,
