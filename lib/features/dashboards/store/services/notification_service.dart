@@ -17,6 +17,168 @@ class NotificationService {
         );
   }
 
+  /// Create notification for new order
+  Future<void> createNewOrderNotification({
+    required String storeId,
+    required String orderId,
+    required String orderNumber,
+    required double totalAmount,
+    required String customerName,
+  }) async {
+    try {
+      final notification = StoreNotification(
+        id: '',
+        storeId: storeId,
+        title: 'New Order Received!',
+        message:
+            'Order #$orderNumber from $customerName (\$${totalAmount.toStringAsFixed(2)})',
+        type: NotificationType.newOrder,
+        isRead: false,
+        createdAt: Timestamp.now(),
+        metadata: {
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+          'totalAmount': totalAmount,
+          'customerName': customerName,
+        },
+      );
+
+      await _notificationsRef.add(notification);
+
+      // Also create a push notification trigger document
+      await _createPushNotificationTrigger(
+        storeId: storeId,
+        type: 'new_order',
+        title: notification.title,
+        body: notification.message,
+        data: {
+          'type': 'new_order',
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+        },
+      );
+    } catch (e) {
+      print('Error creating new order notification: $e');
+    }
+  }
+
+  /// Create notification for order status update
+  Future<void> createOrderUpdateNotification({
+    required String storeId,
+    required String orderId,
+    required String orderNumber,
+    required String newStatus,
+    required String customerName,
+  }) async {
+    try {
+      String title = 'Order Update';
+      String message = 'Order #$orderNumber status changed to $newStatus';
+
+      final notification = StoreNotification(
+        id: '',
+        storeId: storeId,
+        title: title,
+        message: message,
+        type: NotificationType.orderUpdate,
+        isRead: false,
+        createdAt: Timestamp.now(),
+        metadata: {
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+          'newStatus': newStatus,
+          'customerName': customerName,
+        },
+      );
+
+      await _notificationsRef.add(notification);
+
+      // Create push notification trigger
+      await _createPushNotificationTrigger(
+        storeId: storeId,
+        type: 'order_update',
+        title: title,
+        body: message,
+        data: {
+          'type': 'order_update',
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+          'newStatus': newStatus,
+        },
+      );
+    } catch (e) {
+      print('Error creating order update notification: $e');
+    }
+  }
+
+  /// Create notification for order cancellation
+  Future<void> createOrderCancellationNotification({
+    required String storeId,
+    required String orderId,
+    required String orderNumber,
+    required String customerName,
+    required double refundAmount,
+  }) async {
+    try {
+      final notification = StoreNotification(
+        id: '',
+        storeId: storeId,
+        title: 'Order Cancelled',
+        message:
+            'Order #$orderNumber from $customerName has been cancelled. Refund: \$${refundAmount.toStringAsFixed(2)}',
+        type: NotificationType.orderCancelled,
+        isRead: false,
+        createdAt: Timestamp.now(),
+        metadata: {
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+          'customerName': customerName,
+          'refundAmount': refundAmount,
+        },
+      );
+
+      await _notificationsRef.add(notification);
+
+      // Create push notification trigger
+      await _createPushNotificationTrigger(
+        storeId: storeId,
+        type: 'order_cancelled',
+        title: notification.title,
+        body: notification.message,
+        data: {
+          'type': 'order_cancelled',
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+        },
+      );
+    } catch (e) {
+      print('Error creating order cancellation notification: $e');
+    }
+  }
+
+  /// Create push notification trigger document for Cloud Functions
+  Future<void> _createPushNotificationTrigger({
+    required String storeId,
+    required String type,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      await _firestore.collection('push_notifications').add({
+        'storeId': storeId,
+        'type': type,
+        'title': title,
+        'body': body,
+        'data': data ?? {},
+        'processed': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'retryCount': 0,
+      });
+    } catch (e) {
+      print('Error creating push notification trigger: $e');
+    }
+  }
+
   Stream<List<StoreNotification>> getStoreNotifications({int limit = 10}) {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {

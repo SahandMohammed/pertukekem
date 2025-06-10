@@ -16,6 +16,7 @@ class StoreNotification {
   final NotificationType type;
   final bool isRead;
   final Timestamp createdAt;
+  final String storeId;
   final Map<String, dynamic>? metadata;
 
   StoreNotification({
@@ -25,9 +26,9 @@ class StoreNotification {
     required this.type,
     required this.isRead,
     required this.createdAt,
+    required this.storeId,
     this.metadata,
   });
-
   factory StoreNotification.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> snapshot,
     SnapshotOptions? options,
@@ -43,10 +44,10 @@ class StoreNotification {
       ),
       isRead: data['isRead'] as bool? ?? false,
       createdAt: data['createdAt'] as Timestamp,
+      storeId: data['storeId'] as String,
       metadata: data['metadata'] as Map<String, dynamic>?,
     );
   }
-
   Map<String, dynamic> toFirestore() {
     return {
       'title': title,
@@ -54,6 +55,7 @@ class StoreNotification {
       'type': type.name,
       'isRead': isRead,
       'createdAt': createdAt,
+      'storeId': storeId,
       'metadata': metadata,
     };
   }
@@ -65,6 +67,7 @@ class StoreNotification {
     NotificationType? type,
     bool? isRead,
     Timestamp? createdAt,
+    String? storeId,
     Map<String, dynamic>? metadata,
   }) {
     return StoreNotification(
@@ -74,6 +77,7 @@ class StoreNotification {
       type: type ?? this.type,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
+      storeId: storeId ?? this.storeId,
       metadata: metadata ?? this.metadata,
     );
   }

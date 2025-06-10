@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pertukekem/core/services/firebase_options.dart';
+import 'package:pertukekem/core/services/fcm_service.dart';
 import 'package:pertukekem/core/theme/app_theme.dart';
 import 'package:pertukekem/features/dashboards/customer/viewmodels/customer_home_viewmodel.dart';
 import 'package:pertukekem/features/library/viewmodels/library_viewmodel.dart';
@@ -15,10 +17,25 @@ import 'features/dashboards/store/viewmodels/store_viewmodel.dart';
 import 'features/cart/services/cart_service.dart';
 import 'core/router/app_router.dart';
 
+// Top-level background message handler
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print('Handling a background message: ${message.messageId}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Set background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Initialize FCM Service
+  await FCMService().initialize();
+
   runApp(
     MultiProvider(
       providers: [

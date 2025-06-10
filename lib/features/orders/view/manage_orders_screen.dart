@@ -259,12 +259,14 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         ],
       ),
       child: Material(
-        color: Colors.transparent,        child: InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => OrderDetailsScreen(order: order),
-            ),
-          ),
+        color: Colors.transparent,
+        child: InkWell(
+          onTap:
+              () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => OrderDetailsScreen(order: order),
+                ),
+              ),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -409,13 +411,17 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                 ],
                 const SizedBox(height: 16),
                 Row(
-                  children: [                    Expanded(
+                  children: [
+                    Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => OrderDetailsScreen(order: order),
-                          ),
-                        ),
+                        onPressed:
+                            () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        OrderDetailsScreen(order: order),
+                              ),
+                            ),
                         icon: const Icon(Icons.visibility_outlined, size: 16),
                         label: const Text('View Details'),
                         style: OutlinedButton.styleFrom(
@@ -612,6 +618,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       ),
     );
   }
+
   void _showFilterDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,

@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../model/order_model.dart' as order_model;
+import '../../dashboards/store/services/notification_service.dart';
 
 class OrderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final NotificationService _notificationService = NotificationService();
   late final CollectionReference<order_model.Order> _ordersRef;
 
   OrderService() {
@@ -47,9 +49,34 @@ class OrderService {
         createdAt: now,
         updatedAt: null,
       );
-
       final docRef = await _ordersRef.add(order);
-      return docRef.id;
+      final orderId = docRef.id;
+
+      // Create notification for store owner about new order
+      try {
+        // Get buyer information for notification
+        final buyerDoc = await buyerRef.get();
+        String customerName = 'Customer';
+        if (buyerDoc.exists) {
+          final data = buyerDoc.data();
+          if (data is Map<String, dynamic> && data.containsKey('fullName')) {
+            customerName = data['fullName'] ?? 'Customer';
+          }
+        }
+
+        await _notificationService.createNewOrderNotification(
+          storeId: sellerRef.id,
+          orderId: orderId,
+          orderNumber: orderId.substring(0, 8).toUpperCase(),
+          totalAmount: totalAmount,
+          customerName: customerName,
+        );
+      } catch (e) {
+        // Don't fail order creation if notification fails
+        print('Failed to create order notification: $e');
+      }
+
+      return orderId;
     } catch (e) {
       throw Exception('Failed to create order: $e');
     }
@@ -143,11 +170,34 @@ class OrderService {
       if (order.sellerRef.id != currentUser.uid) {
         throw Exception('Not authorized to update this order');
       }
-
       await _ordersRef.doc(orderId).update({
         'status': newStatus.name,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Create notification for order status update
+      try {
+        // Get buyer information for notification
+        final buyerDoc = await order.buyerRef.get();
+        String customerName = 'Customer';
+        if (buyerDoc.exists) {
+          final data = buyerDoc.data();
+          if (data is Map<String, dynamic> && data.containsKey('fullName')) {
+            customerName = data['fullName'] ?? 'Customer';
+          }
+        }
+
+        await _notificationService.createOrderUpdateNotification(
+          storeId: order.sellerRef.id,
+          orderId: orderId,
+          orderNumber: orderId.substring(0, 8).toUpperCase(),
+          newStatus: newStatus.name,
+          customerName: customerName,
+        );
+      } catch (e) {
+        // Don't fail order update if notification fails
+        print('Failed to create order update notification: $e');
+      }
     } catch (e) {
       throw Exception('Failed to update order status: $e');
     }

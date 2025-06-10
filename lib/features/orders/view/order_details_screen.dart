@@ -47,6 +47,7 @@ class OrderDetailsScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildSliverAppBar(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -72,7 +73,8 @@ class OrderDetailsScreen extends StatelessWidget {
             color: colorScheme.onSurfaceVariant,
             size: 16,
           ),
-        ),      ),
+        ),
+      ),
       title: Padding(
         padding: const EdgeInsets.only(left: 8.0),
         child: Row(
@@ -335,7 +337,8 @@ class OrderDetailsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),            FutureBuilder<Listing?>(
+            const SizedBox(height: 16),
+            FutureBuilder<Listing?>(
               future: _fetchBookDetails(order.listingRef.id),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -403,7 +406,8 @@ class OrderDetailsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: colorScheme.surfaceContainerHighest,
-                ),                child:
+                ),
+                child:
                     book.coverUrl.isNotEmpty
                         ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -459,16 +463,25 @@ class OrderDetailsScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
-                      ),                      decoration: BoxDecoration(
+                      ),
+                      decoration: BoxDecoration(
                         color: _getCategoryColor(
-                          book.category.isNotEmpty ? book.category.first : 'general',
+                          book.category.isNotEmpty
+                              ? book.category.first
+                              : 'general',
                         ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        book.category.isNotEmpty ? book.category.first : 'General',
+                        book.category.isNotEmpty
+                            ? book.category.first
+                            : 'General',
                         style: textTheme.labelSmall?.copyWith(
-                          color: _getCategoryColor(book.category.isNotEmpty ? book.category.first : 'general'),
+                          color: _getCategoryColor(
+                            book.category.isNotEmpty
+                                ? book.category.first
+                                : 'general',
+                          ),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -492,10 +505,12 @@ class OrderDetailsScreen extends StatelessWidget {
                 'Price per item',
                 '\$${NumberFormat('#,##0.00').format(book.price)}',
               ),
-              const SizedBox(height: 8),              _buildBookDetailRow(
+              const SizedBox(height: 8),
+              _buildBookDetailRow(
                 'Publication Year',
                 book.year?.toString() ?? 'Not available',
-              ),              if (book.description?.isNotEmpty == true) ...[
+              ),
+              if (book.description?.isNotEmpty == true) ...[
                 const SizedBox(height: 12),
                 Text(
                   'Description',
@@ -606,7 +621,8 @@ class OrderDetailsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
-                children: [                  _buildCustomerDetailRow(
+                children: [
+                  _buildCustomerDetailRow(
                     'Customer ID',
                     order.buyerRef.id.substring(0, 8).toUpperCase(),
                   ),
@@ -1127,6 +1143,7 @@ class OrderDetailsScreen extends StatelessWidget {
       },
     );
   }
+
   Future<Listing?> _fetchBookDetails(String listingId) async {
     try {
       final doc =
