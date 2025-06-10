@@ -54,6 +54,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           ],
         ),
         bottomNavigationBar: NavigationBar(
+          backgroundColor: Colors.white,
           onDestinationSelected: (int index) {
             setState(() {
               _selectedIndex = index;
