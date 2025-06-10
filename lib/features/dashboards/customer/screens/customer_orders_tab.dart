@@ -295,7 +295,7 @@ class _CustomerOrdersContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Ksh ${NumberFormat('#,##0.00').format(order.totalAmount)}',
+                          '\$${NumberFormat('#,##0.00').format(order.totalAmount)}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
