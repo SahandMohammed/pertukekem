@@ -5,7 +5,7 @@ import '../services/payment_card_service.dart';
 
 class PaymentCardViewModel extends ChangeNotifier {
   final PaymentCardService _cardService = PaymentCardService();
-  
+
   List<PaymentCard> _cards = [];
   bool _isLoading = false;
   String? _error;
@@ -61,7 +61,9 @@ class PaymentCardViewModel extends ChangeNotifier {
 
     try {
       // Check if card already exists
-      final lastFourDigits = cardNumber.replaceAll(' ', '').substring(cardNumber.replaceAll(' ', '').length - 4);
+      final lastFourDigits = cardNumber
+          .replaceAll(' ', '')
+          .substring(cardNumber.replaceAll(' ', '').length - 4);
       final cardExists = await _cardService.cardExists(
         userId: currentUserId!,
         lastFourDigits: lastFourDigits,
@@ -179,8 +181,9 @@ class PaymentCardViewModel extends ChangeNotifier {
   // Validate card number format (basic simulation validation)
   static bool isValidCardNumber(String cardNumber) {
     final cleanNumber = cardNumber.replaceAll(' ', '');
-    return cleanNumber.length >= 13 && cleanNumber.length <= 19 && 
-           RegExp(r'^\d+$').hasMatch(cleanNumber);
+    return cleanNumber.length >= 13 &&
+        cleanNumber.length <= 19 &&
+        RegExp(r'^\d+$').hasMatch(cleanNumber);
   }
 
   // Validate expiry date
@@ -188,14 +191,15 @@ class PaymentCardViewModel extends ChangeNotifier {
     try {
       final monthInt = int.parse(month);
       final yearInt = int.parse('20$year'); // Assuming 2-digit year
-      
+
       if (monthInt < 1 || monthInt > 12) return false;
-      
+
       final expiryDate = DateTime(yearInt, monthInt);
       final now = DateTime.now();
       final currentMonth = DateTime(now.year, now.month);
-      
-      return expiryDate.isAfter(currentMonth) || expiryDate.isAtSameMomentAs(currentMonth);
+
+      return expiryDate.isAfter(currentMonth) ||
+          expiryDate.isAtSameMomentAs(currentMonth);
     } catch (e) {
       return false;
     }
@@ -205,14 +209,14 @@ class PaymentCardViewModel extends ChangeNotifier {
   static String formatCardNumber(String cardNumber) {
     final cleanNumber = cardNumber.replaceAll(' ', '');
     String formatted = '';
-    
+
     for (int i = 0; i < cleanNumber.length; i++) {
       if (i > 0 && i % 4 == 0) {
         formatted += ' ';
       }
       formatted += cleanNumber[i];
     }
-    
+
     return formatted;
   }
 

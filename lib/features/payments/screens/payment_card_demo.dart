@@ -325,6 +325,7 @@ class PaymentCardDemo extends StatelessWidget {
       ),
     );
   }
+
   List<String> _getCardTypes(List<PaymentCard> cards) {
     return cards.map((card) => card.cardType).toSet().toList();
   }
