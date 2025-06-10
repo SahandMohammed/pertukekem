@@ -334,6 +334,8 @@ class OrderDetailsScreen extends StatelessWidget {
                     return Column(
                       children: [
                         Row(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start, // Added this line
                           children: [
                             Column(
                               children: [
@@ -369,7 +371,9 @@ class OrderDetailsScreen extends StatelessWidget {
                                     color:
                                         isCompleted
                                             ? viewModel
-                                                .getStatusColor(status)
+                                                .getStatusColor(
+                                                  status,
+                                                ) // Restored .getStatusColor(status)
                                                 .withOpacity(0.3)
                                             : colorScheme.outline.withOpacity(
                                               0.2,
@@ -407,7 +411,8 @@ class OrderDetailsScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if (!isLast) const SizedBox(height: 8),
+                        if (!isLast)
+                          const SizedBox(height: 8), // Corrected this line
                       ],
                     );
                   }).toList(),
