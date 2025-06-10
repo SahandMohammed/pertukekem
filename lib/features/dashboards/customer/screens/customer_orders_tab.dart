@@ -39,7 +39,8 @@ class _CustomerOrdersContent extends StatelessWidget {
 
                 if (viewModel.orders.isEmpty) {
                   return _buildEmptyState(context);
-                }                return RefreshIndicator(
+                }
+                return RefreshIndicator(
                   onRefresh: viewModel.refreshOrders,
                   child: Column(
                     children: [
@@ -104,7 +105,8 @@ class _CustomerOrdersContent extends StatelessWidget {
           ),
         ],
       ),
-    );  }
+    );
+  }
 
   Widget _buildFilterChips(CustomerOrdersViewModel viewModel) {
     final filters = [
