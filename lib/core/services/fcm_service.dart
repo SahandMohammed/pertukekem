@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -177,10 +176,10 @@ class FCMService {
 
   /// Get a unique device identifier
   String _getDeviceId() {
-    // Create a simple device identifier based on platform and timestamp
+    // Create a consistent device identifier based on platform
     final platform = Platform.isIOS ? 'ios' : 'android';
-    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    return '${platform}_$timestamp';
+    // Use a fixed identifier per platform to avoid creating multiple entries
+    return '${platform}_device';
   }
 
   /// Configure message handlers for different app states
@@ -226,12 +225,12 @@ class FCMService {
     }
   }
 
-  /// Handle foreground messages (show local notification)
+  /// Handle foreground messages (show local notification only)
   void _handleForegroundMessage(RemoteMessage message) {
     if (message.notification != null) {
-      // Show both in-app and system notification
+      // Only show local notification in foreground
+      // Don't show in-app notification to avoid duplicates
       _showLocalNotification(message);
-      _showInAppNotification(message);
     }
   }
 
@@ -302,112 +301,6 @@ class FCMService {
         // Navigate to notifications screen
         _navigateToNotifications();
         break;
-    }
-  }
-
-  /// Show in-app notification banner
-  void _showInAppNotification(RemoteMessage message) {
-    final context = _getNavigatorContext();
-    if (context == null) return;
-
-    // Create custom in-app notification
-    final overlay = Overlay.of(context);
-    late OverlayEntry overlayEntry;
-
-    overlayEntry = OverlayEntry(
-      builder:
-          (context) => Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 10,
-            right: 10,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _getNotificationIcon(message.data['type']),
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            message.notification?.title ?? 'New Notification',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          if (message.notification?.body != null)
-                            Text(
-                              message.notification!.body!,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => overlayEntry.remove(),
-                      icon: const Icon(Icons.close, color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-    );
-
-    overlay.insert(overlayEntry);
-
-    // Auto remove after 4 seconds
-    Future.delayed(const Duration(seconds: 4), () {
-      try {
-        overlayEntry.remove();
-      } catch (e) {
-        // Entry might already be removed
-      }
-    });
-
-    // Add haptic feedback
-    HapticFeedback.lightImpact();
-  }
-
-  /// Get appropriate icon for notification type
-  IconData _getNotificationIcon(String? type) {
-    switch (type) {
-      case 'new_order':
-        return Icons.shopping_cart;
-      case 'order_update':
-        return Icons.update;
-      case 'low_stock':
-        return Icons.inventory;
-      case 'review':
-        return Icons.star;
-      default:
-        return Icons.notifications;
     }
   }
 
