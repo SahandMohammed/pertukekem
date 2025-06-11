@@ -190,11 +190,30 @@ class CheckoutService {
         success: false,
         errorMessage: failureReasons[random.nextInt(failureReasons.length)],
       );
-    }
-
-    // Validate card number format (basic validation)
+    } // Validate card number format (basic validation)
+    // Handle both new card entry and stored card scenarios
     final cardNumber = cardInfo['cardNumber']?.replaceAll(' ', '') ?? '';
-    if (cardNumber.length < 16) {
+    final lastFourDigits = cardInfo['lastFourDigits'] ?? '';
+
+    // For stored cards, we only have last 4 digits, so check that instead
+    if (cardNumber.isNotEmpty) {
+      // New card validation
+      if (cardNumber.length < 16) {
+        return PaymentSimulationResult(
+          success: false,
+          errorMessage: 'Invalid card number',
+        );
+      }
+    } else if (lastFourDigits.isNotEmpty) {
+      // Stored card validation - just check if we have the last 4 digits
+      if (lastFourDigits.length != 4) {
+        return PaymentSimulationResult(
+          success: false,
+          errorMessage: 'Invalid card information',
+        );
+      }
+    } else {
+      // No card information provided
       return PaymentSimulationResult(
         success: false,
         errorMessage: 'Invalid card number',
@@ -208,23 +227,27 @@ class CheckoutService {
         success: false,
         errorMessage: 'Invalid expiry date',
       );
-    }
-
-    // Validate CVV
+    } // Validate CVV (optional for stored cards in this simulation)
     final cvv = cardInfo['cvv'] ?? '';
-    if (cvv.length < 3) {
+    final isStoredCard = cardInfo['cardId']?.isNotEmpty ?? false;
+
+    // For new cards, CVV is required. For stored cards, it's optional in this simulation
+    if (!isStoredCard && cvv.length < 3) {
       return PaymentSimulationResult(
         success: false,
         errorMessage: 'Invalid CVV',
       );
-    }
+    } // Success case
+    final last4 =
+        cardNumber.isNotEmpty
+            ? cardNumber.substring(cardNumber.length - 4)
+            : lastFourDigits;
 
-    // Success case
     return PaymentSimulationResult(
       success: true,
       transactionId: 'CARD_${DateTime.now().millisecondsSinceEpoch}',
       message: 'Payment processed successfully',
-      last4Digits: cardNumber.substring(cardNumber.length - 4),
+      last4Digits: last4,
     );
   }
 

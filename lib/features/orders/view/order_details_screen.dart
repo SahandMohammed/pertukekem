@@ -341,6 +341,13 @@ class OrderDetailsScreen extends StatelessWidget {
             FutureBuilder<Listing?>(
               future: _fetchBookDetails(order.listingRef.id),
               builder: (context, snapshot) {
+                print('📱 FutureBuilder state: ${snapshot.connectionState}');
+                print('📱 Has error: ${snapshot.hasError}');
+                print('📱 Has data: ${snapshot.hasData}');
+                if (snapshot.hasError) {
+                  print('📱 Error: ${snapshot.error}');
+                }
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
                     child: Padding(
@@ -357,16 +364,41 @@ class OrderDetailsScreen extends StatelessWidget {
                       color: Colors.red.shade50,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red.shade600),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Could not load book details',
-                            style: TextStyle(color: Colors.red.shade700),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red.shade600,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Could not load book details',
+                                style: TextStyle(color: Colors.red.shade700),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Listing ID: ${order.listingRef.id}',
+                          style: TextStyle(
+                            color: Colors.red.shade600,
+                            fontSize: 12,
+                            fontFamily: 'monospace',
                           ),
                         ),
+                        if (snapshot.hasError)
+                          Text(
+                            'Error: ${snapshot.error}',
+                            style: TextStyle(
+                              color: Colors.red.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
                       ],
                     ),
                   );
@@ -1146,16 +1178,107 @@ class OrderDetailsScreen extends StatelessWidget {
 
   Future<Listing?> _fetchBookDetails(String listingId) async {
     try {
+      print('🔍 Fetching book details for listing ID: $listingId');
+
       final doc =
           await firestore.FirebaseFirestore.instance
               .collection('listings')
               .doc(listingId)
               .get();
+
+      print('📄 Document exists: ${doc.exists}');
+
       if (doc.exists) {
-        return Listing.fromFirestore(doc, null);
+        final data = doc.data();
+        print('✅ Found listing data: $data');
+
+        // Check if essential fields are present and provide defaults for missing ones
+        if (data != null) {
+          // Log specific field availability
+          print('📝 Field availability check:');
+          print('  - title: ${data['title']}');
+          print('  - author: ${data['author']}');
+          print('  - sellerRef: ${data['sellerRef']}');
+          print('  - description: ${data['description']}');
+          print('  - isbn: ${data['isbn']}');
+          print('  - price: ${data['price']}');
+          print('  - coverUrl: ${data['coverUrl']}');
+
+          // Ensure required fields have defaults if missing
+          final Map<String, dynamic> processedData = Map.from(data);
+
+          // Add missing required fields with defaults
+          if (processedData['author'] == null) {
+            processedData['author'] = 'Unknown Author';
+            print('⚠️ Missing author field, using default: "Unknown Author"');
+          }
+
+          if (processedData['condition'] == null) {
+            processedData['condition'] = 'used';
+            print('⚠️ Missing condition field, using default: "used"');
+          }
+
+          if (processedData['category'] == null) {
+            processedData['category'] = ['General'];
+            print('⚠️ Missing category field, using default: ["General"]');
+          }
+
+          if (processedData['isbn'] == null) {
+            processedData['isbn'] = '';
+            print('⚠️ Missing isbn field, using default: ""');
+          }
+
+          if (processedData['coverUrl'] == null) {
+            processedData['coverUrl'] = '';
+            print('⚠️ Missing coverUrl field, using default: ""');
+          }
+
+          if (processedData['bookType'] == null) {
+            processedData['bookType'] = 'physical';
+            print('⚠️ Missing bookType field, using default: "physical"');
+          } // Manually create a Listing object with safe data
+          return Listing(
+            id: doc.id,
+            sellerRef:
+                processedData['sellerRef'] as firestore.DocumentReference,
+            sellerType: processedData['sellerType'] as String,
+            title: processedData['title'] as String,
+            author: processedData['author'] as String,
+            condition: processedData['condition'] as String,
+            price: (processedData['price'] as num).toDouble(),
+            category: List<String>.from(
+              processedData['category'] as List<dynamic>,
+            ),
+            isbn: processedData['isbn'] as String,
+            coverUrl: processedData['coverUrl'] as String,
+            description: processedData['description'] as String?,
+            publisher: processedData['publisher'] as String?,
+            language: processedData['language'] as String?,
+            pageCount:
+                processedData['pageCount'] != null
+                    ? (processedData['pageCount'] as num).toInt()
+                    : null,
+            year:
+                processedData['year'] != null
+                    ? (processedData['year'] as num).toInt()
+                    : null,
+            format: processedData['format'] as String?,
+            bookType: processedData['bookType'] as String,
+            ebookUrl: processedData['ebookUrl'] as String?,
+            createdAt: processedData['createdAt'] as firestore.Timestamp?,
+            updatedAt: processedData['updatedAt'] as firestore.Timestamp?,
+          );
+        } else {
+          print('❌ Document data is null');
+          return null;
+        }
+      } else {
+        print('❌ No document found for listing ID: $listingId');
+        return null;
       }
-      return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('💥 Error fetching book details: $e');
+      print('📚 Stack trace: $stackTrace');
       return null;
     }
   }

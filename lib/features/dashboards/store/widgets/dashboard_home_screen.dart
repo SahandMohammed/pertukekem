@@ -5,6 +5,7 @@ import '../services/notification_service.dart';
 import '../models/notification_model.dart';
 import '../screens/notifications_screen.dart';
 import '../../../orders/model/order_model.dart' as order_model;
+import '../../../orders/viewmodel/order_viewmodel.dart';
 import '../../../payments/screens/store_transactions_screen.dart';
 
 class DashboardHomeScreen extends StatefulWidget {
@@ -278,6 +279,21 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                     const SnackBar(content: Text('Analytics coming soon!')),
                   );
                 },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Debug section for order issues
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickActionCard(
+                title: 'Debug Orders',
+                subtitle: 'Fix order display issues',
+                icon: Icons.bug_report,
+                color: Colors.orange,
+                onTap: () => _debugOrderIssues(),
               ),
             ),
           ],
@@ -665,6 +681,83 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
         return Icons.star;
       case NotificationType.system:
         return Icons.info;
+    }
+  }
+
+  Future<void> _debugOrderIssues() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (context) => const AlertDialog(
+              content: Row(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16),
+                  Text('Debugging and fixing order issues...'),
+                ],
+              ),
+            ),
+      );
+
+      // Create OrderViewModel instance and run debug/fix
+      final orderViewModel = OrderViewModel();
+      await orderViewModel.debugAndFixOrderIssues();
+
+      // Close loading dialog
+      if (mounted) Navigator.of(context).pop();
+
+      // Check if there was an error
+      final errorMessage = orderViewModel.errorMessage;
+      final title = errorMessage != null ? 'Debug Error' : 'Debug Complete';
+      final message =
+          errorMessage ??
+          'Debug and fix operation completed successfully. Check the console logs for details. The dashboard will now refresh to show any fixed orders.';
+
+      // Show result dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text(title),
+                content: SingleChildScrollView(child: Text(message)),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Refresh the dashboard to show any fixed orders
+                      setState(() {});
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted) Navigator.of(context).pop();
+
+      // Show error dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Debug Error'),
+                content: Text('Error during debug: $e'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+      }
     }
   }
 }

@@ -82,6 +82,45 @@ class OrderViewModel extends ChangeNotifier {
     }
   }
 
+  // Debug and fix order reference issues
+  Future<void> debugAndFixOrderIssues() async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      print('🔧 Starting order debugging and fixing...');
+
+      // First debug to identify issues
+      await _orderService.debugOrderReferences();
+
+      // Then attempt to fix them
+      await _orderService.fixOrderReferences();
+
+      // Clear error and reinitialize stream to get fresh data
+      _errorMessage = null;
+      _initOrdersStream();
+
+      print('✅ Order debugging and fixing completed!');
+    } catch (e) {
+      _errorMessage = 'Debug/Fix failed: ${e.toString()}';
+      print('❌ Debug/Fix error: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Check if store exists for current user
+  Future<bool> checkStoreExists() async {
+    try {
+      return await _orderService.checkStoreExists();
+    } catch (e) {
+      print('Error checking store: $e');
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _errorMessage = null;

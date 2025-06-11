@@ -44,23 +44,27 @@ class CustomerOrdersViewModel extends ChangeNotifier {
   CustomerOrdersViewModel() {
     loadOrders();
   }
-
   Future<void> loadOrders() async {
     try {
       _setLoading(true);
       _errorMessage = null;
 
-      // Use the existing getBuyerOrders stream and convert to list
-      final ordersStream = _orderService.getBuyerOrders();
-      await for (final ordersList in ordersStream.take(1)) {
-        _orders = ordersList;
-        break;
+      print('📱 Loading orders from server...');
+      // Force fresh data from server to avoid cache issues
+      _orders = await _orderService.getBuyerOrdersFromServer();
+
+      print('📦 Loaded ${_orders.length} orders from server');
+      if (_orders.isNotEmpty) {
+        print(
+          '📋 Order IDs: ${_orders.map((o) => o.id.substring(0, 8)).join(', ')}',
+        );
       }
 
       _orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to load orders: ${e.toString()}';
+      print('❌ Error loading customer orders: $e');
       debugPrint('Error loading customer orders: $e');
     } finally {
       _setLoading(false);
@@ -68,7 +72,18 @@ class CustomerOrdersViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshOrders() async {
+    print('🔄 Starting aggressive order refresh...');
+    // Clear cache and reload from server
+    try {
+      // Try multiple cache clearing strategies
+      await _orderService.clearOrderCache();
+      await _orderService.forceFirestoreRestart();
+    } catch (e) {
+      // Cache clearing might fail, but we can still reload
+      print('⚠️ Cache clearing failed: $e');
+    }
     await loadOrders();
+    print('✅ Order refresh completed');
   }
 
   void setStatusFilter(String status) {
@@ -137,6 +152,37 @@ class CustomerOrdersViewModel extends ChangeNotifier {
         return 'Cancelled';
       case OrderStatus.rejected:
         return 'Rejected';
+    }
+  }
+
+  // Debug method to check if data is coming from cache or server
+  Future<void> debugOrderSource() async {
+    try {
+      print('=== ORDER DEBUG INFO ===');
+
+      // Check collection status first
+      await _orderService.checkOrdersCollectionStatus();
+
+      // Check cached orders count
+      final ordersStream = _orderService.getBuyerOrders();
+      await for (final ordersList in ordersStream.take(1)) {
+        print('Cached orders count: ${ordersList.length}');
+        if (ordersList.isNotEmpty) {
+          print('First cached order ID: ${ordersList.first.id}');
+        }
+        break;
+      }
+
+      // Check server orders count
+      final serverOrders = await _orderService.getBuyerOrdersFromServer();
+      print('Server orders count: ${serverOrders.length}');
+      if (serverOrders.isNotEmpty) {
+        print('First server order ID: ${serverOrders.first.id}');
+      }
+
+      print('=== END DEBUG INFO ===');
+    } catch (e) {
+      print('Debug error: $e');
     }
   }
 

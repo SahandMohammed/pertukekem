@@ -98,9 +98,15 @@ class _CustomerOrdersContent extends StatelessWidget {
           Consumer<CustomerOrdersViewModel>(
             builder: (context, viewModel, child) {
               return IconButton(
-                onPressed: viewModel.refreshOrders,
+                onPressed: () async {
+                  // Debug and force refresh
+                  print('🔄 Force refreshing orders from server...');
+                  await viewModel.debugOrderSource();
+                  await viewModel.refreshOrders();
+                  print('✅ Refresh completed');
+                },
                 icon: Icon(Icons.refresh_rounded, color: Colors.grey.shade600),
-                tooltip: 'Refresh Orders',
+                tooltip: 'Force Refresh Orders',
               );
             },
           ),
