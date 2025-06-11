@@ -5,6 +5,7 @@ import 'package:pertukekem/core/services/firebase_options.dart';
 import 'package:pertukekem/core/services/fcm_service.dart';
 import 'package:pertukekem/core/theme/app_theme.dart';
 import 'package:pertukekem/features/dashboards/customer/viewmodels/customer_home_viewmodel.dart';
+import 'package:pertukekem/features/dashboards/customer/viewmodels/customer_orders_viewmodel.dart';
 import 'package:pertukekem/features/library/viewmodels/library_viewmodel.dart';
 import 'package:pertukekem/features/listings/viewmodel/manage_listings_viewmodel.dart';
 import 'package:pertukekem/features/orders/viewmodel/order_viewmodel.dart';
@@ -39,19 +40,57 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        // Create ViewModels
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => StoreViewModel()),
         ChangeNotifierProvider(create: (_) => ManageListingsViewModel()),
         ChangeNotifierProvider(create: (_) => OrderViewModel()),
         ChangeNotifierProvider(create: (_) => CustomerHomeViewModel()),
+        ChangeNotifierProvider(create: (_) => CustomerOrdersViewModel()),
         ChangeNotifierProvider(create: (_) => LibraryViewModel()),
         ChangeNotifierProvider(create: (_) => CartService()),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
         ChangeNotifierProvider(create: (_) => PaymentCardViewModel()),
       ],
-      child: const MyApp(),
+      child: Consumer<AuthViewModel>(
+        builder: (context, authViewModel, child) {
+          // Register all StateClearable ViewModels with AuthViewModel
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _registerStateClearables(context, authViewModel);
+          });
+
+          return const MyApp();
+        },
+      ),
     ),
   );
+}
+
+void _registerStateClearables(
+  BuildContext context,
+  AuthViewModel authViewModel,
+) {
+  // Register all ViewModels that implement StateClearable
+  final storeViewModel = context.read<StoreViewModel>();
+  final manageListingsViewModel = context.read<ManageListingsViewModel>();
+  final orderViewModel = context.read<OrderViewModel>();
+  final customerHomeViewModel = context.read<CustomerHomeViewModel>();
+  final customerOrdersViewModel = context.read<CustomerOrdersViewModel>();
+  final libraryViewModel = context.read<LibraryViewModel>();
+  final cartService = context.read<CartService>();
+  final profileViewModel = context.read<ProfileViewModel>();
+  final paymentCardViewModel = context.read<PaymentCardViewModel>();
+
+  // Register clearState methods with AuthViewModel
+  authViewModel.registerStateClearable(storeViewModel.clearState);
+  authViewModel.registerStateClearable(manageListingsViewModel.clearState);
+  authViewModel.registerStateClearable(orderViewModel.clearState);
+  authViewModel.registerStateClearable(customerHomeViewModel.clearState);
+  authViewModel.registerStateClearable(customerOrdersViewModel.clearState);
+  authViewModel.registerStateClearable(libraryViewModel.clearState);
+  authViewModel.registerStateClearable(cartService.clearState);
+  authViewModel.registerStateClearable(profileViewModel.clearState);
+  authViewModel.registerStateClearable(paymentCardViewModel.clearState);
 }
 
 class MyApp extends StatelessWidget {

@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/interfaces/state_clearable.dart';
 import '../models/payment_card_model.dart';
 import '../services/payment_card_service.dart';
 
-class PaymentCardViewModel extends ChangeNotifier {
+class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
   final PaymentCardService _cardService = PaymentCardService();
 
   List<PaymentCard> _cards = [];
@@ -225,5 +226,21 @@ class PaymentCardViewModel extends ChangeNotifier {
   // Get card type from number
   static String getCardType(String cardNumber) {
     return PaymentCard.determineCardType(cardNumber);
+  }
+
+  @override
+  Future<void> clearState() async {
+    debugPrint('🧹 Clearing PaymentCardViewModel state...');
+
+    // Clear all state
+    _cards.clear();
+    _defaultCard = null;
+    _error = null;
+    _isLoading = false;
+
+    // Notify listeners
+    notifyListeners();
+
+    debugPrint('✅ PaymentCardViewModel state cleared');
   }
 }

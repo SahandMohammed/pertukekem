@@ -3,9 +3,10 @@ import 'package:pertukekem/core/services/listing_service.dart';
 import 'package:pertukekem/features/listings/model/listing_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/interfaces/state_clearable.dart';
 import 'dart:async';
 
-class ManageListingsViewModel extends ChangeNotifier {
+class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   final ListingService _listingService = ListingService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -34,12 +35,34 @@ class ManageListingsViewModel extends ChangeNotifier {
     _controller = StreamController<List<Listing>>.broadcast();
     _initSellerListingsStream();
   }
-
   @override
   void dispose() {
     _subscription?.cancel();
     _controller?.close();
     super.dispose();
+  }
+
+  @override
+  Future<void> clearState() async {
+    debugPrint('🧹 Clearing ManageListingsViewModel state...');
+
+    // Cancel subscription and close stream controller
+    _subscription?.cancel();
+    _subscription = null;
+
+    await _controller?.close();
+    _controller = null;
+
+    // Clear all state
+    _searchTerm = '';
+    _errorMessage = null;
+    _isLoading = false;
+    _isRefreshing = false;
+
+    // Notify listeners
+    notifyListeners();
+
+    debugPrint('✅ ManageListingsViewModel state cleared');
   }
 
   void _initSellerListingsStream() {

@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/interfaces/state_clearable.dart';
 import '../models/cart_item_model.dart';
 import '../../listings/model/listing_model.dart';
 
-class CartService extends ChangeNotifier {
+class CartService extends ChangeNotifier implements StateClearable {
   static final CartService _instance = CartService._internal();
   factory CartService() => _instance;
   CartService._internal();
@@ -260,5 +261,17 @@ class CartService extends ChangeNotifier {
   void dispose() {
     _cart = null;
     super.dispose();
+  }
+
+  @override
+  Future<void> clearState() async {
+    // Clear cart data
+    _cart = null;
+    _isLoading = false;
+
+    // Notify listeners
+    notifyListeners();
+
+    debugPrint('✅ CartService state cleared');
   }
 }

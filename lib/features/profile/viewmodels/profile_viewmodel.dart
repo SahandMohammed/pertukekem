@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/interfaces/state_clearable.dart';
 import '../../authentication/models/user_model.dart';
 import '../../authentication/viewmodels/auth_viewmodel.dart';
 import '../models/address_model.dart';
 
-class ProfileViewModel extends ChangeNotifier {
+class ProfileViewModel extends ChangeNotifier implements StateClearable {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   AuthViewModel? _authViewModel;
@@ -301,5 +302,23 @@ class ProfileViewModel extends ChangeNotifier {
       return b.createdAt.compareTo(a.createdAt);
     });
     Future.microtask(() => notifyListeners());
+  }
+
+  @override
+  Future<void> clearState() async {
+    debugPrint('🧹 Clearing ProfileViewModel state...');
+
+    // Clear auth reference
+    _authViewModel = null;
+
+    // Clear all state
+    _addresses.clear();
+    _error = null;
+    _isLoading = false;
+
+    // Notify listeners
+    notifyListeners();
+
+    debugPrint('✅ ProfileViewModel state cleared');
   }
 }

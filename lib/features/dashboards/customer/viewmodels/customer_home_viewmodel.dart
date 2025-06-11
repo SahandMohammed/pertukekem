@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../core/interfaces/state_clearable.dart';
 import '../../../listings/model/listing_model.dart';
 import '../../store/models/store_model.dart';
 import '../services/customer_home_service.dart';
 import '../../../library/models/library_model.dart';
 import '../../../library/services/library_service.dart';
 
-class CustomerHomeViewModel extends ChangeNotifier {
+class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   final CustomerHomeService _homeService = CustomerHomeService();
   final LibraryService _libraryService = LibraryService();
 
@@ -172,5 +173,33 @@ class CustomerHomeViewModel extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  @override
+  Future<void> clearState() async {
+    debugPrint('🧹 Clearing CustomerHomeViewModel state...');
+
+    // Clear all lists
+    _recentlyListedItems.clear();
+    _recentlyJoinedStores.clear();
+    _allStores.clear();
+    _searchResults.clear();
+    _currentlyReadingBooks.clear();
+
+    // Reset loading states
+    _isLoadingRecentItems = false;
+    _isLoadingRecentStores = false;
+    _isLoadingAllStores = false;
+    _isSearching = false;
+    _isLoadingCurrentlyReading = false;
+
+    // Clear error and search query
+    _errorMessage = null;
+    _searchQuery = '';
+
+    // Notify listeners
+    notifyListeners();
+
+    debugPrint('✅ CustomerHomeViewModel state cleared');
   }
 }

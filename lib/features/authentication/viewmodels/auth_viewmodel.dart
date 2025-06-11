@@ -1,17 +1,23 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/interfaces/state_clearable.dart';
+import '../../../core/services/fcm_service.dart';
 import '../models/user_model.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FCMService _fcmService = FCMService();
 
   User? _firebaseUser;
   UserModel? _user;
   bool _isLoading = false;
   String? _verificationId;
   int? _resendToken;
+
+  // List of state clearable functions that need cleanup
+  final List<Function> _stateClearables = [];
 
   User? get firebaseUser => _firebaseUser;
   UserModel? get user => _user;
@@ -21,6 +27,17 @@ class AuthViewModel extends ChangeNotifier {
   AuthViewModel() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
+
+  /// Register a function that needs to be called during state cleanup
+  void registerStateClearable(Function clearStateFunction) {
+    _stateClearables.add(clearStateFunction);
+  }
+
+  /// Unregister a state clearable function
+  void unregisterStateClearable(Function clearStateFunction) {
+    _stateClearables.remove(clearStateFunction);
+  }
+
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
     _firebaseUser = firebaseUser;
     if (firebaseUser != null) {
@@ -159,9 +176,37 @@ class AuthViewModel extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
+
+      debugPrint('🔄 Starting comprehensive sign out process...');
+      // 1. Clear FCM token and unsubscribe from notifications
+      try {
+        await _fcmService.clearTokens();
+        debugPrint('✅ FCM tokens cleared');
+      } catch (e) {
+        debugPrint('⚠️ Error clearing FCM tokens: $e');
+      }
+
+      // 2. Clear state in all registered ViewModels
+      for (final clearFunction in _stateClearables) {
+        try {
+          await clearFunction();
+          debugPrint('✅ ViewModel state cleared');
+        } catch (e) {
+          debugPrint('⚠️ Error clearing ViewModel state: $e');
+        }
+      }
+
+      // 3. Clear local state
+      _user = null;
+      _verificationId = null;
+      _resendToken = null;
+
+      // 4. Sign out from Firebase Auth (this will trigger _onAuthStateChanged)
       await _auth.signOut();
+
+      debugPrint('✅ Sign out completed successfully');
     } catch (e) {
-      debugPrint('Error during sign out: $e');
+      debugPrint('❌ Error during sign out: $e');
       rethrow;
     } finally {
       _isLoading = false;

@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/interfaces/state_clearable.dart';
 import '../models/library_model.dart';
 import '../services/library_service.dart';
 
-class LibraryViewModel extends ChangeNotifier {
+class LibraryViewModel extends ChangeNotifier implements StateClearable {
   final LibraryService _libraryService = LibraryService();
 
   // State variables
@@ -248,6 +249,33 @@ class LibraryViewModel extends ChangeNotifier {
   // Clear error message
   void clearError() {
     _errorMessage = null;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> clearState() async {
+    // Clear all book lists
+    _allBooks.clear();
+    _ebooks.clear();
+    _physicalBooks.clear();
+    _currentlyReading.clear();
+    _recentlyPurchased.clear();
+
+    // Clear stats
+    _stats = null;
+
+    // Reset loading states
+    _isLoadingLibrary = false;
+    _isLoadingStats = false;
+    _isLoadingCurrentlyReading = false;
+
+    // Clear error state
+    _errorMessage = null;
+
+    // Reset filter and search
+    _searchQuery = '';
+    _currentFilter = 'all';
+
     notifyListeners();
   }
 }

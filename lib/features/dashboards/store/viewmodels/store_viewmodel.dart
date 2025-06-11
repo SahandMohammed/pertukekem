@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/interfaces/state_clearable.dart';
 import '../../../authentication/viewmodels/auth_viewmodel.dart';
 import '../models/store_model.dart';
 
-class StoreViewModel extends ChangeNotifier {
+class StoreViewModel extends ChangeNotifier implements StateClearable {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -182,7 +183,6 @@ class StoreViewModel extends ChangeNotifier {
           .collection('stores')
           .doc(updatedStore.storeId)
           .update(storeToUpdate.toMap());
-
       _store = storeToUpdate;
     } catch (e) {
       _error = 'Failed to update store: $e';
@@ -191,5 +191,20 @@ class StoreViewModel extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  @override
+  Future<void> clearState() async {
+    debugPrint('🧹 Clearing StoreViewModel state...');
+
+    // Clear all state
+    _store = null;
+    _error = null;
+    _isLoading = false;
+
+    // Notify listeners
+    notifyListeners();
+
+    debugPrint('✅ StoreViewModel state cleared');
   }
 }

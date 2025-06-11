@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../core/interfaces/state_clearable.dart';
 import '../../../orders/model/order_model.dart';
 import '../../../orders/service/order_service.dart';
+import 'dart:async';
 
-class CustomerOrdersViewModel extends ChangeNotifier {
+class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
   final OrderService _orderService = OrderService();
+  StreamSubscription<List<Order>>? _ordersSubscription;
 
   List<Order> _orders = [];
   List<Order> get orders => _orders;
@@ -188,6 +191,27 @@ class CustomerOrdersViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _ordersSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  Future<void> clearState() async {
+    debugPrint('🧹 Clearing CustomerOrdersViewModel state...');
+
+    // Cancel any active subscriptions
+    _ordersSubscription?.cancel();
+    _ordersSubscription = null;
+
+    // Clear all state
+    _orders.clear();
+    _isLoading = false;
+    _errorMessage = null;
+    _selectedStatus = 'all';
+
+    // Notify listeners
+    notifyListeners();
+
+    debugPrint('✅ CustomerOrdersViewModel state cleared');
   }
 }

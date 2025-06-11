@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../../core/interfaces/state_clearable.dart';
 import '../model/order_model.dart';
 import '../service/order_service.dart';
+import 'dart:async';
 
-class OrderViewModel extends ChangeNotifier {
+class OrderViewModel extends ChangeNotifier implements StateClearable {
   final OrderService _orderService = OrderService();
   String? _errorMessage;
   bool _isLoading = false;
   bool _isRefreshing = false;
   Stream<List<Order>>? _ordersStream;
+  StreamSubscription<List<Order>>? _ordersSubscription;
 
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -16,13 +19,30 @@ class OrderViewModel extends ChangeNotifier {
   OrderViewModel() {
     _initOrdersStream();
   }
-
   void _initOrdersStream() {
     try {
       _ordersStream = _orderService.getSellerOrders().handleError((error) {
         _errorMessage = error.toString();
         notifyListeners();
       });
+
+      // Cancel existing subscription if any
+      _ordersSubscription?.cancel();
+
+      // Listen to the stream to detect errors early
+      _ordersSubscription = _ordersStream?.listen(
+        (orders) {
+          // Stream is working, clear any previous errors
+          if (_errorMessage != null) {
+            _errorMessage = null;
+            notifyListeners();
+          }
+        },
+        onError: (error) {
+          _errorMessage = error.toString();
+          notifyListeners();
+        },
+      );
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
@@ -123,9 +143,30 @@ class OrderViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _ordersSubscription?.cancel();
     _errorMessage = null;
     _isLoading = false;
     _isRefreshing = false;
     super.dispose();
+  }
+
+  @override
+  Future<void> clearState() async {
+    debugPrint('🧹 Clearing OrderViewModel state...');
+
+    // Cancel stream subscription to prevent infinite loops
+    _ordersSubscription?.cancel();
+    _ordersSubscription = null;
+
+    // Clear all state
+    _ordersStream = null;
+    _errorMessage = null;
+    _isLoading = false;
+    _isRefreshing = false;
+
+    // Notify listeners of state change
+    notifyListeners();
+
+    debugPrint('✅ OrderViewModel state cleared');
   }
 }
