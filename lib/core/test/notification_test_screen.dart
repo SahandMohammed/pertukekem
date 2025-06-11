@@ -80,25 +80,31 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: _isLoading ? null : _testNewOrderNotification,
               child:
                   _isLoading
                       ? const CircularProgressIndicator()
-                      : const Text('Test New Order Notification'),
+                      : const Text(
+                        'Test New Order Notification',
+                        style: TextStyle(color: Colors.white),
+                      ),
             ),
             const SizedBox(height: 12),
-
             ElevatedButton(
               onPressed: _isLoading ? null : _testOrderUpdateNotification,
-              child: const Text('Test Order Update Notification'),
+              child: const Text(
+                'Test Order Update Notification',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             const SizedBox(height: 12),
-
             ElevatedButton(
               onPressed: _isLoading ? null : _testDirectPushNotification,
-              child: const Text('Test Direct Push Notification'),
+              child: const Text(
+                'Test Direct Push Notification',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             const SizedBox(height: 12),
 
