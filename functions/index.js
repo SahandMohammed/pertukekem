@@ -53,7 +53,7 @@ exports.sendPushNotification = onDocumentCreated(
       if (tokens.length === 0) {
         console.log(`No valid tokens found for store ID: ${storeId}`);
         return;
-      }      // Create the notification payload
+      } // Create the notification payload
       const payload = {
         notification: {
           title: title,

@@ -14,12 +14,15 @@ class AppRouter {
         final verificationId = settings.arguments as String;
         return MaterialPageRoute(
           builder: (_) => VerifyPhoneScreen(verificationId: verificationId),
-        );      case '/store-setup':
+        );
+      case '/store-setup':
         return MaterialPageRoute(builder: (_) => const StoreSetupScreen());
       case '/cart':
         return MaterialPageRoute(builder: (_) => const CartScreen());
       case '/notification-test':
-        return MaterialPageRoute(builder: (_) => const NotificationTestScreen());
+        return MaterialPageRoute(
+          builder: (_) => const NotificationTestScreen(),
+        );
       default:
         return MaterialPageRoute(
           builder:
