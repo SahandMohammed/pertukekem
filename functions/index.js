@@ -19,8 +19,9 @@ exports.sendPushNotification = onDocumentCreated(
     const snap = event.data;
     const triggerData = snap.data();
     const { storeId, type, title, body, data } = triggerData;
-
     try {
+      console.log(`Processing notification trigger for store ID: ${storeId}`);
+
       // Get all FCM tokens for the store owner
       const userQuery = await db
         .collection("users")
@@ -28,30 +29,41 @@ exports.sendPushNotification = onDocumentCreated(
         .limit(1)
         .get();
 
+      console.log(`Found ${userQuery.size} users for store ID: ${storeId}`);
+
       if (userQuery.empty) {
         console.log(`No user found for store ID: ${storeId}`);
         return;
       }
-
       const userDoc = userQuery.docs[0];
       const userData = userDoc.data();
-      const fcmTokens = userData.fcmTokens;
 
-      if (!fcmTokens || Object.keys(fcmTokens).length === 0) {
-        console.log(`No FCM tokens found for store ID: ${storeId}`);
-        return;
-      }
+      console.log(`User document ID: ${userDoc.id}`);
 
-      // Extract tokens from the fcmTokens object
+      // Extract FCM tokens from fcmTokens object
+      const fcmTokens = userData.fcmTokens || {};
       const tokens = [];
-      Object.values(fcmTokens).forEach((tokenInfo) => {
-        if (tokenInfo.token) {
+
+      console.log(`FCM tokens object:`, fcmTokens);
+      console.log(`FCM tokens keys:`, Object.keys(fcmTokens));
+
+      // Extract all valid tokens
+      Object.entries(fcmTokens).forEach(([deviceId, tokenInfo]) => {
+        if (tokenInfo && tokenInfo.token) {
           tokens.push(tokenInfo.token);
+          console.log(
+            `Added token from ${deviceId}: ${tokenInfo.token.substring(
+              0,
+              20
+            )}...`
+          );
         }
       });
 
+      console.log(`Total valid tokens extracted: ${tokens.length}`);
+
       if (tokens.length === 0) {
-        console.log(`No valid tokens found for store ID: ${storeId}`);
+        console.log(`No valid FCM tokens found for store ID: ${storeId}`);
         return;
       } // Create the notification payload
       const payload = {
@@ -64,12 +76,25 @@ exports.sendPushNotification = onDocumentCreated(
           click_action: "FLUTTER_NOTIFICATION_CLICK",
         },
         tokens: tokens,
-      };
-
-      // Send notification to all tokens
+      }; // Send notification to all tokens
       const response = await messaging.sendEachForMulticast(payload);
 
-      console.log("Push notification sent successfully:", response);
+      console.log("Push notification sent successfully:");
+      console.log(`Success count: ${response.successCount}`);
+      console.log(`Failure count: ${response.failureCount}`);
+
+      // Log each response
+      response.responses.forEach((result, index) => {
+        if (result.success) {
+          console.log(`✅ Token ${index + 1}: Success`);
+        } else {
+          console.log(
+            `❌ Token ${index + 1}: Error - ${result.error?.code}: ${
+              result.error?.message
+            }`
+          );
+        }
+      });
 
       // Clean up invalid tokens
       const invalidTokens = [];
@@ -86,9 +111,7 @@ exports.sendPushNotification = onDocumentCreated(
             invalidTokens.push(tokens[index]);
           }
         }
-      });
-
-      // Remove invalid tokens from user document
+      }); // Remove invalid tokens from user document
       if (invalidTokens.length > 0) {
         const updates = {};
         Object.entries(fcmTokens).forEach(([deviceId, tokenInfo]) => {

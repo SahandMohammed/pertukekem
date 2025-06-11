@@ -113,10 +113,20 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
               child: const Text('Check User FCM Data'),
             ),
             const SizedBox(height: 12),
-
             OutlinedButton(
               onPressed: _isLoading ? null : _fixFCMTokenStorage,
               child: const Text('Fix FCM Token Storage'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _isLoading ? null : _triggerFCMTokenStorage,
+              child: const Text('Trigger FCM Token Storage'),
+            ),
+            const SizedBox(height: 12),
+
+            OutlinedButton(
+              onPressed: _isLoading ? null : _refreshFCMToken,
+              child: const Text('Force Refresh FCM Token'),
             ),
             const SizedBox(height: 12),
 
@@ -368,6 +378,35 @@ ${fcmTokens != null ? _formatFCMTokens(fcmTokens as Map) : 'None stored'}
     }
   }
 
+  Future<void> _triggerFCMTokenStorage() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Triggering FCM token storage...';
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Call the FCM service method to trigger token storage
+      await _fcmService.onUserLogin();
+
+      setState(() {
+        _status = 'FCM token storage triggered successfully!';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error triggering FCM token storage: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _checkCloudFunctionLogs() async {
     setState(() {
       _status = '''
@@ -395,5 +434,37 @@ Debug Instructions:
 Current logged in user should have FCM tokens stored to receive notifications.
         ''';
     });
+  }
+
+  Future<void> _refreshFCMToken() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Force refreshing FCM token...';
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Force refresh the FCM token
+      final newToken = await _fcmService.refreshToken();
+
+      setState(() {
+        _status =
+            newToken != null
+                ? 'FCM token refreshed successfully!\nNew token: ${newToken.substring(0, 20)}...'
+                : 'Failed to refresh FCM token';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error refreshing FCM token: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }
