@@ -17,7 +17,6 @@ class FCMService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
-
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
@@ -240,6 +239,26 @@ class FCMService {
       final notification = message.notification;
       if (notification == null) return;
 
+      // Create unique notification ID to prevent duplicates
+      final messageId = message.messageId ?? message.hashCode.toString();
+
+      // Check if we already showed this notification (use global set)
+      if (_globalShownNotifications.contains(messageId)) {
+        debugPrint('Foreground notification already shown: $messageId');
+        return;
+      }
+
+      // Add to shown notifications set
+      _globalShownNotifications.add(messageId);
+
+      // Clean up old entries (keep only last 50)
+      if (_globalShownNotifications.length > 50) {
+        final oldEntries = _globalShownNotifications.take(
+          _globalShownNotifications.length - 50,
+        );
+        _globalShownNotifications.removeAll(oldEntries);
+      }
+
       final type = message.data['type'] ?? '';
       final orderId = message.data['orderId'];
       final payload = orderId != null ? '$type:$orderId' : type;
@@ -266,7 +285,7 @@ class FCMService {
       );
 
       await _localNotifications.show(
-        message.hashCode,
+        messageId.hashCode, // Use consistent ID
         notification.title,
         notification.body,
         notificationDetails,
@@ -410,6 +429,9 @@ class FCMService {
   }
 }
 
+// Global set to track shown notifications across handlers
+final Set<String> _globalShownNotifications = <String>{};
+
 /// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -427,6 +449,26 @@ Future<void> _showBackgroundLocalNotification(RemoteMessage message) async {
   try {
     final notification = message.notification;
     if (notification == null) return;
+
+    // Create unique notification ID to prevent duplicates
+    final messageId = message.messageId ?? message.hashCode.toString();
+
+    // Check if we already showed this notification
+    if (_globalShownNotifications.contains(messageId)) {
+      debugPrint('Background notification already shown: $messageId');
+      return;
+    }
+
+    // Add to shown notifications set
+    _globalShownNotifications.add(messageId);
+
+    // Clean up old entries (keep only last 50)
+    if (_globalShownNotifications.length > 50) {
+      final oldEntries = _globalShownNotifications.take(
+        _globalShownNotifications.length - 50,
+      );
+      _globalShownNotifications.removeAll(oldEntries);
+    }
 
     final localNotifications = FlutterLocalNotificationsPlugin();
 
@@ -468,7 +510,7 @@ Future<void> _showBackgroundLocalNotification(RemoteMessage message) async {
     );
 
     await localNotifications.show(
-      message.hashCode,
+      messageId.hashCode, // Use consistent ID
       notification.title,
       notification.body,
       notificationDetails,
