@@ -106,6 +106,18 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
               onPressed: _isLoading ? null : _checkUserData,
               child: const Text('Check User FCM Data'),
             ),
+            const SizedBox(height: 12),
+
+            OutlinedButton(
+              onPressed: _isLoading ? null : _fixFCMTokenStorage,
+              child: const Text('Fix FCM Token Storage'),
+            ),
+            const SizedBox(height: 12),
+
+            OutlinedButton(
+              onPressed: _isLoading ? null : _checkCloudFunctionLogs,
+              child: const Text('View Debug Instructions'),
+            ),
           ],
         ),
       ),
@@ -264,12 +276,20 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
       final storeId = userData?['storeId'];
       final fcmTokens = userData?['fcmTokens'];
 
+      // Get current FCM token
+      final currentToken = _fcmService.fcmToken;
+
       setState(() {
         _status = '''
 User Data Check:
+- User ID: ${user.uid}
+- Email: ${user.email}
 - Store ID: ${storeId ?? 'Not set'}
 - FCM Tokens: ${fcmTokens != null ? '${(fcmTokens as Map).length} tokens' : 'No tokens'}
-- Current FCM Token: ${_fcmService.fcmToken ?? 'Not available'}
+- Current FCM Token: ${currentToken ?? 'Not available'}
+
+FCM Tokens in Firestore:
+${fcmTokens != null ? _formatFCMTokens(fcmTokens as Map) : 'None stored'}
         ''';
       });
     } catch (e) {
@@ -281,5 +301,93 @@ User Data Check:
         _isLoading = false;
       });
     }
+  }
+
+  String _formatFCMTokens(Map tokens) {
+    if (tokens.isEmpty) return 'No tokens stored';
+
+    String result = '';
+    tokens.forEach((deviceId, tokenInfo) {
+      result += '- Device: $deviceId\n';
+      result += '  Token: ${tokenInfo['token']}\n';
+      result += '  Platform: ${tokenInfo['platform']}\n';
+      result += '  Updated: ${tokenInfo['lastUpdated']}\n\n';
+    });
+    return result;
+  }
+
+  Future<void> _fixFCMTokenStorage() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Fixing FCM token storage...';
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Get current FCM token
+      final currentToken = _fcmService.fcmToken;
+      if (currentToken == null) {
+        throw Exception('No FCM token available');
+      }
+
+      // Store token using the correct method
+      final deviceId = 'android_${DateTime.now().millisecondsSinceEpoch}';
+      final tokenInfo = {
+        'token': currentToken,
+        'platform': 'android',
+        'lastUpdated': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'fcmTokens': {deviceId: tokenInfo},
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      setState(() {
+        _status =
+            'FCM token storage fixed! Current token has been stored in Firestore.';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error fixing FCM token storage: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _checkCloudFunctionLogs() async {
+    setState(() {
+      _status = '''
+Debug Instructions:
+
+1. Check Firebase Functions logs:
+   - Go to Firebase Console > Functions > Logs
+   - OR run: firebase functions:log --only sendPushNotification
+
+2. Check if tokens are being stored:
+   - Use "Check User FCM Data" button above
+   - If no tokens, use "Fix FCM Token Storage"
+
+3. Test notification flow:
+   - Create a test notification trigger
+   - Check logs for "No FCM tokens found" errors
+   - Verify Cloud Function execution
+
+4. Common issues:
+   - fcmTokens field missing in user document
+   - Invalid or expired FCM tokens
+   - Cloud Function permissions
+   - Network connectivity on device
+
+Current logged in user should have FCM tokens stored to receive notifications.
+        ''';
+    });
   }
 }

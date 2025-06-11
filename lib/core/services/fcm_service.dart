@@ -90,10 +90,11 @@ class FCMService {
         'lastUpdated': FieldValue.serverTimestamp(),
       };
 
-      await _firestore.collection('users').doc(currentUser.uid).update({
+      // Use set with merge to ensure fcmTokens field is created if it doesn't exist
+      await _firestore.collection('users').doc(currentUser.uid).set({
         'fcmTokens.${_getDeviceId()}': deviceInfo,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       debugPrint('FCM token stored in Firestore');
     } catch (e) {
