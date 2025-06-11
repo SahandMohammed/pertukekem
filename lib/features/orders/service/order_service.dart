@@ -50,9 +50,8 @@ class OrderService {
         updatedAt: null,
       );
       final docRef = await _ordersRef.add(order);
-      final orderId = docRef.id;
-
-      // Create notification for store owner about new order
+      final orderId =
+          docRef.id; // Create notification for store owner about new order
       try {
         // Get buyer information for notification
         final buyerDoc = await buyerRef.get();
@@ -64,8 +63,37 @@ class OrderService {
           }
         }
 
+        // Determine storeId based on seller type
+        String storeId;
+        if (sellerRef.path.startsWith('stores/')) {
+          // Seller is a store, use the store ID directly
+          storeId = sellerRef.id;
+        } else if (sellerRef.path.startsWith('users/')) {
+          // Seller is a user, get their storeId from user document
+          final sellerDoc = await sellerRef.get();
+          if (sellerDoc.exists) {
+            final sellerData = sellerDoc.data();
+            if (sellerData is Map<String, dynamic> &&
+                sellerData.containsKey('storeId')) {
+              storeId = sellerData['storeId'];
+            } else {
+              // User doesn't have a store, skip notification
+              print(
+                'User seller ${sellerRef.id} does not have a store, skipping notification',
+              );
+              return orderId;
+            }
+          } else {
+            print('Seller document not found: ${sellerRef.path}');
+            return orderId;
+          }
+        } else {
+          print('Unknown seller reference format: ${sellerRef.path}');
+          return orderId;
+        }
+
         await _notificationService.createNewOrderNotification(
-          storeId: sellerRef.id,
+          storeId: storeId,
           orderId: orderId,
           orderNumber: orderId.substring(0, 8).toUpperCase(),
           totalAmount: totalAmount,
@@ -197,9 +225,7 @@ class OrderService {
       await _ordersRef.doc(orderId).update({
         'status': newStatus.name,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Create notification for order status update
+      }); // Create notification for order status update
       try {
         // Get buyer information for notification
         final buyerDoc = await order.buyerRef.get();
@@ -211,8 +237,37 @@ class OrderService {
           }
         }
 
+        // Determine storeId based on seller type
+        String storeId;
+        if (order.sellerRef.path.startsWith('stores/')) {
+          // Seller is a store, use the store ID directly
+          storeId = order.sellerRef.id;
+        } else if (order.sellerRef.path.startsWith('users/')) {
+          // Seller is a user, get their storeId from user document
+          final sellerDoc = await order.sellerRef.get();
+          if (sellerDoc.exists) {
+            final sellerData = sellerDoc.data();
+            if (sellerData is Map<String, dynamic> &&
+                sellerData.containsKey('storeId')) {
+              storeId = sellerData['storeId'];
+            } else {
+              // User doesn't have a store, skip notification
+              print(
+                'User seller ${order.sellerRef.id} does not have a store, skipping notification',
+              );
+              return;
+            }
+          } else {
+            print('Seller document not found: ${order.sellerRef.path}');
+            return;
+          }
+        } else {
+          print('Unknown seller reference format: ${order.sellerRef.path}');
+          return;
+        }
+
         await _notificationService.createOrderUpdateNotification(
-          storeId: order.sellerRef.id,
+          storeId: storeId,
           orderId: orderId,
           orderNumber: orderId.substring(0, 8).toUpperCase(),
           newStatus: newStatus.name,

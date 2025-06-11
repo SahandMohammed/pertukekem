@@ -53,30 +53,27 @@ exports.sendPushNotification = onDocumentCreated(
       if (tokens.length === 0) {
         console.log(`No valid tokens found for store ID: ${storeId}`);
         return;
-      }
-
-      // Create the notification payload
+      }      // Create the notification payload
       const payload = {
         notification: {
           title: title,
           body: body,
-          sound: "default",
-          badge: "1",
         },
         data: {
           ...data,
           click_action: "FLUTTER_NOTIFICATION_CLICK",
         },
+        tokens: tokens,
       };
 
       // Send notification to all tokens
-      const response = await messaging.sendToDevice(tokens, payload);
+      const response = await messaging.sendEachForMulticast(payload);
 
       console.log("Push notification sent successfully:", response);
 
       // Clean up invalid tokens
       const invalidTokens = [];
-      response.results.forEach((result, index) => {
+      response.responses.forEach((result, index) => {
         if (result.error) {
           console.error(
             `Error sending to token ${tokens[index]}:`,
