@@ -164,7 +164,7 @@ class NotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      await _firestore.collection('push_notifications').add({
+      await _firestore.collection('pushNotificationTriggers').add({
         'storeId': storeId,
         'type': type,
         'title': title,

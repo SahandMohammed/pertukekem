@@ -8,9 +8,11 @@ plugins {
 android {
     namespace = "com.logicbloom.pertukekem"
     compileSdk = 35
-    ndkVersion = "27.2.12479018"
+    ndkVersion = "27.2.12479018"    
 
     compileOptions {
+        // Enable support for the new language APIs
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -39,6 +41,9 @@ android {
 dependencies {
   implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
   implementation("com.google.firebase:firebase-analytics")
+  
+  // Add core library desugaring
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
 
 

@@ -18,21 +18,13 @@ import 'features/dashboards/store/viewmodels/store_viewmodel.dart';
 import 'features/cart/services/cart_service.dart';
 import 'core/router/app_router.dart';
 
-// Top-level background message handler
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print('Handling a background message: ${message.messageId}');
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   // Set background message handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Initialize FCM Service
   await FCMService().initialize();

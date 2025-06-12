@@ -3,6 +3,7 @@ import 'package:pertukekem/features/cart/screens/cart_screen.dart';
 import '../../features/authentication/screens/verify_phone_screen.dart';
 import '../../features/authentication/screens/auth_wrapper.dart';
 import '../../features/dashboards/store/screens/store_setup_screen.dart';
+import '../test/notification_test_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -18,6 +19,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const StoreSetupScreen());
       case '/cart':
         return MaterialPageRoute(builder: (_) => const CartScreen());
+      case '/notification-test':
+        return MaterialPageRoute(
+          builder: (_) => const NotificationTestScreen(),
+        );
       default:
         return MaterialPageRoute(
           builder:

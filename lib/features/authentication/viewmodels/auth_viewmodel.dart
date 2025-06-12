@@ -43,6 +43,9 @@ class AuthViewModel extends ChangeNotifier {
     if (firebaseUser != null) {
       // Fetch user data from Firestore
       await _fetchUserData();
+
+      // Trigger FCM token storage when user logs in
+      await _fcmService.onUserLogin();
     } else {
       _user = null;
     }
@@ -339,10 +342,11 @@ class AuthViewModel extends ChangeNotifier {
           'isPhoneVerified': true,
           'updatedAt': FieldValue.serverTimestamp(),
           'phoneNumber': _firebaseUser!.phoneNumber ?? '',
-        });
-
-        // Fetch updated user data
+        }); // Fetch updated user data
         await _fetchUserData();
+
+        // Trigger FCM token storage after phone verification
+        await _fcmService.onUserLogin();
       } else {
         throw FirebaseAuthException(
           code: 'operation-not-allowed',

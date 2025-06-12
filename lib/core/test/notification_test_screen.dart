@@ -80,31 +80,59 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: _isLoading ? null : _testNewOrderNotification,
               child:
                   _isLoading
                       ? const CircularProgressIndicator()
-                      : const Text('Test New Order Notification'),
+                      : const Text(
+                        'Test New Order Notification',
+                        style: TextStyle(color: Colors.white),
+                      ),
             ),
             const SizedBox(height: 12),
-
             ElevatedButton(
               onPressed: _isLoading ? null : _testOrderUpdateNotification,
-              child: const Text('Test Order Update Notification'),
+              child: const Text(
+                'Test Order Update Notification',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             const SizedBox(height: 12),
-
             ElevatedButton(
               onPressed: _isLoading ? null : _testDirectPushNotification,
-              child: const Text('Test Direct Push Notification'),
+              child: const Text(
+                'Test Direct Push Notification',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             const SizedBox(height: 12),
 
             OutlinedButton(
               onPressed: _isLoading ? null : _checkUserData,
               child: const Text('Check User FCM Data'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _isLoading ? null : _fixFCMTokenStorage,
+              child: const Text('Fix FCM Token Storage'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _isLoading ? null : _triggerFCMTokenStorage,
+              child: const Text('Trigger FCM Token Storage'),
+            ),
+            const SizedBox(height: 12),
+
+            OutlinedButton(
+              onPressed: _isLoading ? null : _refreshFCMToken,
+              child: const Text('Force Refresh FCM Token'),
+            ),
+            const SizedBox(height: 12),
+
+            OutlinedButton(
+              onPressed: _isLoading ? null : _checkCloudFunctionLogs,
+              child: const Text('View Debug Instructions'),
             ),
           ],
         ),
@@ -264,17 +292,174 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
       final storeId = userData?['storeId'];
       final fcmTokens = userData?['fcmTokens'];
 
+      // Get current FCM token
+      final currentToken = _fcmService.fcmToken;
+
       setState(() {
         _status = '''
 User Data Check:
+- User ID: ${user.uid}
+- Email: ${user.email}
 - Store ID: ${storeId ?? 'Not set'}
 - FCM Tokens: ${fcmTokens != null ? '${(fcmTokens as Map).length} tokens' : 'No tokens'}
-- Current FCM Token: ${_fcmService.fcmToken ?? 'Not available'}
+- Current FCM Token: ${currentToken ?? 'Not available'}
+
+FCM Tokens in Firestore:
+${fcmTokens != null ? _formatFCMTokens(fcmTokens as Map) : 'None stored'}
         ''';
       });
     } catch (e) {
       setState(() {
         _status = 'Error checking user data: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatFCMTokens(Map tokens) {
+    if (tokens.isEmpty) return 'No tokens stored';
+
+    String result = '';
+    tokens.forEach((deviceId, tokenInfo) {
+      result += '- Device: $deviceId\n';
+      result += '  Token: ${tokenInfo['token']}\n';
+      result += '  Platform: ${tokenInfo['platform']}\n';
+      result += '  Updated: ${tokenInfo['lastUpdated']}\n\n';
+    });
+    return result;
+  }
+
+  Future<void> _fixFCMTokenStorage() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Fixing FCM token storage...';
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Get current FCM token
+      final currentToken = _fcmService.fcmToken;
+      if (currentToken == null) {
+        throw Exception('No FCM token available');
+      }
+
+      // Store token using the correct method
+      final deviceId = 'android_${DateTime.now().millisecondsSinceEpoch}';
+      final tokenInfo = {
+        'token': currentToken,
+        'platform': 'android',
+        'lastUpdated': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'fcmTokens': {deviceId: tokenInfo},
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      setState(() {
+        _status =
+            'FCM token storage fixed! Current token has been stored in Firestore.';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error fixing FCM token storage: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _triggerFCMTokenStorage() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Triggering FCM token storage...';
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Call the FCM service method to trigger token storage
+      await _fcmService.onUserLogin();
+
+      setState(() {
+        _status = 'FCM token storage triggered successfully!';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error triggering FCM token storage: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _checkCloudFunctionLogs() async {
+    setState(() {
+      _status = '''
+Debug Instructions:
+
+1. Check Firebase Functions logs:
+   - Go to Firebase Console > Functions > Logs
+   - OR run: firebase functions:log --only sendPushNotification
+
+2. Check if tokens are being stored:
+   - Use "Check User FCM Data" button above
+   - If no tokens, use "Fix FCM Token Storage"
+
+3. Test notification flow:
+   - Create a test notification trigger
+   - Check logs for "No FCM tokens found" errors
+   - Verify Cloud Function execution
+
+4. Common issues:
+   - fcmTokens field missing in user document
+   - Invalid or expired FCM tokens
+   - Cloud Function permissions
+   - Network connectivity on device
+
+Current logged in user should have FCM tokens stored to receive notifications.
+        ''';
+    });
+  }
+
+  Future<void> _refreshFCMToken() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Force refreshing FCM token...';
+    });
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Force refresh the FCM token
+      final newToken = await _fcmService.refreshToken();
+
+      setState(() {
+        _status =
+            newToken != null
+                ? 'FCM token refreshed successfully!\nNew token: ${newToken.substring(0, 20)}...'
+                : 'Failed to refresh FCM token';
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Error refreshing FCM token: $e';
       });
     } finally {
       setState(() {

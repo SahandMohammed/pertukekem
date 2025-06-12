@@ -35,6 +35,14 @@ class _StoreDashboardState extends State<StoreDashboard> {
               title: Text('Welcome, $storeName'),
               centerTitle: false,
               actions: [
+                // Debug: FCM Test Button (remove in production)
+                IconButton(
+                  icon: const Icon(Icons.bug_report),
+                  tooltip: 'FCM Debug',
+                  onPressed: () {
+                    Navigator.of(context).pushNamed('/notification-test');
+                  },
+                ),
                 FutureBuilder<int>(
                   future: _notificationService.getUnreadCount(),
                   builder: (context, snapshot) {

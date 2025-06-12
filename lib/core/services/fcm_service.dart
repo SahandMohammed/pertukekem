@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class FCMService {
   static final FCMService _instance = FCMService._internal();
@@ -14,13 +15,17 @@ class FCMService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
   /// Initialize FCM and request permissions
   Future<void> initialize() async {
     try {
+      // Initialize local notifications
+      await _initializeLocalNotifications();
+
       // Request permission for notifications
       await _requestPermission();
 
@@ -34,6 +39,50 @@ class FCMService {
     } catch (e) {
       debugPrint('Error initializing FCM: $e');
     }
+  }
+
+  /// Initialize local notifications plugin
+  Future<void> _initializeLocalNotifications() async {
+    const androidInitialization = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
+    const iosInitialization = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const initializationSettings = InitializationSettings(
+      android: androidInitialization,
+      iOS: iosInitialization,
+    );
+
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+
+    // Create Android notification channel
+    if (Platform.isAndroid) {
+      await _createNotificationChannel();
+    }
+  }
+
+  /// Create Android notification channel
+  Future<void> _createNotificationChannel() async {
+    const androidChannel = AndroidNotificationChannel(
+      'pertukekem_notifications',
+      'Pertukekem Notifications',
+      description: 'Notifications for Pertukekem app',
+      importance: Importance.high,
+      playSound: true,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(androidChannel);
   }
 
   /// Request notification permissions
@@ -63,6 +112,8 @@ class FCMService {
 
       if (_fcmToken != null && _auth.currentUser != null) {
         await _storeTokenInFirestore(_fcmToken!);
+      } else if (_fcmToken == null) {
+        debugPrint('Warning: FCM token is null after getToken() call');
       }
 
       // Listen for token refresh
@@ -78,22 +129,43 @@ class FCMService {
     }
   }
 
+  /// Force refresh FCM token
+  Future<String?> refreshToken() async {
+    try {
+      debugPrint('Forcing FCM token refresh...');
+      await _messaging.deleteToken();
+      _fcmToken = await _messaging.getToken();
+      debugPrint('New FCM Token after refresh: $_fcmToken');
+
+      if (_fcmToken != null && _auth.currentUser != null) {
+        await _storeTokenInFirestore(_fcmToken!);
+      }
+
+      return _fcmToken;
+    } catch (e) {
+      debugPrint('Error refreshing FCM token: $e');
+      return null;
+    }
+  }
+
   /// Store FCM token in Firestore user document
   Future<void> _storeTokenInFirestore(String token) async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return;
 
+      final deviceId = _getDeviceId();
       final deviceInfo = {
         'token': token,
         'platform': Platform.isIOS ? 'ios' : 'android',
         'lastUpdated': FieldValue.serverTimestamp(),
       };
 
-      await _firestore.collection('users').doc(currentUser.uid).update({
-        'fcmTokens.${_getDeviceId()}': deviceInfo,
+      // Store token in fcmTokens object
+      await _firestore.collection('users').doc(currentUser.uid).set({
+        'fcmTokens': {deviceId: deviceInfo},
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       debugPrint('FCM token stored in Firestore');
     } catch (e) {
@@ -103,10 +175,10 @@ class FCMService {
 
   /// Get a unique device identifier
   String _getDeviceId() {
-    // Create a simple device identifier based on platform and timestamp
+    // Create a consistent device identifier based on platform
     final platform = Platform.isIOS ? 'ios' : 'android';
-    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-    return '${platform}_$timestamp';
+    // Use a fixed identifier per platform to avoid creating multiple entries
+    return '${platform}_device';
   }
 
   /// Configure message handlers for different app states
@@ -132,11 +204,97 @@ class FCMService {
     });
   }
 
-  /// Handle foreground messages (show in-app notification)
+  /// Handle local notification tap
+  void _onNotificationTapped(NotificationResponse notificationResponse) {
+    debugPrint('Local notification tapped: ${notificationResponse.payload}');
+
+    if (notificationResponse.payload != null) {
+      // Parse payload and navigate accordingly
+      // Payload format: "type:orderId" or just "type"
+      final parts = notificationResponse.payload!.split(':');
+      final type = parts.isNotEmpty ? parts[0] : '';
+      final id = parts.length > 1 ? parts[1] : null;
+
+      final data = <String, dynamic>{
+        'type': type,
+        if (id != null) 'orderId': id,
+      };
+
+      _handleNotificationTap(RemoteMessage(data: data));
+    }
+  }
+
+  /// Handle foreground messages (show local notification only)
   void _handleForegroundMessage(RemoteMessage message) {
     if (message.notification != null) {
-      // Show in-app notification or banner
-      _showInAppNotification(message);
+      // Only show local notification in foreground
+      // Don't show in-app notification to avoid duplicates
+      _showLocalNotification(message);
+    }
+  }
+
+  /// Show system notification using flutter_local_notifications
+  Future<void> _showLocalNotification(RemoteMessage message) async {
+    try {
+      final notification = message.notification;
+      if (notification == null) return;
+
+      // Create unique notification ID to prevent duplicates
+      final messageId = message.messageId ?? message.hashCode.toString();
+
+      // Check if we already showed this notification (use global set)
+      if (_globalShownNotifications.contains(messageId)) {
+        debugPrint('Foreground notification already shown: $messageId');
+        return;
+      }
+
+      // Add to shown notifications set
+      _globalShownNotifications.add(messageId);
+
+      // Clean up old entries (keep only last 50)
+      if (_globalShownNotifications.length > 50) {
+        final oldEntries = _globalShownNotifications.take(
+          _globalShownNotifications.length - 50,
+        );
+        _globalShownNotifications.removeAll(oldEntries);
+      }
+
+      final type = message.data['type'] ?? '';
+      final orderId = message.data['orderId'];
+      final payload = orderId != null ? '$type:$orderId' : type;
+
+      const androidDetails = AndroidNotificationDetails(
+        'pertukekem_notifications',
+        'Pertukekem Notifications',
+        channelDescription: 'Notifications for Pertukekem app',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _localNotifications.show(
+        messageId.hashCode, // Use consistent ID
+        notification.title,
+        notification.body,
+        notificationDetails,
+        payload: payload,
+      );
+
+      debugPrint('Local notification shown: ${notification.title}');
+    } catch (e) {
+      debugPrint('Error showing local notification: $e');
     }
   }
 
@@ -162,112 +320,6 @@ class FCMService {
         // Navigate to notifications screen
         _navigateToNotifications();
         break;
-    }
-  }
-
-  /// Show in-app notification banner
-  void _showInAppNotification(RemoteMessage message) {
-    final context = _getNavigatorContext();
-    if (context == null) return;
-
-    // Create custom in-app notification
-    final overlay = Overlay.of(context);
-    late OverlayEntry overlayEntry;
-
-    overlayEntry = OverlayEntry(
-      builder:
-          (context) => Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 10,
-            right: 10,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _getNotificationIcon(message.data['type']),
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            message.notification?.title ?? 'New Notification',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          if (message.notification?.body != null)
-                            Text(
-                              message.notification!.body!,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => overlayEntry.remove(),
-                      icon: const Icon(Icons.close, color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-    );
-
-    overlay.insert(overlayEntry);
-
-    // Auto remove after 4 seconds
-    Future.delayed(const Duration(seconds: 4), () {
-      try {
-        overlayEntry.remove();
-      } catch (e) {
-        // Entry might already be removed
-      }
-    });
-
-    // Add haptic feedback
-    HapticFeedback.lightImpact();
-  }
-
-  /// Get appropriate icon for notification type
-  IconData _getNotificationIcon(String? type) {
-    switch (type) {
-      case 'new_order':
-        return Icons.shopping_cart;
-      case 'order_update':
-        return Icons.update;
-      case 'low_stock':
-        return Icons.inventory;
-      case 'review':
-        return Icons.star;
-      default:
-        return Icons.notifications;
     }
   }
 
@@ -330,15 +382,44 @@ class FCMService {
     }
   }
 
+  /// Trigger FCM token storage for current user (call after login)
+  Future<void> onUserLogin() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('Cannot store FCM token: no user logged in');
+        return;
+      }
+
+      // Try to get a fresh token if we don't have one
+      if (_fcmToken == null) {
+        debugPrint('No FCM token available, attempting to get fresh token');
+        _fcmToken = await _messaging.getToken();
+        debugPrint('Fresh FCM Token: $_fcmToken');
+      }
+
+      if (_fcmToken != null) {
+        debugPrint('User logged in, storing FCM token');
+        await _storeTokenInFirestore(_fcmToken!);
+      } else {
+        debugPrint(
+          'Cannot store FCM token: user=${currentUser.uid}, token=$_fcmToken',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error storing FCM token on login: $e');
+    }
+  }
+
   /// Clean up tokens when user signs out
   Future<void> clearTokens() async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser != null) {
-        await _firestore.collection('users').doc(currentUser.uid).update({
-          'fcmTokens': FieldValue.delete(),
+        await _firestore.collection('users').doc(currentUser.uid).set({
+          'fcmTokens': {},
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        }, SetOptions(merge: true));
       }
       _fcmToken = null;
       debugPrint('FCM tokens cleared');
@@ -348,11 +429,96 @@ class FCMService {
   }
 }
 
+// Global set to track shown notifications across handlers
+final Set<String> _globalShownNotifications = <String>{};
+
 /// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('Background message received: ${message.messageId}');
 
-  // You can perform background tasks here like updating local database
-  // or showing local notifications
+  // Initialize Firebase if not already done
+  await Firebase.initializeApp();
+
+  // Show local notification for background messages
+  await _showBackgroundLocalNotification(message);
+}
+
+/// Show local notification for background messages
+Future<void> _showBackgroundLocalNotification(RemoteMessage message) async {
+  try {
+    final notification = message.notification;
+    if (notification == null) return;
+
+    // Create unique notification ID to prevent duplicates
+    final messageId = message.messageId ?? message.hashCode.toString();
+
+    // Check if we already showed this notification
+    if (_globalShownNotifications.contains(messageId)) {
+      debugPrint('Background notification already shown: $messageId');
+      return;
+    }
+
+    // Add to shown notifications set
+    _globalShownNotifications.add(messageId);
+
+    // Clean up old entries (keep only last 50)
+    if (_globalShownNotifications.length > 50) {
+      final oldEntries = _globalShownNotifications.take(
+        _globalShownNotifications.length - 50,
+      );
+      _globalShownNotifications.removeAll(oldEntries);
+    }
+
+    final localNotifications = FlutterLocalNotificationsPlugin();
+
+    // Initialize if needed
+    const androidInitialization = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
+    const iosInitialization = DarwinInitializationSettings();
+    const initializationSettings = InitializationSettings(
+      android: androidInitialization,
+      iOS: iosInitialization,
+    );
+
+    await localNotifications.initialize(initializationSettings);
+
+    final type = message.data['type'] ?? '';
+    final orderId = message.data['orderId'];
+    final payload = orderId != null ? '$type:$orderId' : type;
+
+    const androidDetails = AndroidNotificationDetails(
+      'pertukekem_notifications',
+      'Pertukekem Notifications',
+      channelDescription: 'Notifications for Pertukekem app',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await localNotifications.show(
+      messageId.hashCode, // Use consistent ID
+      notification.title,
+      notification.body,
+      notificationDetails,
+      payload: payload,
+    );
+
+    debugPrint('Background local notification shown: ${notification.title}');
+  } catch (e) {
+    debugPrint('Error showing background local notification: $e');
+  }
 }
