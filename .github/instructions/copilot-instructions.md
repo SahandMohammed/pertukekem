@@ -1,17 +1,42 @@
-# 📐 Coding Standards & Architecture Guide
+# 📐 GitHub Copilot Custom Instructions for Pertukekem Online Bookstore
 
 **Online Bookstore App — Flutter + Firebase**
-
-> Maintain clean, scalable, and maintainable code. Consistency is key. All pull requests must adhere to these conventions.
+Maintain clean, scalable, and maintainable code. Consistency is key. All pull requests must adhere to these conventions.
 
 ---
 
 ## 💡 Architectural Overview
 
 - Adopt the **MVVM** (Model-View-ViewModel) architecture.
-- Use `Provider` or `Riverpod` for state management.
+- Use **Provider** (`ChangeNotifierProvider`, `Consumer`) for state management.
 - Feature-first folder structure: each module has its own UI, logic, and models.
 - Business logic belongs in ViewModels and service layers — not in the UI.
+
+---
+
+## 📁 Folder Structure & Modularity
+
+```
+lib/
+├── core/
+│   ├── router/       # Routing and navigation
+│   ├── services/     # Shared services (e.g., Firebase interactions)
+│   ├── theme/        # App-wide themes and styles
+│   ├── utils/        # Utility functions, extensions, constants
+│   └── widgets/      # Reusable widgets
+├── features/         # Each folder = one feature/module
+│   ├── auth/
+│   │   ├── view/          # UI screens & widgets (Stateless)
+│   │   ├── viewmodel/     # Business logic (`ChangeNotifier`)
+│   │   └── model/         # DTOs, form data, Firestore types
+│   ├── book_catalog/
+│   ├── cart/
+│   ├── order/
+│   └── profile/
+└── main.dart
+```
+
+- Register all feature `ChangeNotifierProviders` in `main.dart` or a dedicated `providers.dart` using `MultiProvider`.
 
 ---
 
@@ -19,10 +44,10 @@
 
 ### Code Style
 
-- Use `const` constructors wherever possible.
-- Follow [Effective Dart](https://dart.dev/guides/language/effective-dart) style recommendations.
+- Use `const` constructors everywhere possible.
+- Follow [Effective Dart](https://dart.dev/guides/language/effective-dart) rules.
 - Extract complex or long widgets into separate widget classes.
-- Avoid methods over 50 lines — break into smaller units.
+- Avoid methods over 50 lines—break into smaller, testable units.
 
 ### Naming Conventions
 
@@ -34,80 +59,49 @@
 | Constants     | SCREAMING_CAPS | `MAX_ITEM_LIMIT`            |
 | Files/Folders | snake_case     | `book_details_screen.dart`  |
 
----
+### Analysis Options & Formatting
 
-## 📁 Folder Structure & Modularity
+- Include `analysis_options.yaml` at the repo root with:
 
-```
-lib/
-├── core/
-│   ├── router/ # Routing and navigation
-│   ├── services/ # Firebase services
-│   ├── theme/ # App-wide themes and styles
-│   └── utils/ # Utility functions and extensions including: constants, helpers, apputils
-│   ├── widgets/ # Reusable widgets
-│
-├── features/               # Each folder = 1 feature/module
-│   ├── auth/
-│   │   ├── view/ # UI screens & widgets
-│   │   ├── viewmodel/ # Business logic
-│   │   └── model/ # Data models
-│   ├── bookstore/
-│   ├── cart/
-│   ├── order/
-│   └── profile/
-└── main.dart
-```
+  ```yaml
+  include: package:flutter_lints/flutter.yaml
+  linter:
+    rules:
+      - prefer_const_constructors
+      - avoid_print
+      - curly_braces_in_flow_control_structures
+  ```
 
-### Feature Folder Structure
-
-Each `features/<module>/` should contain:
-
-- `view/` — Screens & widgets (Stateless by default)
-- `viewmodel/` — Business logic using `ChangeNotifier`
-- `model/` — DTOs, form data, Firestore-specific types
+- Enable auto-format on save (`editor.formatOnSave: true`).
+- Enforce max line length of 80 characters.
+- Use single quotes for strings where possible.
 
 ---
 
 ## 🎨 UI & UX Standards
 
-- Use `Material 3` widgets where supported.
-- Follow accessibility guidelines: sufficient contrast, minimum tap size, readable fonts.
-- Use `Theme.of(context)` and `MediaQuery` for theming and responsiveness.
-- Design for both small and large screens (phones and tablets).
+- Use Material 3 widgets and theming (`ThemeData`, `ColorScheme`).
+- Follow accessibility guidelines: adequate contrast, minimum tap sizes, scalable fonts.
+- Use `Theme.of(context)` and `MediaQuery` for responsive layouts.
+- Design for phones and tablets; test on different screen sizes.
 
 ---
 
-## 🔐 Firebase Integration & Firestore Design
+## 🔐 Firebase & Firestore Design
 
 - Enforce **Role-Based Access Control (RBAC)** in Firestore security rules.
-- Avoid deep document nesting beyond 2-3 levels.
-- Use `.where()` and indexing efficiently — avoid client-side filtering.
-- Do not hardcode Firestore paths — centralize them in a constants file.
-
----
-
-## 🧪 Testing Strategy
-
-- Write **unit tests** for ViewModels, services, and helpers.
-- Add **widget tests** for screens like `LoginScreen`, `CartScreen`, etc.
-- Organize tests as:
-  ```
-  test/
-  ├── auth/
-  ├── bookstore/
-  └── core/
-  ```
-- Mock Firebase using tools like `mockito`, `cloud_firestore_mocks`, or `firebase_auth_mocks`.
+- Avoid deep document nesting beyond 2–3 levels.
+- Use indexed queries (`.where()`); avoid heavy client-side filtering.
+- Centralize Firestore paths in a constants file; do not hardcode strings.
 
 ---
 
 ## 🛠 Error Handling & Logging
 
-- Use `try-catch` for all async Firebase operations.
-- Avoid exposing technical error messages — use friendly feedback via `SnackBar` or `AlertDialog`.
-- Use fallback UI widgets like `ErrorWidget`, `EmptyStateWidget`, and `RetryButton`.
-- Log errors with context for easy debugging.
+- Wrap all async operations in `try/catch`.
+- Surface user-friendly messages via `SnackBar` or `AlertDialog`.
+- Provide fallback UI components: `ErrorWidget`, `EmptyStateWidget`, `RetryButton`.
+- Log errors with contextual information for debugging.
 
 ---
 
@@ -115,8 +109,8 @@ Each `features/<module>/` should contain:
 
 - [ ] Folder structure matches MVVM + feature-first layout.
 - [ ] Classes, files, and methods follow naming conventions.
-- [ ] Widgets are stateless unless state is needed.
+- [ ] Widgets are stateless by default; state resides in ViewModels.
 - [ ] Business logic is separated from UI.
-- [ ] Firebase reads/writes are handled in service or ViewModel, not in UI.
-- [ ] All new code has relevant tests and is well-documented.
-- [ ] Error states are gracefully handled.
+- [ ] Firebase reads/writes handled in service or ViewModel, not UI.
+- [ ] All new code includes relevant tests and documentation.
+- [ ] Error and loading states are gracefully handled.
