@@ -426,21 +426,20 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             createdAt: widget.listing?.createdAt,
             updatedAt: widget.listing?.updatedAt,
           );
-
           if (widget.listing != null) {
             await viewModel.updateListing(listing);
             if (mounted) {
               _showSuccessSnackBar('Listing updated successfully!');
+              // Return success result to trigger refresh
+              Navigator.of(context).pop('updated');
             }
           } else {
             await viewModel.addListing(listing);
             if (mounted) {
               _showSuccessSnackBar('Listing added successfully!');
+              // Return success result to trigger refresh
+              Navigator.of(context).pop('added');
             }
-          }
-
-          if (mounted) {
-            Navigator.of(context).pop();
           }
         } catch (e) {
           if (mounted) {
@@ -777,7 +776,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                       );
                       await viewModel.deleteListing(widget.listing!.id!);
                       _showSuccessSnackBar('Listing deleted successfully!');
-                      Navigator.of(context).pop();
+                      Navigator.of(context).pop('deleted');
                     }
                   } catch (e) {
                     _showErrorSnackBar(

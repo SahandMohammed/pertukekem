@@ -12,13 +12,35 @@ class ManageListingsScreen extends StatefulWidget {
   State<ManageListingsScreen> createState() => _ManageListingsScreenState();
 }
 
-class _ManageListingsScreenState extends State<ManageListingsScreen> {
+class _ManageListingsScreenState extends State<ManageListingsScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
+  bool _hasReturnedFromNavigation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _hasReturnedFromNavigation) {
+      print('🔄 App resumed after navigation, refreshing listings...');
+      _hasReturnedFromNavigation = false;
+      final viewModel = Provider.of<ManageListingsViewModel>(
+        context,
+        listen: false,
+      );
+      viewModel.refreshListings();
+    }
   }
 
   @override
@@ -29,16 +51,18 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await Navigator.push(
+          _hasReturnedFromNavigation = true;
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddEditListingScreen(),
             ),
-          ); // Explicitly refresh listings when returning from add screen
-          await Provider.of<ManageListingsViewModel>(
-            context,
-            listen: false,
-          ).refreshListings();
+          );
+          // Only refresh when listing was actually added
+          if (result == 'added' && mounted) {
+            print('🔄 Listing added successfully, refreshing...');
+            await viewModel.refreshListings();
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('New Listing'),
@@ -99,106 +123,126 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
                 ),
               ],
             ),
-          ),
-          // Listings content
+          ), // Listings content
           Expanded(
-            child: StreamBuilder<List<Listing>>(
-              stream: viewModel.sellerListingsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting ||
-                    viewModel.isRefreshing) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: colorScheme.error,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error: ${snapshot.error}',
-                          style: TextStyle(color: colorScheme.error),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () async {
-                            await viewModel.refreshListings();
-                          },
-                          child: const Text('Retry'),
-                        ),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await viewModel.refreshListings();
+              },
+              child: StreamBuilder<List<Listing>>(
+                stream: viewModel.sellerListingsStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting ||
+                      viewModel.isRefreshing) {
+                    return ListView(
+                      children: const [
+                        SizedBox(height: 200),
+                        Center(child: CircularProgressIndicator()),
                       ],
-                    ),
-                  );
-                }
+                    );
+                  }
 
-                final listings = snapshot.data ?? [];
-                if (listings.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  if (snapshot.hasError) {
+                    return ListView(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceVariant,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.inventory_2_outlined,
-                            size: 48,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No Listings Yet',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Add your first listing by tapping the button below',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        FilledButton.icon(
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => const AddEditListingScreen(),
+                        SizedBox(height: 200),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: colorScheme.error,
                               ),
-                            ); // Refresh listings when returning from add screen (empty state case)
-                            await Provider.of<ManageListingsViewModel>(
-                              context,
-                              listen: false,
-                            ).refreshListings();
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add New Listing'),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Error: ${snapshot.error}',
+                                style: TextStyle(color: colorScheme.error),
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: () async {
+                                  await viewModel.refreshListings();
+                                },
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
-                    ),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    await viewModel.refreshListings();
-                  },
-                  child: ListView.builder(
+                    );
+                  }
+
+                  final listings = snapshot.data ?? [];
+                  if (listings.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(height: 200),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceVariant,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 48,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No Listings Yet',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Pull down to refresh or add your first listing',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              FilledButton.icon(
+                                onPressed: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) =>
+                                              const AddEditListingScreen(),
+                                    ),
+                                  );
+                                  // Only refresh when listing was actually added
+                                  if (result == 'added' && mounted) {
+                                    print(
+                                      '🔄 Listing added successfully (empty state), refreshing...',
+                                    );
+                                    await viewModel.refreshListings();
+                                  }
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add New Listing'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: listings.length,
                     itemBuilder: (context, index) {
@@ -230,7 +274,8 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
                                             Navigator.pop(
                                               bottomSheetContext,
                                             ); // Close bottom sheet
-                                            await Navigator.push(
+                                            _hasReturnedFromNavigation = true;
+                                            final result = await Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
@@ -239,13 +284,15 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
                                                           listing: listing,
                                                         ),
                                               ),
-                                            ); // Refresh listings when returning from edit screen
-                                            await Provider.of<
-                                              ManageListingsViewModel
-                                            >(
-                                              context,
-                                              listen: false,
-                                            ).refreshListings();
+                                            );
+                                            // Only refresh when listing was actually updated
+                                            if (result == 'updated' &&
+                                                mounted) {
+                                              print(
+                                                '🔄 Listing updated successfully, refreshing...',
+                                              );
+                                              await viewModel.refreshListings();
+                                            }
                                           },
                                         ),
                                         ListTile(
@@ -482,9 +529,9 @@ class _ManageListingsScreenState extends State<ManageListingsScreen> {
                         ),
                       );
                     },
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ],

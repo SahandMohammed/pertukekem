@@ -11,14 +11,33 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
   bool _isRefreshing = false;
   Stream<List<Order>>? _ordersStream;
   StreamSubscription<List<Order>>? _ordersSubscription;
+  Timer? _autoRefreshTimer;
+  bool _autoRefreshEnabled = true;
 
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
-
+  bool get autoRefreshEnabled => _autoRefreshEnabled;
   OrderViewModel() {
     _initOrdersStream();
+    _startAutoRefresh();
   }
+  void _startAutoRefresh() {
+    // Auto-refresh every 30 seconds to check for new orders
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (_autoRefreshEnabled && !_isRefreshing && _errorMessage == null) {
+        print('🔄 Auto-refreshing orders...');
+        refreshOrders();
+      }
+    });
+  }
+
+  void toggleAutoRefresh() {
+    _autoRefreshEnabled = !_autoRefreshEnabled;
+    print('🔄 Auto-refresh ${_autoRefreshEnabled ? 'enabled' : 'disabled'}');
+    notifyListeners();
+  }
+
   void _initOrdersStream() {
     try {
       _ordersStream = _orderService.getSellerOrders().handleError((error) {
@@ -63,6 +82,46 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     return _ordersStream ?? const Stream.empty();
   }
 
+  Future<void> refreshOrders() async {
+    // Prevent multiple simultaneous refresh operations
+    if (_isRefreshing) {
+      print('⏳ Refresh already in progress, skipping...');
+      return;
+    }
+
+    try {
+      _isRefreshing = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      print('🔄 Refreshing orders from server...');
+
+      // Clear cache and reload from server
+      try {
+        await _orderService.clearOrderCache();
+        await _orderService.forceFirestoreRestart();
+
+        // Force get fresh data from server to verify it's working
+        final serverOrders = await _orderService.getSellerOrdersFromServer();
+        print('📦 Server returned ${serverOrders.length} orders');
+      } catch (e) {
+        // Cache clearing might fail, but we can still reload
+        print('⚠️ Cache clearing failed: $e');
+      }
+
+      // Reinitialize the stream to get fresh data
+      _initOrdersStream();
+
+      print('✅ Order refresh completed');
+    } catch (e) {
+      _errorMessage = e.toString();
+      print('❌ Error refreshing orders: $e');
+    } finally {
+      _isRefreshing = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> updateOrderStatus(String orderId, OrderStatus newStatus) async {
     try {
       _isLoading = true;
@@ -73,6 +132,9 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
 
       // Clear any previous error message on success
       _errorMessage = null;
+
+      // Refresh the orders stream to get updated data
+      await refreshOrders();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -144,6 +206,7 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
   @override
   void dispose() {
     _ordersSubscription?.cancel();
+    _autoRefreshTimer?.cancel();
     _errorMessage = null;
     _isLoading = false;
     _isRefreshing = false;
@@ -154,9 +217,11 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing OrderViewModel state...');
 
-    // Cancel stream subscription to prevent infinite loops
+    // Cancel stream subscription and auto-refresh timer
     _ordersSubscription?.cancel();
     _ordersSubscription = null;
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
 
     // Clear all state
     _ordersStream = null;

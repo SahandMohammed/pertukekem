@@ -80,6 +80,38 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         ),
       ),
       actions: [
+        Consumer<OrderViewModel>(
+          builder: (context, viewModel, child) {
+            return IconButton(
+              onPressed:
+                  viewModel.isRefreshing
+                      ? null
+                      : () async {
+                        await viewModel.refreshOrders();
+                      },
+              icon:
+                  viewModel.isRefreshing
+                      ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.refresh_rounded,
+                          color: colorScheme.onSurfaceVariant,
+                          size: 18,
+                        ),
+                      ),
+              tooltip: 'Refresh Orders',
+            );
+          },
+        ),
         IconButton(
           onPressed: () => _showFilterDialog(context),
           icon: Container(
@@ -202,10 +234,9 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
             if (filteredOrders.isEmpty) {
               return _buildEmptyState(context);
             }
-
             return RefreshIndicator(
               onRefresh: () async {
-                // Stream will automatically refresh
+                await viewModel.refreshOrders();
               },
               child: ListView.separated(
                 shrinkWrap: true,
