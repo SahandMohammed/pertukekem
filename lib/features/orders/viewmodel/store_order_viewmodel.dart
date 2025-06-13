@@ -73,7 +73,6 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     );
     notifyListeners();
   }
-
   void _initOrdersStream() {
     try {
       _isLoading = true;
@@ -82,15 +81,18 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
 
       debugPrint('🚀 Initializing orders stream...');
 
+      // Cancel existing subscription and clear stream before creating new one
+      _ordersSubscription?.cancel();
+      _ordersSubscription = null;
+      _ordersStream = null;
+
+      // Create a fresh stream
       _ordersStream = _orderService.getSellerOrders().handleError((error) {
         debugPrint('❌ Orders stream error: $error');
         _errorMessage = error.toString();
         _isLoading = false;
         notifyListeners();
       });
-
-      // Cancel existing subscription if any
-      _ordersSubscription?.cancel();
 
       // Listen to the stream to detect errors early and manage loading state
       _ordersSubscription = _ordersStream?.listen(
@@ -123,15 +125,16 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
     // Reinitialize the stream when clearing errors
     _initOrdersStream();
-  }
-
-  Stream<List<Order>> getOrders() {
+  }  Stream<List<Order>> getOrders() {
+    // Return existing stream if available, only create new one if needed
     if (_ordersStream == null) {
+      debugPrint('🎯 Creating new orders stream...');
       _initOrdersStream();
+    } else {
+      debugPrint('🎯 Returning existing orders stream...');
     }
     return _ordersStream ?? const Stream.empty();
   }
-
   Future<void> refreshOrders() async {
     // Prevent multiple simultaneous refresh operations
     if (_isRefreshing) {
@@ -145,7 +148,8 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
       notifyListeners();
       debugPrint('🔄 Refreshing orders...');
 
-      // Reinitialize the stream to get fresh data
+      // Force recreate the stream to get fresh data
+      debugPrint('🔄 Recreating orders stream for refresh...');
       _initOrdersStream();
 
       debugPrint('✅ Order refresh initiated');
