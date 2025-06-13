@@ -32,17 +32,18 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   bool _isLoadingReviews = true;
   bool _isCheckingOwnership = true;
   bool _userOwnsBook = false;
+  bool _isStoreAccount = false;
 
   Listing get listing => widget.listing;
 
   bool get _isAnyLoading =>
-      _isLoadingStore || _isLoadingReviews || _isCheckingOwnership;
-  @override
+      _isLoadingStore || _isLoadingReviews || _isCheckingOwnership;  @override
   void initState() {
     super.initState();
     _loadStoreInfo();
     _loadReviewStats();
     _checkBookOwnership();
+    _checkUserType();
 
     // Initialize cart service
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -106,11 +107,41 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       final ownsBook = await _libraryService.userOwnsBook(listing.id!);
       setState(() {
         _userOwnsBook = ownsBook;
-      });
-    } catch (e) {
+      });    } catch (e) {
       debugPrint('Error checking book ownership: $e');
     } finally {
       setState(() => _isCheckingOwnership = false);
+    }
+  }
+
+  Future<void> _checkUserType() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      setState(() => _isStoreAccount = false);
+      return;
+    }
+
+    try {
+      // Check user roles in the users collection
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        final roles = userData?['roles'] as List<dynamic>?;
+        
+        // Check if user has store role
+        setState(() {
+          _isStoreAccount = roles?.contains('store') ?? false;
+        });
+      } else {
+        setState(() => _isStoreAccount = false);
+      }
+    } catch (e) {
+      debugPrint('Error checking user type: $e');
+      setState(() => _isStoreAccount = false);
     }
   }
 
@@ -1043,8 +1074,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+      children: [        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
@@ -1054,12 +1084,14 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 color: colorScheme.onSurface,
               ),
             ),
-            TextButton.icon(
-              onPressed: () => _showAddReviewDialog(context),
-              icon: Icon(Icons.add, size: 18),
-              label: Text('Write Review'),
-              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
-            ),
+            // Hide Write Review button for store accounts
+            if (!_isStoreAccount)
+              TextButton.icon(
+                onPressed: () => _showAddReviewDialog(context),
+                icon: Icon(Icons.add, size: 18),
+                label: Text('Write Review'),
+                style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
+              ),
           ],
         ),
         const SizedBox(height: 16), // Review Stats
@@ -1149,9 +1181,13 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       ],
     );
   }
-
   Widget _buildContactSellerButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    // Hide the entire contact seller button for store accounts
+    if (_isStoreAccount) {
+      return const SizedBox.shrink();
+    }
 
     return Consumer<AuthViewModel>(
       builder: (context, authViewModel, child) {
@@ -1815,8 +1851,15 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       ),
     );
   }
-
   void _showAddReviewDialog(BuildContext context) {
+    // Prevent store accounts from opening the review dialog
+    if (_isStoreAccount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Store accounts cannot write reviews')),
+      );
+      return;
+    }
+
     final textTheme = Theme.of(context).textTheme;
 
     double rating = 5.0;
@@ -1895,7 +1938,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
           ),
     );
   }
-
   Future<void> _submitReview(
     BuildContext context,
     double rating,
@@ -1905,6 +1947,14 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Please enter a comment')));
+      return;
+    }
+
+    // Prevent store accounts from submitting reviews
+    if (_isStoreAccount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Store accounts cannot write reviews')),
+      );
       return;
     }
 

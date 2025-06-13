@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/library_model.dart';
 import '../viewmodels/library_viewmodel.dart';
 import '../services/download_service.dart';
 import 'ebook_reader_screen.dart';
+import '../../listings/model/listing_model.dart';
+import '../../listings/view/add_edit_listing_screen.dart';
+import '../../listings/viewmodel/manage_listings_viewmodel.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   final LibraryBook book;
@@ -21,11 +25,36 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   bool _isFileAvailable = false;
+  bool _isStoreAccount = false;
 
   @override
   void initState() {
     super.initState();
     _checkFileAvailability();
+    _checkUserType();
+  }
+
+  Future<void> _checkUserType() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      try {
+        // Check if the user has a store document
+        final storeDoc =
+            await FirebaseFirestore.instance
+                .collection('stores')
+                .doc(currentUser.uid)
+                .get();
+
+        setState(() {
+          _isStoreAccount = storeDoc.exists;
+        });
+      } catch (e) {
+        print('Error checking user type: $e');
+        setState(() {
+          _isStoreAccount = false;
+        });
+      }
+    }
   }
 
   Future<void> _checkFileAvailability() async {
@@ -191,8 +220,12 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                       _buildBookInformation(updatedBook),
                       const SizedBox(height: 16),
                       _buildPurchaseInformation(updatedBook),
-                      if (updatedBook.isEbook) const SizedBox(height: 16),
-                      if (updatedBook.isEbook) _buildEbookActions(updatedBook),
+                      const SizedBox(height: 16),
+                      // Show different actions based on user type
+                      if (_isStoreAccount)
+                        _buildStoreActions(updatedBook)
+                      else if (updatedBook.isEbook)
+                        _buildEbookActions(updatedBook),
                     ],
                   ),
                 ),
@@ -293,6 +326,191 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildStoreActions(LibraryBook book) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Store Actions',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _editListing(book),
+                icon: const Icon(Icons.edit),
+                label: const Text('Edit Listing'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _deleteListing(book),
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete Listing'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editListing(LibraryBook book) async {
+    try {
+      // First, get the listing ID from the book
+      // You'll need to query the listings collection to find the listing by book details
+      final listingsQuery =
+          await FirebaseFirestore.instance
+              .collection('listings')
+              .where('title', isEqualTo: book.title)
+              .where('author', isEqualTo: book.author)
+              .get();
+
+      if (listingsQuery.docs.isNotEmpty) {
+        final listingDoc = listingsQuery.docs.first;
+
+        // Create a Listing object from the found data
+        final listing = Listing.fromFirestore(listingDoc, null);
+
+        // Navigate to AddEditListingScreen
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddEditListingScreen(listing: listing),
+          ),
+        );
+
+        if (result == 'updated' && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Listing updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not find the listing to edit'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading listing: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteListing(LibraryBook book) async {
+    // Show confirmation dialog
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Delete Listing'),
+            content: Text('Are you sure you want to delete "${book.title}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+    );
+
+    if (shouldDelete == true) {
+      try {
+        // Query the listings collection to find the corresponding listing
+        final listingsQuery =
+            await FirebaseFirestore.instance
+                .collection('listings')
+                .where('title', isEqualTo: book.title)
+                .where('author', isEqualTo: book.author)
+                .get();
+
+        if (listingsQuery.docs.isNotEmpty) {
+          final listingDoc = listingsQuery.docs.first;
+          final listingData = listingDoc.data();
+
+          // Verify this listing belongs to the current user
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            final sellerRef = listingData['sellerRef'] as DocumentReference;
+            final isOwner =
+                sellerRef.path == 'users/${currentUser.uid}' ||
+                sellerRef.path == 'stores/${currentUser.uid}';
+
+            if (isOwner) {
+              // Use ManageListingsViewModel to delete the listing
+              final viewModel = Provider.of<ManageListingsViewModel>(
+                context,
+                listen: false,
+              );
+
+              await viewModel.deleteListing(listingDoc.id);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Listing deleted successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+
+                // Navigate back to previous screen
+                Navigator.pop(context);
+              }
+            } else {
+              throw Exception('You are not authorized to delete this listing');
+            }
+          } else {
+            throw Exception('User not authenticated');
+          }
+        } else {
+          throw Exception('Listing not found');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting listing: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildReadingProgress(LibraryBook book) {
