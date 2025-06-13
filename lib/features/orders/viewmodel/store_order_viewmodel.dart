@@ -73,6 +73,7 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     );
     notifyListeners();
   }
+
   void _initOrdersStream() {
     try {
       _isLoading = true;
@@ -125,7 +126,9 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
     // Reinitialize the stream when clearing errors
     _initOrdersStream();
-  }  Stream<List<Order>> getOrders() {
+  }
+
+  Stream<List<Order>> getOrders() {
     // Return existing stream if available, only create new one if needed
     if (_ordersStream == null) {
       debugPrint('🎯 Creating new orders stream...');
@@ -135,6 +138,7 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     }
     return _ordersStream ?? const Stream.empty();
   }
+
   Future<void> refreshOrders() async {
     // Prevent multiple simultaneous refresh operations
     if (_isRefreshing) {
