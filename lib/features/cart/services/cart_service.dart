@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/interfaces/state_clearable.dart';
-import '../models/cart_item_model.dart';
+import '../model/cart_item_model.dart';
 import '../../listings/model/listing_model.dart';
 
 class CartService extends ChangeNotifier implements StateClearable {

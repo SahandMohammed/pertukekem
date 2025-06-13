@@ -6,13 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../model/listing_model.dart';
 import '../model/review_model.dart';
-import '../../dashboards/store/models/store_model.dart';
+import '../../dashboards/store/model/store_model.dart';
 import '../../../core/services/review_service.dart';
-import '../../authentication/viewmodels/auth_viewmodel.dart';
-import '../../payments/screens/payment_screen.dart';
-import '../../library/services/library_service.dart';
+import '../../authentication/viewmodel/auth_viewmodel.dart';
+import '../../payments/view/payment_screen.dart';
+import '../../library/service/library_service.dart';
 import '../../cart/services/cart_service.dart';
-import '../../cart/screens/cart_screen.dart';
+import '../../cart/view/cart_screen.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final Listing listing;
@@ -37,7 +37,8 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   Listing get listing => widget.listing;
 
   bool get _isAnyLoading =>
-      _isLoadingStore || _isLoadingReviews || _isCheckingOwnership;  @override
+      _isLoadingStore || _isLoadingReviews || _isCheckingOwnership;
+  @override
   void initState() {
     super.initState();
     _loadStoreInfo();
@@ -107,7 +108,8 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       final ownsBook = await _libraryService.userOwnsBook(listing.id!);
       setState(() {
         _userOwnsBook = ownsBook;
-      });    } catch (e) {
+      });
+    } catch (e) {
       debugPrint('Error checking book ownership: $e');
     } finally {
       setState(() => _isCheckingOwnership = false);
@@ -123,15 +125,16 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
 
     try {
       // Check user roles in the users collection
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .get();
 
       if (userDoc.exists) {
         final userData = userDoc.data();
         final roles = userData?['roles'] as List<dynamic>?;
-        
+
         // Check if user has store role
         setState(() {
           _isStoreAccount = roles?.contains('store') ?? false;
@@ -1074,7 +1077,8 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [        Row(
+      children: [
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
@@ -1090,7 +1094,9 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 onPressed: () => _showAddReviewDialog(context),
                 icon: Icon(Icons.add, size: 18),
                 label: Text('Write Review'),
-                style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
+                style: TextButton.styleFrom(
+                  foregroundColor: colorScheme.primary,
+                ),
               ),
           ],
         ),
@@ -1181,6 +1187,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       ],
     );
   }
+
   Widget _buildContactSellerButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1851,6 +1858,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       ),
     );
   }
+
   void _showAddReviewDialog(BuildContext context) {
     // Prevent store accounts from opening the review dialog
     if (_isStoreAccount) {
@@ -1938,6 +1946,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
           ),
     );
   }
+
   Future<void> _submitReview(
     BuildContext context,
     double rating,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'lib/features/cart/models/cart_item_model.dart';
+import 'lib/features/cart/model/cart_item_model.dart';
 import 'lib/features/listings/model/listing_model.dart';
 
 void main() {

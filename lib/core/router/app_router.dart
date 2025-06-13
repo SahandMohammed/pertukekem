@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:pertukekem/features/cart/screens/cart_screen.dart';
-import '../../features/authentication/screens/verify_phone_screen.dart';
-import '../../features/authentication/screens/auth_wrapper.dart';
-import '../../features/profile/store/screens/store_setup_screen.dart';
+import 'package:pertukekem/features/cart/view/cart_screen.dart';
+import '../../features/authentication/view/verify_phone_screen.dart';
+import '../../features/authentication/view/auth_wrapper.dart';
+import '../../features/profile/view/store/store_setup_screen.dart';
 import '../test/notification_test_screen.dart';
 
 class AppRouter {

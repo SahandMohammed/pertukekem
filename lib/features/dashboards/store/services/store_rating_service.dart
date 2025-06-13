@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/store_rating_model.dart';
+import '../model/store_rating_model.dart';
 
 class StoreRatingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

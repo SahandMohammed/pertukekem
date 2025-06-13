@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../models/store_rating_model.dart';
-import '../viewmodels/store_rating_viewmodel.dart';
+import '../model/store_rating_model.dart';
+import '../viewmodel/store_rating_viewmodel.dart';
 
 class StoreRatingWidget extends StatefulWidget {
   final String storeId;
