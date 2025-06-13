@@ -5,7 +5,7 @@ import '../../listings/model/listing_model.dart';
 import '../../listings/view/listing_details_screen.dart';
 import '../model/store_model.dart';
 import '../viewmodel/store_rating_viewmodel.dart';
-import '../view/store/store_profile_screen.dart';
+import '../view/store/store_details_screen.dart';
 
 class ListingCard extends StatelessWidget {
   final Listing listing;
@@ -185,7 +185,7 @@ class StoreCard extends StatelessWidget {
               builder:
                   (context) => ChangeNotifierProvider(
                     create: (context) => StoreRatingViewModel(),
-                    child: StoreProfileScreen(store: store),
+                    child: StoreDetailsScreen(store: store),
                   ),
             ),
           );

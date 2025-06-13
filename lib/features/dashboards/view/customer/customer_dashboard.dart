@@ -4,7 +4,7 @@ import '../../viewmodel/customer_home_viewmodel.dart';
 import 'search_tab.dart';
 import 'customer_user_profile_tab.dart';
 import '../../../orders/view/customer/customer_orders_tab.dart';
-import '../store/store_profile_screen.dart';
+import '../store/store_details_screen.dart';
 import '../../viewmodel/store_rating_viewmodel.dart';
 import '../../../library/view/library_tab.dart';
 import '../../../library/view/ebook_reader_screen.dart';
@@ -436,7 +436,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             builder:
                 (context) => ChangeNotifierProvider(
                   create: (context) => StoreRatingViewModel(),
-                  child: StoreProfileScreen(store: store),
+                  child: StoreDetailsScreen(store: store),
                 ),
           ),
         );

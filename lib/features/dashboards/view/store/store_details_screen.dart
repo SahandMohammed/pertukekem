@@ -5,16 +5,16 @@ import '../../../listings/model/listing_model.dart';
 import '../../../listings/view/listing_details_screen.dart';
 import '../../../../core/services/listing_service.dart';
 
-class StoreProfileScreen extends StatefulWidget {
+class StoreDetailsScreen extends StatefulWidget {
   final StoreModel store;
 
-  const StoreProfileScreen({super.key, required this.store});
+  const StoreDetailsScreen({super.key, required this.store});
 
   @override
-  State<StoreProfileScreen> createState() => _StoreProfileScreenState();
+  State<StoreDetailsScreen> createState() => _StoreDetailsScreenState();
 }
 
-class _StoreProfileScreenState extends State<StoreProfileScreen> {
+class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
   final ListingService _listingService = ListingService();
   List<Listing> _storeListings = [];
   bool _isLoading = true;
