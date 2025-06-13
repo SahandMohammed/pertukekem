@@ -4,7 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pertukekem/core/services/firebase_options.dart';
 import 'package:pertukekem/core/services/fcm_service.dart';
 import 'package:pertukekem/core/theme/app_theme.dart';
-import 'package:pertukekem/features/dashboards/customer/viewmodel/customer_home_viewmodel.dart';
+import 'package:pertukekem/features/dashboards/viewmodel/customer_home_viewmodel.dart';
 import 'package:pertukekem/features/orders/viewmodel/customer_orders_viewmodel.dart';
 import 'package:pertukekem/features/library/viewmodel/library_viewmodel.dart';
 import 'package:pertukekem/features/listings/viewmodel/manage_listings_viewmodel.dart';

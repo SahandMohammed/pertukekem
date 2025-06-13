@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodel/customer_home_viewmodel.dart';
+import '../../viewmodel/customer_home_viewmodel.dart';
 import 'search_tab.dart';
 import 'customer_user_profile_tab.dart';
 import '../../../orders/view/customer/customer_orders_tab.dart';
-import 'store_profile_screen.dart';
-import '../../store/viewmodel/store_rating_viewmodel.dart';
+import '../store/store_profile_screen.dart';
+import '../../viewmodel/store_rating_viewmodel.dart';
 import '../../../library/view/library_tab.dart';
 import '../../../library/view/ebook_reader_screen.dart';
 import '../../../library/model/library_model.dart';

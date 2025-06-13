@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:pertukekem/features/dashboards/viewmodel/customer_home_viewmodel.dart';
+import 'package:pertukekem/features/dashboards/widgets/home_widgets.dart';
 import 'package:provider/provider.dart';
-import '../viewmodel/customer_home_viewmodel.dart';
-import '../widgets/home_widgets.dart';
 
 class SearchTab extends StatefulWidget {
   final TextEditingController searchController;

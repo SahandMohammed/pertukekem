@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../orders/model/order_model.dart' as order_model;
+import '../../orders/model/order_model.dart' as order_model;
 
 class DashboardSummary {
   final int totalOrders;

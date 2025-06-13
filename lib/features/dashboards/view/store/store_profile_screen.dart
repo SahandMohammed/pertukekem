@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../store/model/store_model.dart';
-import '../../store/widgets/store_rating_widget.dart';
+import '../../model/store_model.dart';
+import '../../widgets/store_rating_widget.dart';
 import '../../../listings/model/listing_model.dart';
 import '../../../listings/view/listing_details_screen.dart';
 import '../../../../core/services/listing_service.dart';

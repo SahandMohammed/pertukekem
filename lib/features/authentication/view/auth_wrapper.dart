@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pertukekem/features/dashboards/customer/view/customer_dashboard.dart';
+import 'package:pertukekem/features/dashboards/view/customer/customer_dashboard.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/auth_viewmodel.dart';
 import 'admin_dashboard.dart';
-import '../../dashboards/store/view/store_dashboard.dart';
+import '../../dashboards/view/store/store_dashboard.dart';
 import '../../profile/view/store/store_setup_screen.dart';
 import 'login_screen.dart';
 

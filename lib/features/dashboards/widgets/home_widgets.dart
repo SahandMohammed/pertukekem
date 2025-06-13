@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../listings/model/listing_model.dart';
-import '../../../listings/view/listing_details_screen.dart';
-import '../../store/model/store_model.dart';
-import '../../store/viewmodel/store_rating_viewmodel.dart';
-import '../view/store_profile_screen.dart';
+import '../../listings/model/listing_model.dart';
+import '../../listings/view/listing_details_screen.dart';
+import '../model/store_model.dart';
+import '../viewmodel/store_rating_viewmodel.dart';
+import '../view/store/store_profile_screen.dart';
 
 class ListingCard extends StatelessWidget {
   final Listing listing;

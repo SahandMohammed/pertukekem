@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../listings/model/listing_model.dart';
-import '../../store/model/store_model.dart';
+import '../../listings/model/listing_model.dart';
+import '../model/store_model.dart';
 
 class CustomerHomeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

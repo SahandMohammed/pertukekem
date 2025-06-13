@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../model/listing_model.dart';
 import '../model/review_model.dart';
-import '../../dashboards/store/model/store_model.dart';
+import '../../dashboards/model/store_model.dart';
 import '../../../core/services/review_service.dart';
 import '../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../payments/view/payment_screen.dart';

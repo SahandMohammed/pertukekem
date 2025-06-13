@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../core/interfaces/state_clearable.dart';
-import '../../../listings/model/listing_model.dart';
-import '../../store/model/store_model.dart';
+import '../../../core/interfaces/state_clearable.dart';
+import '../../listings/model/listing_model.dart';
+import '../model/store_model.dart';
 import '../service/customer_home_service.dart';
-import '../../../library/model/library_model.dart';
-import '../../../library/service/library_service.dart';
+import '../../library/model/library_model.dart';
+import '../../library/service/library_service.dart';
 
 class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   final CustomerHomeService _homeService = CustomerHomeService();

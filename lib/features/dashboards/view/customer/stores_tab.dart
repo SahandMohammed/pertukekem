@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodel/customer_home_viewmodel.dart';
-import '../widgets/home_widgets.dart';
+import '../../viewmodel/customer_home_viewmodel.dart';
+import '../../widgets/home_widgets.dart';
 
 class StoresTab extends StatefulWidget {
   const StoresTab({super.key});
