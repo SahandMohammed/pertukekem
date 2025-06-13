@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import '../model/store_rating_model.dart';
-import '../services/store_rating_service.dart';
+import '../service/store_rating_service.dart';
 
 class StoreRatingViewModel extends ChangeNotifier {
   final StoreRatingService _ratingService = StoreRatingService();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../services/dashboard_service.dart';
-import '../services/notification_service.dart';
+import '../service/dashboard_service.dart';
+import '../service/notification_service.dart';
 import '../model/notification_model.dart';
 import '../view/notifications_screen.dart';
 import '../../../orders/model/order_model.dart' as order_model;

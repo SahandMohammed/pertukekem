@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pertukekem/core/services/fcm_service.dart';
-import 'package:pertukekem/features/dashboards/store/services/notification_service.dart';
+import 'package:pertukekem/features/dashboards/store/service/notification_service.dart';
 
 class NotificationTestScreen extends StatefulWidget {
   const NotificationTestScreen({super.key});
