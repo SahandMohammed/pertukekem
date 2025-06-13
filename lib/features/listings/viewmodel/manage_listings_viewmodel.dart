@@ -15,7 +15,7 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   StreamSubscription<List<Listing>>? _subscription;
 
   Stream<List<Listing>>? get sellerListingsStream {
-    print(
+    debugPrint(
       '🔍 Getting sellerListingsStream - controller exists: ${_controller != null}, closed: ${_controller?.isClosed}',
     );
     return _searchTerm.isEmpty
@@ -34,6 +34,14 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
 
   bool _isRefreshing = false;
   bool get isRefreshing => _isRefreshing;
+
+  // Navigation state management
+  bool _hasReturnedFromNavigation = false;
+  bool get hasReturnedFromNavigation => _hasReturnedFromNavigation;
+
+  // UI state for showing messages
+  String? _successMessage;
+  String? get successMessage => _successMessage;
 
   ManageListingsViewModel() {
     _controller = StreamController<List<Listing>>.broadcast();
@@ -62,6 +70,8 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     _errorMessage = null;
     _isLoading = false;
     _isRefreshing = false;
+    _hasReturnedFromNavigation = false;
+    _successMessage = null;
 
     // Notify listeners
     notifyListeners();
@@ -199,6 +209,7 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
       // The stream will automatically update when Firestore changes are detected
       // Clear loading state
       _isLoading = false;
+      _successMessage = 'Listing added successfully';
       print('✅ Listing added successfully');
     } catch (e) {
       _errorMessage = e.toString();
@@ -218,6 +229,7 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
       // The stream will automatically update when Firestore changes are detected
       // Clear loading state
       _isLoading = false;
+      _successMessage = 'Listing updated successfully';
       print('✅ Listing updated successfully');
     } catch (e) {
       _errorMessage = e.toString();
@@ -237,6 +249,7 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
       // The stream will automatically update when Firestore changes are detected
       // Clear loading state
       _isLoading = false;
+      _successMessage = 'Listing deleted successfully';
       print('✅ Listing deleted successfully');
     } catch (e) {
       _errorMessage = e.toString();
@@ -282,6 +295,124 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
+  // Navigation and UI state management methods
+  void navigateToListingDetail(BuildContext context, Listing listing) {
+    Navigator.of(context).pushNamed('/listingDetail', arguments: listing);
+  }
+
+  void navigateBack(BuildContext context) {
+    Navigator.of(context).pop();
+  }
+
+  void setNavigationReturn(bool hasReturned) {
+    _hasReturnedFromNavigation = hasReturned;
+    notifyListeners();
+  }
+
+  void clearMessages() {
+    _successMessage = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  Future<void> handleAddListingNavigation() async {
+    _hasReturnedFromNavigation = true;
+    notifyListeners();
+  }
+
+  Future<void> handleNavigationResult(String? result) async {
+    if (result == 'added' || result == 'updated') {
+      debugPrint('🔄 Listing $result successfully, refreshing...');
+      await refreshListings();
+      _successMessage =
+          result == 'added'
+              ? 'Listing added successfully'
+              : 'Listing updated successfully';
+      notifyListeners();
+    }
+    _hasReturnedFromNavigation = false;
+  }
+
+  Future<bool> showDeleteConfirmation({
+    required BuildContext context,
+    required String listingTitle,
+  }) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Delete Listing'),
+            content: Text('Are you sure you want to delete "$listingTitle"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+    );
+    return shouldDelete ?? false;
+  }
+
+  Future<void> handleDeleteListing({
+    required String listingId,
+    required String listingTitle,
+    required ScaffoldMessengerState scaffoldMessenger,
+  }) async {
+    try {
+      await deleteListing(listingId);
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Listing deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _successMessage = 'Listing deleted successfully';
+      notifyListeners();
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error deleting listing: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      _errorMessage = 'Error deleting listing: $e';
+      notifyListeners();
+    }
+  }
+
+  void clearSearchTerm() {
+    _searchTerm = '';
+    notifyListeners();
+  }
+
+  bool get hasListings => _controller?.stream != null;
+
+  bool get shouldShowEmptyState {
+    return !_isLoading && !_isRefreshing && _errorMessage == null;
+  }
+
+  bool get shouldShowLoadingState {
+    return _isLoading || _isRefreshing;
+  }
+
+  bool get shouldShowErrorState {
+    return _errorMessage != null;
+  }
+
+  void handleAppLifecycleResume() {
+    if (_hasReturnedFromNavigation) {
+      debugPrint('🔄 App resumed after navigation, refreshing listings...');
+      _hasReturnedFromNavigation = false;
+      refreshListings();
+    }
+  }
+
   // Debug method to test stream updates
   void forceNotifyListeners() {
     print('🔔 Forcing notifyListeners call');
@@ -290,10 +421,10 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
 
   // Debug method to check controller state
   void debugControllerState() {
-    print(
+    debugPrint(
       '🔍 Controller state: exists=${_controller != null}, closed=${_controller?.isClosed}',
     );
-    print('🔍 Subscription state: exists=${_subscription != null}');
-    print('🔍 Current refresh state: $_isRefreshing');
+    debugPrint('🔍 Subscription state: exists=${_subscription != null}');
+    debugPrint('🔍 Current refresh state: $_isRefreshing');
   }
 }
