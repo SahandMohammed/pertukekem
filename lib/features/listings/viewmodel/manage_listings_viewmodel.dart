@@ -13,14 +13,20 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
 
   StreamController<List<Listing>>? _controller;
   StreamSubscription<List<Listing>>? _subscription;
-
   Stream<List<Listing>>? get sellerListingsStream {
     debugPrint(
       '🔍 Getting sellerListingsStream - controller exists: ${_controller != null}, closed: ${_controller?.isClosed}',
     );
-    return _searchTerm.isEmpty
-        ? _controller?.stream
-        : _controller?.stream.map((listings) => _filterListings(listings));
+
+    if (_controller == null || _controller!.isClosed) {
+      return const Stream<List<Listing>>.empty();
+    }
+
+    if (_searchTerm.isEmpty) {
+      return _controller!.stream;
+    } else {
+      return _controller!.stream.map((listings) => _filterListings(listings));
+    }
   }
 
   String _searchTerm = '';
@@ -83,98 +89,99 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     final currentUser = _auth.currentUser;
     print('Loading seller listings for user: ${currentUser?.uid}');
 
-    if (currentUser != null) {
-      String sellerId = currentUser.uid;
-
-      // Ensure we have a valid controller
-      if (_controller == null || _controller!.isClosed) {
-        _controller = StreamController<List<Listing>>.broadcast();
-      }
-
-      // First check if user is a store owner
-      _firestore
-          .collection('stores')
-          .doc(sellerId)
-          .get()
-          .then((storeDoc) async {
-            print('Store doc exists: ${storeDoc.exists}');
-            print('Store id: ${storeDoc.id}');
-
-            // Use the appropriate collection based on seller type
-            String sellerType = storeDoc.exists ? "store" : "user";
-            DocumentReference sellerRef = _firestore
-                .collection(sellerType == 'store' ? 'stores' : 'users')
-                .doc(sellerId);
-
-            print('Setting up listings stream with:');
-            print('- sellerType: $sellerType');
-            print('- sellerRef: ${sellerRef.path}');
-
-            // Cancel any existing subscription
-            _subscription?.cancel();
-
-            // Set up the stream with both filters
-            final firestoreStream = _listingService.watchAllListings(
-              sellerRef: sellerRef,
-              sellerType: sellerType,
-            ); // Subscribe to the Firestore stream and forward data to our controller
-            _subscription = firestoreStream.listen(
-              (listings) {
-                print('📦 Received ${listings.length} listings from Firestore');
-                listings.forEach((listing) {
-                  print(
-                    '- ${listing.id}: ${listing.title}, type: ${listing.sellerType}, ref: ${listing.sellerRef.path}',
-                  );
-                });
-
-                // Add data to our controller if it's still valid
-                if (_controller != null && !_controller!.isClosed) {
-                  print('✅ Adding listings to stream controller');
-                  _controller!.add(listings);
-                } else {
-                  print('❌ Controller is null or closed, cannot add listings');
-                }
-
-                // Clear refreshing state when we get new data
-                if (_isRefreshing) {
-                  print('🔄 Clearing refresh state');
-                  _isRefreshing = false;
-                  notifyListeners();
-                }
-              },
-              onError: (error) {
-                print('Error in listings stream: $error');
-                _errorMessage = error.toString();
-                _isRefreshing = false;
-                notifyListeners();
-
-                // Add error to controller if it's still valid
-                if (_controller != null && !_controller!.isClosed) {
-                  _controller!.addError(error);
-                }
-              },
-            );
-
-            notifyListeners();
-          })
-          .catchError((error) {
-            print('Error checking store doc: $error');
-            _errorMessage = "Error determining seller type: $error";
-            _isRefreshing = false;
-            notifyListeners();
-
-            // Add empty list on error if controller is still valid
-            if (_controller != null && !_controller!.isClosed) {
-              _controller!.add([]);
-            }
-          });
-    } else {
+    if (currentUser == null) {
       print('No authenticated user');
       _errorMessage = "User not authenticated.";
       _isRefreshing = false;
       notifyListeners();
+      return;
+    }
 
-      // Add empty list when no user if controller is still valid
+    // Ensure we have a valid controller
+    if (_controller == null || _controller!.isClosed) {
+      _controller = StreamController<List<Listing>>.broadcast();
+    }
+
+    String sellerId = currentUser.uid;
+
+    // Setup the stream asynchronously to avoid nested stream issues
+    _setupListingsStream(sellerId);
+  }
+
+  Future<void> _setupListingsStream(String sellerId) async {
+    try {
+      // First check if user is a store owner
+      final storeDoc =
+          await _firestore.collection('stores').doc(sellerId).get();
+
+      print('Store doc exists: ${storeDoc.exists}');
+      print('Store id: ${storeDoc.id}');
+
+      // Use the appropriate collection based on seller type
+      String sellerType = storeDoc.exists ? "store" : "user";
+      DocumentReference sellerRef = _firestore
+          .collection(sellerType == 'store' ? 'stores' : 'users')
+          .doc(sellerId);
+
+      print('Setting up listings stream with:');
+      print('- sellerType: $sellerType');
+      print('- sellerRef: ${sellerRef.path}');
+
+      // Cancel any existing subscription
+      _subscription?.cancel();
+
+      // Set up the stream with both filters
+      final firestoreStream = _listingService.watchAllListings(
+        sellerRef: sellerRef,
+        sellerType: sellerType,
+      );
+
+      // Subscribe to the Firestore stream and forward data to our controller
+      _subscription = firestoreStream.listen(
+        (listings) {
+          print('📦 Received ${listings.length} listings from Firestore');
+          listings.forEach((listing) {
+            print(
+              '- ${listing.id}: ${listing.title}, type: ${listing.sellerType}, ref: ${listing.sellerRef.path}',
+            );
+          });
+
+          // Add data to our controller if it's still valid
+          if (_controller != null && !_controller!.isClosed) {
+            print('✅ Adding listings to stream controller');
+            _controller!.add(listings);
+          } else {
+            print('❌ Controller is null or closed, cannot add listings');
+          }
+
+          // Clear refreshing state when we get new data
+          if (_isRefreshing) {
+            print('🔄 Clearing refresh state');
+            _isRefreshing = false;
+            notifyListeners();
+          }
+        },
+        onError: (error) {
+          print('Error in listings stream: $error');
+          _errorMessage = error.toString();
+          _isRefreshing = false;
+          notifyListeners();
+
+          // Add error to controller if it's still valid
+          if (_controller != null && !_controller!.isClosed) {
+            _controller!.addError(error);
+          }
+        },
+      );
+
+      notifyListeners();
+    } catch (error) {
+      print('Error setting up listings stream: $error');
+      _errorMessage = "Error determining seller type: $error";
+      _isRefreshing = false;
+      notifyListeners();
+
+      // Add empty list on error if controller is still valid
       if (_controller != null && !_controller!.isClosed) {
         _controller!.add([]);
       }

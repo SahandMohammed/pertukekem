@@ -75,18 +75,17 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
   }
 
   Future<void> refreshOrders() async {
-    print('🔄 Starting aggressive order refresh...');
-    // Clear cache and reload from server
+    print('🔄 Starting order refresh...');
+
     try {
-      // Try multiple cache clearing strategies
-      await _orderService.clearOrderCache();
-      await _orderService.forceFirestoreRestart();
+      // Force reload from server without cache
+      await loadOrders();
+      print('✅ Order refresh completed');
     } catch (e) {
-      // Cache clearing might fail, but we can still reload
-      print('⚠️ Cache clearing failed: $e');
+      print('❌ Order refresh failed: $e');
+      _errorMessage = 'Failed to refresh orders: $e';
+      notifyListeners();
     }
-    await loadOrders();
-    print('✅ Order refresh completed');
   }
 
   void setStatusFilter(String status) {

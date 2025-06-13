@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../model/order_model.dart' as order_model;
 import '../../dashboards/store/services/notification_service.dart';
 
@@ -9,10 +10,6 @@ class OrderService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final NotificationService _notificationService = NotificationService();
   late final CollectionReference<order_model.Order> _ordersRef;
-
-  // Cache the store ID to avoid repeated user document reads
-  String? _cachedStoreId;
-  String? _cachedUserId;
 
   OrderService() {
     _ordersRef = _firestore
@@ -118,95 +115,91 @@ class OrderService {
   Stream<List<order_model.Order>> getSellerOrders() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
-      throw Exception('User not authenticated');
+      return Stream.error(Exception('User not authenticated'));
     }
 
-    // Check if we need to refresh cache
-    if (_cachedUserId != currentUser.uid || _cachedStoreId == null) {
-      _cachedUserId = currentUser.uid;
-      _cachedStoreId = null; // Reset to trigger refresh
-    }
+    // Create a stream controller to manage the orders stream
+    late StreamController<List<order_model.Order>> controller;
+    StreamSubscription<QuerySnapshot<order_model.Order>>? ordersSubscription;
+    controller = StreamController<List<order_model.Order>>.broadcast(
+      onListen: () async {
+        try {
+          debugPrint('🔍 Getting store ID for orders stream...');
 
-    // If we have cached store ID, use it directly
-    if (_cachedStoreId != null) {
-      final storeRef = _firestore.collection('stores').doc(_cachedStoreId!);
-      return _ordersRef
-          .where('sellerRef', isEqualTo: storeRef)
-          .orderBy('createdAt', descending: true)
-          .snapshots(includeMetadataChanges: false)
-          .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
-    }
+          // Get store ID directly without stream chaining
+          final userDoc =
+              await _firestore.collection('users').doc(currentUser.uid).get();
 
-    // If no cached store ID, get it once and then create the stream
-    return _getUserStoreIdOnce().asStream().asyncExpand((storeId) {
-      if (storeId == null) {
-        throw Exception('Store ID not found');
-      }
+          if (!userDoc.exists) {
+            controller.addError(Exception('User document not found'));
+            return;
+          }
 
-      // Cache the store ID for future calls
-      _cachedStoreId = storeId;
+          final storeId = userDoc.data()?['storeId'];
+          if (storeId == null || storeId.isEmpty) {
+            controller.addError(Exception('Store ID not found'));
+            return;
+          }
 
-      final storeRef = _firestore.collection('stores').doc(storeId);
-      return _ordersRef
-          .where('sellerRef', isEqualTo: storeRef)
-          .orderBy('createdAt', descending: true)
-          .snapshots(includeMetadataChanges: false)
-          .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
-    });
+          debugPrint('✅ Store ID found: $storeId');
+
+          final storeRef = _firestore.collection('stores').doc(storeId);
+
+          // Subscribe to orders stream
+          ordersSubscription = _ordersRef
+              .where('sellerRef', isEqualTo: storeRef)
+              .orderBy('createdAt', descending: true)
+              .snapshots(includeMetadataChanges: false)
+              .listen(
+                (snapshot) {
+                  final orders =
+                      snapshot.docs.map((doc) => doc.data()).toList();
+                  debugPrint('📦 Loaded ${orders.length} orders from stream');
+                  controller.add(orders);
+                },
+                onError: (error) {
+                  debugPrint('❌ Orders stream error: $error');
+                  controller.addError(error);
+                },
+              );
+        } catch (e) {
+          debugPrint('❌ Error setting up orders stream: $e');
+          controller.addError(e);
+        }
+      },
+      onCancel: () {
+        debugPrint('🔄 Cancelling orders stream subscription');
+        ordersSubscription?.cancel();
+      },
+    );
+
+    return controller.stream;
   }
 
-  // Optimized method to get store ID only once
-  Future<String?> _getUserStoreIdOnce() async {
+  // Check if store exists
+  Future<bool> checkStoreExists() async {
     final currentUser = _auth.currentUser;
-    if (currentUser == null) return null;
+    if (currentUser == null) return false;
 
     try {
-      debugPrint('🔍 Fetching store ID for user: ${currentUser.uid}');
+      debugPrint('🔍 Checking if store exists for user: ${currentUser.uid}');
 
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .get(const GetOptions(source: Source.cache))
-          .timeout(
-            const Duration(seconds: 3),
-            onTimeout: () {
-              debugPrint('⏰ Cache timeout, fetching from server...');
-              return _firestore
-                  .collection('users')
-                  .doc(currentUser.uid)
-                  .get(const GetOptions(source: Source.server));
-            },
-          );
+      final userDoc =
+          await _firestore.collection('users').doc(currentUser.uid).get();
 
       if (!userDoc.exists) {
-        throw Exception('User document not found');
+        debugPrint('❌ User document not found');
+        return false;
       }
 
       final storeId = userDoc.data()?['storeId'];
       if (storeId == null || storeId.isEmpty) {
-        throw Exception('Store ID not found in user document');
+        debugPrint('❌ Store ID not found in user document');
+        return false;
       }
 
       debugPrint('✅ Store ID found: $storeId');
-      return storeId;
-    } catch (e) {
-      debugPrint('❌ Error getting user store ID: $e');
-      rethrow;
-    }
-  }
-
-  // Cache management methods
-  void clearCache() {
-    _cachedStoreId = null;
-    _cachedUserId = null;
-    debugPrint('🧹 OrderService cache cleared');
-  }
-
-  // Check if we need a store exists check - optimized version
-  Future<bool> checkStoreExists() async {
-    try {
-      final storeId = await _getUserStoreIdOnce();
-      return storeId != null;
+      return true;
     } catch (e) {
       debugPrint('❌ Error checking store existence: $e');
       return false;
@@ -382,31 +375,6 @@ class OrderService {
       });
     } catch (e) {
       throw Exception('Failed to update tracking number: $e');
-    }
-  }
-
-  // Clear Firestore cache to ensure fresh data
-  Future<void> clearOrderCache() async {
-    try {
-      print('🧹 Clearing Firestore cache...');
-      await _firestore.clearPersistence();
-      print('✅ Order cache cleared successfully');
-    } catch (e) {
-      print('⚠️ Error clearing cache: $e');
-      // Cache clearing might fail if app is actively using Firestore
-      // This is not critical, so we don't throw an error
-    }
-  }
-
-  // Force terminate and restart Firestore to ensure no cache
-  Future<void> forceFirestoreRestart() async {
-    try {
-      print('🔄 Forcing Firestore restart...');
-      await _firestore.terminate();
-      await _firestore.waitForPendingWrites();
-      print('✅ Firestore restarted successfully');
-    } catch (e) {
-      print('⚠️ Error restarting Firestore: $e');
     }
   }
 

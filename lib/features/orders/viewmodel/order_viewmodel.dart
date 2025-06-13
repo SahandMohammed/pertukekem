@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/interfaces/state_clearable.dart';
 import '../model/order_model.dart';
 import '../service/order_service.dart';
@@ -124,13 +125,6 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     _initOrdersStream();
   }
 
-  // Clear service cache and reinitialize - useful for performance
-  void clearCacheAndRefresh() {
-    debugPrint('🧹 Clearing cache and refreshing orders...');
-    _orderService.clearCache();
-    _initOrdersStream();
-  }
-
   Stream<List<Order>> getOrders() {
     if (_ordersStream == null) {
       _initOrdersStream();
@@ -149,11 +143,9 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
       _isRefreshing = true;
       _errorMessage = null;
       notifyListeners();
-
       debugPrint('🔄 Refreshing orders...');
 
-      // For a more efficient refresh, just reinitialize the stream
-      // The cache will be used if available, making it faster
+      // Reinitialize the stream to get fresh data
       _initOrdersStream();
 
       debugPrint('✅ Order refresh initiated');
@@ -396,9 +388,6 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     _ordersSubscription = null;
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = null;
-
-    // Clear service cache for better performance on next init
-    _orderService.clearCache();
 
     // Clear all state
     _ordersStream = null;
