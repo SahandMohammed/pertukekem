@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../authentication/viewmodels/auth_viewmodel.dart';
 import '../../../payments/screens/user_cards_screen.dart';
 import '../../../payments/screens/user_transaction_history_screen.dart';
-import '../../../profile/screens/manage_address_screen.dart';
-import '../../../profile/viewmodels/profile_viewmodel.dart';
+import '../../../profile/customer/screens/manage_address_screen.dart';
+import '../../../profile/store/viewmodels/store_profile_viewmodel.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});

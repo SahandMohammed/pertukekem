@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pertukekem/features/authentication/viewmodels/auth_viewmodel.dart';
 import 'package:pertukekem/features/listings/view/manage_listings_screen.dart';
-import 'package:pertukekem/features/orders/view/manage_orders_screen.dart';
+import 'package:pertukekem/features/orders/view/store_manage_orders_screen.dart';
 import '../widgets/dashboard_home_screen.dart';
 import '../services/notification_service.dart';
 import 'notifications_screen.dart';
-import 'profile_screen.dart';
+import '../../../profile/store/screens/store_user_tab.dart';
 
 class StoreDashboard extends StatefulWidget {
   const StoreDashboard({super.key});

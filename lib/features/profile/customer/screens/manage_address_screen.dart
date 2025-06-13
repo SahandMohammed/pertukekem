@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../authentication/viewmodels/auth_viewmodel.dart';
-import '../../authentication/models/user_model.dart';
+import '../../../authentication/viewmodels/auth_viewmodel.dart';
+import '../../../authentication/models/user_model.dart';
 import '../models/address_model.dart';
-import '../viewmodels/profile_viewmodel.dart';
+import '../../store/viewmodels/store_profile_viewmodel.dart';
 import 'add_edit_address_screen.dart';
 
 class ManageAddressScreen extends StatefulWidget {

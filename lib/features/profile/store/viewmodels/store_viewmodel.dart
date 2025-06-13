@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/interfaces/state_clearable.dart';
 import '../../../authentication/viewmodels/auth_viewmodel.dart';
-import '../models/store_model.dart';
+import '../../../dashboards/store/models/store_model.dart';
 
 class StoreViewModel extends ChangeNotifier implements StateClearable {
   final FirebaseAuth _auth = FirebaseAuth.instance;

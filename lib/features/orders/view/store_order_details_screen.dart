@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import '../model/order_model.dart';
-import '../viewmodel/order_viewmodel.dart';
+import '../viewmodel/store_order_viewmodel.dart';
 import '../../listings/model/listing_model.dart';
 
 class OrderDetailsScreen extends StatelessWidget {

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../model/order_model.dart';
-import '../viewmodel/order_viewmodel.dart';
-import 'order_details_screen.dart';
+import '../viewmodel/store_order_viewmodel.dart';
+import 'store_order_details_screen.dart';
 
 class ManageOrdersScreen extends StatefulWidget {
   const ManageOrdersScreen({super.key});

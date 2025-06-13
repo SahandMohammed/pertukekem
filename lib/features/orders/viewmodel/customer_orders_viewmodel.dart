@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/interfaces/state_clearable.dart';
-import '../../../orders/model/order_model.dart';
-import '../../../orders/service/order_service.dart';
+import '../../../core/interfaces/state_clearable.dart';
+import '../model/order_model.dart';
+import '../service/order_service.dart';
 import 'dart:async';
 
 class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {

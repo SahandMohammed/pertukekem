@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../../../orders/model/order_model.dart';
-import '../viewmodels/customer_orders_viewmodel.dart';
+import '../model/order_model.dart';
+import '../viewmodel/customer_orders_viewmodel.dart';
 
 class OrderDetailsScreen extends StatelessWidget {
   final Order order;

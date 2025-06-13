@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../viewmodels/customer_orders_viewmodel.dart';
-import '../../../orders/model/order_model.dart';
-import 'order_details_screen.dart';
+import '../viewmodel/customer_orders_viewmodel.dart';
+import '../model/order_model.dart';
+import 'customer_order_details_screen.dart';
 
 class CustomerOrdersTab extends StatelessWidget {
   const CustomerOrdersTab({super.key});

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import 'admin_dashboard.dart';
 import '../../dashboards/store/screens/store_dashboard.dart';
-import '../../dashboards/store/screens/store_setup_screen.dart';
+import '../../profile/store/screens/store_setup_screen.dart';
 import 'login_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
