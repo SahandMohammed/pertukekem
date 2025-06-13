@@ -14,10 +14,43 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
   Timer? _autoRefreshTimer;
   bool _autoRefreshEnabled = true;
 
+  // Filter state management
+  String _selectedFilter = 'all';
+  String get selectedFilter => _selectedFilter;
+
+  // UI state management
+  String? _successMessage;
+  String? get successMessage => _successMessage;
+
+  // Getters
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
   bool get autoRefreshEnabled => _autoRefreshEnabled;
+
+  List<String> get availableFilters => [
+    'all',
+    'pending',
+    'confirmed',
+    'shipped',
+    'delivered',
+    'cancelled',
+    'rejected',
+  ];
+
+  Map<String, dynamic> getFilterConfig(String key) {
+    final configs = {
+      'all': {'label': 'All', 'icon': Icons.all_inclusive},
+      'pending': {'label': 'Pending', 'icon': Icons.schedule_outlined},
+      'confirmed': {'label': 'Confirmed', 'icon': Icons.check_circle_outline},
+      'shipped': {'label': 'Shipped', 'icon': Icons.local_shipping_outlined},
+      'delivered': {'label': 'Delivered', 'icon': Icons.done_all},
+      'cancelled': {'label': 'Cancelled', 'icon': Icons.cancel_outlined},
+      'rejected': {'label': 'Rejected', 'icon': Icons.close_rounded},
+    };
+    return configs[key] ?? {'label': key, 'icon': Icons.help_outline};
+  }
+
   OrderViewModel() {
     _initOrdersStream();
     _startAutoRefresh();
@@ -26,7 +59,7 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     // Auto-refresh every 30 seconds to check for new orders
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (_autoRefreshEnabled && !_isRefreshing && _errorMessage == null) {
-        print('🔄 Auto-refreshing orders...');
+        debugPrint('🔄 Auto-refreshing orders...');
         refreshOrders();
       }
     });
@@ -34,36 +67,52 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
 
   void toggleAutoRefresh() {
     _autoRefreshEnabled = !_autoRefreshEnabled;
-    print('🔄 Auto-refresh ${_autoRefreshEnabled ? 'enabled' : 'disabled'}');
+    debugPrint(
+      '🔄 Auto-refresh ${_autoRefreshEnabled ? 'enabled' : 'disabled'}',
+    );
     notifyListeners();
   }
 
   void _initOrdersStream() {
     try {
+      _isLoading = true;
+      _errorMessage = null; // Clear any previous errors
+      notifyListeners();
+
+      debugPrint('🚀 Initializing orders stream...');
+
       _ordersStream = _orderService.getSellerOrders().handleError((error) {
+        debugPrint('❌ Orders stream error: $error');
         _errorMessage = error.toString();
+        _isLoading = false;
         notifyListeners();
       });
 
       // Cancel existing subscription if any
       _ordersSubscription?.cancel();
 
-      // Listen to the stream to detect errors early
+      // Listen to the stream to detect errors early and manage loading state
       _ordersSubscription = _ordersStream?.listen(
         (orders) {
-          // Stream is working, clear any previous errors
+          // Stream is working, clear any previous errors and loading state
           if (_errorMessage != null) {
             _errorMessage = null;
-            notifyListeners();
           }
+          _isLoading = false;
+          debugPrint('✅ Orders loaded: ${orders.length} orders');
+          notifyListeners();
         },
         onError: (error) {
+          debugPrint('❌ Orders subscription error: $error');
           _errorMessage = error.toString();
+          _isLoading = false;
           notifyListeners();
         },
       );
     } catch (e) {
+      debugPrint('❌ Error initializing orders stream: $e');
       _errorMessage = e.toString();
+      _isLoading = false;
       notifyListeners();
     }
   }
@@ -72,6 +121,13 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     _errorMessage = null;
     notifyListeners();
     // Reinitialize the stream when clearing errors
+    _initOrdersStream();
+  }
+
+  // Clear service cache and reinitialize - useful for performance
+  void clearCacheAndRefresh() {
+    debugPrint('🧹 Clearing cache and refreshing orders...');
+    _orderService.clearCache();
     _initOrdersStream();
   }
 
@@ -85,7 +141,7 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
   Future<void> refreshOrders() async {
     // Prevent multiple simultaneous refresh operations
     if (_isRefreshing) {
-      print('⏳ Refresh already in progress, skipping...');
+      debugPrint('⏳ Refresh already in progress, skipping...');
       return;
     }
 
@@ -94,28 +150,16 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
       _errorMessage = null;
       notifyListeners();
 
-      print('🔄 Refreshing orders from server...');
+      debugPrint('🔄 Refreshing orders...');
 
-      // Clear cache and reload from server
-      try {
-        await _orderService.clearOrderCache();
-        await _orderService.forceFirestoreRestart();
-
-        // Force get fresh data from server to verify it's working
-        final serverOrders = await _orderService.getSellerOrdersFromServer();
-        print('📦 Server returned ${serverOrders.length} orders');
-      } catch (e) {
-        // Cache clearing might fail, but we can still reload
-        print('⚠️ Cache clearing failed: $e');
-      }
-
-      // Reinitialize the stream to get fresh data
+      // For a more efficient refresh, just reinitialize the stream
+      // The cache will be used if available, making it faster
       _initOrdersStream();
 
-      print('✅ Order refresh completed');
+      debugPrint('✅ Order refresh initiated');
     } catch (e) {
       _errorMessage = e.toString();
-      print('❌ Error refreshing orders: $e');
+      debugPrint('❌ Error refreshing orders: $e');
     } finally {
       _isRefreshing = false;
       notifyListeners();
@@ -203,6 +247,136 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
+  // Filter management methods
+  void setFilter(String filter) {
+    if (availableFilters.contains(filter)) {
+      _selectedFilter = filter;
+      notifyListeners();
+    }
+  }
+
+  List<Order> filterOrders(List<Order> orders) {
+    if (_selectedFilter == 'all') return orders;
+    return orders
+        .where((order) => order.status.name == _selectedFilter)
+        .toList();
+  }
+
+  // UI state management methods
+  void clearMessages() {
+    _successMessage = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void showSuccess(String message) {
+    _successMessage = message;
+    notifyListeners();
+    // Auto-clear success message after 3 seconds
+    Timer(const Duration(seconds: 3), () {
+      if (_successMessage == message) {
+        _successMessage = null;
+        notifyListeners();
+      }
+    });
+  }
+
+  // Status update with feedback
+  Future<void> updateOrderStatusWithFeedback(
+    String orderId,
+    OrderStatus newStatus, {
+    String? customMessage,
+  }) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      await _orderService.updateOrderStatus(orderId, newStatus);
+
+      // Show success message
+      final statusText = getStatusText(newStatus);
+      showSuccess(customMessage ?? 'Order status updated to $statusText');
+
+      // Refresh the orders stream to get updated data
+      await refreshOrders();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Helper methods for UI
+  String getStatusText(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return 'Pending';
+      case OrderStatus.confirmed:
+        return 'Confirmed';
+      case OrderStatus.shipped:
+        return 'Shipped';
+      case OrderStatus.delivered:
+        return 'Delivered';
+      case OrderStatus.cancelled:
+        return 'Cancelled';
+      case OrderStatus.rejected:
+        return 'Rejected';
+    }
+  }
+
+  IconData getStatusIcon(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return Icons.schedule_outlined;
+      case OrderStatus.confirmed:
+        return Icons.check_circle_outline;
+      case OrderStatus.shipped:
+        return Icons.local_shipping_outlined;
+      case OrderStatus.delivered:
+        return Icons.done_all;
+      case OrderStatus.cancelled:
+        return Icons.cancel_outlined;
+      case OrderStatus.rejected:
+        return Icons.close_rounded;
+    }
+  }
+
+  Color getStatusColor(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return Colors.orange.shade600;
+      case OrderStatus.confirmed:
+        return Colors.blue.shade600;
+      case OrderStatus.shipped:
+        return Colors.indigo.shade600;
+      case OrderStatus.delivered:
+        return Colors.green.shade600;
+      case OrderStatus.cancelled:
+        return Colors.red.shade600;
+      case OrderStatus.rejected:
+        return Colors.red.shade700;
+    }
+  }
+
+  // Navigation helpers
+  void navigateToOrderDetails(BuildContext context, Order order) {
+    Navigator.of(context).pushNamed('/order-details', arguments: order);
+  }
+
+  bool get shouldShowEmptyState => _selectedFilter != 'all';
+
+  String get emptyStateTitle =>
+      _selectedFilter == 'all'
+          ? 'No Orders Yet'
+          : 'No ${_selectedFilter.toUpperCase()} Orders';
+
+  String get emptyStateMessage =>
+      _selectedFilter == 'all'
+          ? 'Orders from customers will appear here'
+          : 'No orders with $_selectedFilter status found';
+
   @override
   void dispose() {
     _ordersSubscription?.cancel();
@@ -223,11 +397,16 @@ class OrderViewModel extends ChangeNotifier implements StateClearable {
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = null;
 
+    // Clear service cache for better performance on next init
+    _orderService.clearCache();
+
     // Clear all state
     _ordersStream = null;
     _errorMessage = null;
+    _successMessage = null;
     _isLoading = false;
     _isRefreshing = false;
+    _selectedFilter = 'all';
 
     // Notify listeners of state change
     notifyListeners();

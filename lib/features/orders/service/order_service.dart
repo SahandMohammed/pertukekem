@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../model/order_model.dart' as order_model;
 import '../../dashboards/store/services/notification_service.dart';
 
@@ -8,6 +9,10 @@ class OrderService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final NotificationService _notificationService = NotificationService();
   late final CollectionReference<order_model.Order> _ordersRef;
+
+  // Cache the store ID to avoid repeated user document reads
+  String? _cachedStoreId;
+  String? _cachedUserId;
 
   OrderService() {
     _ordersRef = _firestore
@@ -116,33 +121,96 @@ class OrderService {
       throw Exception('User not authenticated');
     }
 
-    // First get the user's store ID
-    return _firestore
-        .collection('users')
-        .doc(currentUser.uid)
-        .snapshots()
-        .asyncExpand((userDoc) {
-          if (!userDoc.exists) {
-            throw Exception('User document not found');
-          }
+    // Check if we need to refresh cache
+    if (_cachedUserId != currentUser.uid || _cachedStoreId == null) {
+      _cachedUserId = currentUser.uid;
+      _cachedStoreId = null; // Reset to trigger refresh
+    }
 
-          final storeId = userDoc.data()?['storeId'];
+    // If we have cached store ID, use it directly
+    if (_cachedStoreId != null) {
+      final storeRef = _firestore.collection('stores').doc(_cachedStoreId!);
+      return _ordersRef
+          .where('sellerRef', isEqualTo: storeRef)
+          .orderBy('createdAt', descending: true)
+          .snapshots(includeMetadataChanges: false)
+          .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+    }
 
-          if (storeId == null || storeId.isEmpty) {
-            throw Exception('Store ID not found');
-          }
+    // If no cached store ID, get it once and then create the stream
+    return _getUserStoreIdOnce().asStream().asyncExpand((storeId) {
+      if (storeId == null) {
+        throw Exception('Store ID not found');
+      }
 
-          final storeRef = _firestore.collection('stores').doc(storeId);
-          return _ordersRef
-              .where('sellerRef', isEqualTo: storeRef)
-              .orderBy('createdAt', descending: true)
-              .snapshots(
-                includeMetadataChanges: false,
-              ) // Reduce cache dependence
-              .map(
-                (snapshot) => snapshot.docs.map((doc) => doc.data()).toList(),
-              );
-        });
+      // Cache the store ID for future calls
+      _cachedStoreId = storeId;
+
+      final storeRef = _firestore.collection('stores').doc(storeId);
+      return _ordersRef
+          .where('sellerRef', isEqualTo: storeRef)
+          .orderBy('createdAt', descending: true)
+          .snapshots(includeMetadataChanges: false)
+          .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+    });
+  }
+
+  // Optimized method to get store ID only once
+  Future<String?> _getUserStoreIdOnce() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return null;
+
+    try {
+      debugPrint('🔍 Fetching store ID for user: ${currentUser.uid}');
+
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .get(const GetOptions(source: Source.cache))
+          .timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              debugPrint('⏰ Cache timeout, fetching from server...');
+              return _firestore
+                  .collection('users')
+                  .doc(currentUser.uid)
+                  .get(const GetOptions(source: Source.server));
+            },
+          );
+
+      if (!userDoc.exists) {
+        throw Exception('User document not found');
+      }
+
+      final storeId = userDoc.data()?['storeId'];
+      if (storeId == null || storeId.isEmpty) {
+        throw Exception('Store ID not found in user document');
+      }
+
+      debugPrint('✅ Store ID found: $storeId');
+      return storeId;
+    } catch (e) {
+      debugPrint('❌ Error getting user store ID: $e');
+      rethrow;
+    }
+  }
+
+  // Cache management methods
+  void clearCache() {
+    _cachedStoreId = null;
+    _cachedUserId = null;
+    debugPrint('🧹 OrderService cache cleared');
+  }
+
+  // Check if we need a store exists check - optimized version
+  Future<bool> checkStoreExists() async {
+    try {
+      final storeId = await _getUserStoreIdOnce();
+      return storeId != null;
+    } catch (e) {
+      debugPrint('❌ Error checking store existence: $e');
+      return false;
+    }
   }
 
   // Get orders for a buyer (customer)
@@ -630,20 +698,6 @@ class OrderService {
     } catch (e) {
       print('❌ Error fixing order references: $e');
       throw e;
-    }
-  }
-
-  // Check if there's a store document for the user
-  Future<bool> checkStoreExists() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return false;
-
-    try {
-      final storeDoc =
-          await _firestore.collection('stores').doc(currentUser.uid).get();
-      return storeDoc.exists;
-    } catch (e) {
-      return false;
     }
   }
 }
