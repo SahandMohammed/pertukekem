@@ -10,7 +10,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   final ListingService _listingService = ListingService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   StreamController<List<Listing>>? _controller;
   StreamSubscription<List<Listing>>? _subscription;
   Stream<List<Listing>>? get sellerListingsStream {
@@ -18,8 +17,14 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
       '🔍 Getting sellerListingsStream - controller exists: ${_controller != null}, closed: ${_controller?.isClosed}',
     );
 
+    // Ensure we have a valid controller before returning the stream
     if (_controller == null || _controller!.isClosed) {
-      return const Stream<List<Listing>>.empty();
+      // Initialize controller if it doesn't exist
+      _controller = StreamController<List<Listing>>.broadcast();
+      // Re-initialize the stream if not already initialized
+      if (_subscription == null) {
+        _initSellerListingsStream();
+      }
     }
 
     if (_searchTerm.isEmpty) {
@@ -48,10 +53,12 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   // UI state for showing messages
   String? _successMessage;
   String? get successMessage => _successMessage;
-
   ManageListingsViewModel() {
     _controller = StreamController<List<Listing>>.broadcast();
-    _initSellerListingsStream();
+    // Delay initialization to avoid potential issues during provider setup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initSellerListingsStream();
+    });
   }
   @override
   void dispose() {
@@ -68,7 +75,9 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     _subscription?.cancel();
     _subscription = null;
 
-    await _controller?.close();
+    if (_controller != null && !_controller!.isClosed) {
+      await _controller!.close();
+    }
     _controller = null;
 
     // Clear all state
@@ -97,6 +106,12 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
       return;
     }
 
+    // Prevent multiple initializations
+    if (_subscription != null) {
+      print('Stream already initialized, skipping...');
+      return;
+    }
+
     // Ensure we have a valid controller
     if (_controller == null || _controller!.isClosed) {
       _controller = StreamController<List<Listing>>.broadcast();
@@ -110,6 +125,13 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
 
   Future<void> _setupListingsStream(String sellerId) async {
     try {
+      // Check if we already have a subscription (avoid duplicate setups)
+      if (_subscription != null) {
+        print('Stream already setup, cancelling existing subscription...');
+        _subscription!.cancel();
+        _subscription = null;
+      }
+
       // First check if user is a store owner
       final storeDoc =
           await _firestore.collection('stores').doc(sellerId).get();
@@ -126,9 +148,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
       print('Setting up listings stream with:');
       print('- sellerType: $sellerType');
       print('- sellerRef: ${sellerRef.path}');
-
-      // Cancel any existing subscription
-      _subscription?.cancel();
 
       // Set up the stream with both filters
       final firestoreStream = _listingService.watchAllListings(
