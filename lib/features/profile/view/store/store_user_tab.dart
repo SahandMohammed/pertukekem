@@ -473,6 +473,7 @@ class ProfileScreen extends StatelessWidget {
       ],
     );
   }
+
   void _showImageSourceDialog(
     BuildContext context,
     ProfileViewModel profileViewModel,
@@ -485,132 +486,142 @@ class ProfileScreen extends StatelessWidget {
       enableDrag: !profileViewModel.isRemovingImage,
       builder:
           (context) => Consumer<ProfileViewModel>(
-            builder: (context, profileViewModel, child) => Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-              ),
-              child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Handle bar
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+            builder:
+                (context, profileViewModel, child) => Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
                     ),
-                    const SizedBox(height: 24),
-
-                    Text(
-                      'Update Profile Picture',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Choose how you want to update your profile picture',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-
-                    Row(
+                  ),
+                  child: SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: _buildImageSourceOption(
-                            context,
-                            icon: Icons.camera_alt_rounded,
-                            label: 'Camera',
-                            subtitle: 'Take a new photo',
-                            onTap: () {
-                              Navigator.pop(context);
-                              _handleImageSelection(
-                                context,
-                                profileViewModel,
-                                ImageSource.camera,
-                              );
-                            },
+                        // Handle bar
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildImageSourceOption(
-                            context,
-                            icon: Icons.photo_library_rounded,
-                            label: 'Gallery',
-                            subtitle: 'Choose from photos',
-                            onTap: () {
-                              Navigator.pop(context);
-                              _handleImageSelection(
-                                context,
-                                profileViewModel,
-                                ImageSource.gallery,
-                              );
-                            },
-                          ),
+                        const SizedBox(height: 24),
+
+                        Text(
+                          'Update Profile Picture',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Choose how you want to update your profile picture',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildImageSourceOption(
+                                context,
+                                icon: Icons.camera_alt_rounded,
+                                label: 'Camera',
+                                subtitle: 'Take a new photo',
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _handleImageSelection(
+                                    context,
+                                    profileViewModel,
+                                    ImageSource.camera,
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildImageSourceOption(
+                                context,
+                                icon: Icons.photo_library_rounded,
+                                label: 'Gallery',
+                                subtitle: 'Choose from photos',
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _handleImageSelection(
+                                    context,
+                                    profileViewModel,
+                                    ImageSource.gallery,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (profileViewModel.storeProfilePicture != null) ...[
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  profileViewModel.isRemovingImage
+                                      ? null
+                                      : () {
+                                        debugPrint(
+                                          '🗑️ Remove Photo button clicked',
+                                        );
+                                        Navigator.pop(context);
+                                        _handleRemoveProfilePicture(
+                                          context,
+                                          profileViewModel,
+                                        );
+                                      },
+                              icon:
+                                  profileViewModel.isRemovingImage
+                                      ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : const Icon(Icons.delete_outline),
+                              label: Text(
+                                profileViewModel.isRemovingImage
+                                    ? 'Removing...'
+                                    : 'Remove Photo',
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.error,
+                                side: BorderSide(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
                       ],
                     ),
-                    if (profileViewModel.storeProfilePicture != null) ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,                        child: OutlinedButton.icon(
-                          onPressed:
-                              profileViewModel.isRemovingImage
-                                  ? null
-                                  : () {
-                                    debugPrint('🗑️ Remove Photo button clicked');
-                                    Navigator.pop(context);
-                                    _handleRemoveProfilePicture(
-                                      context,
-                                      profileViewModel,
-                                    );
-                                  },
-                          icon:
-                              profileViewModel.isRemovingImage
-                                  ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : const Icon(Icons.delete_outline),
-                          label: Text(
-                            profileViewModel.isRemovingImage
-                                ? 'Removing...'
-                                : 'Remove Photo',
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Theme.of(context).colorScheme.error,
-                            side: BorderSide(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
+                  ),
+                ),
           ),
-        ),
     );
   }
 
@@ -724,12 +735,13 @@ class ProfileScreen extends StatelessWidget {
       }
     }
   }
+
   Future<void> _handleRemoveProfilePicture(
     BuildContext context,
     ProfileViewModel profileViewModel,
   ) async {
     debugPrint('🗑️ Starting profile picture removal process...');
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -759,7 +771,9 @@ class ProfileScreen extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       debugPrint('🗑️ Calling removeProfilePicture method...');
       final errorMessage = await profileViewModel.removeProfilePicture();
-      debugPrint('🗑️ removeProfilePicture completed with error: $errorMessage');
+      debugPrint(
+        '🗑️ removeProfilePicture completed with error: $errorMessage',
+      );
 
       if (context.mounted) {
         if (errorMessage == null) {

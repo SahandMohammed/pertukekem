@@ -35,10 +35,9 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
   void setAuthViewModel(AuthViewModel authViewModel) {
     _authViewModel = authViewModel;
   }
-
   void _setLoading(bool loading) {
     _isLoading = loading;
-    Future.microtask(() => notifyListeners());
+    notifyListeners();
   }
 
   void _setUploadingImage(bool uploading) {
@@ -46,27 +45,26 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     if (!uploading) {
       _uploadProgress = 0.0;
     }
-    Future.microtask(() => notifyListeners());
+    notifyListeners();
   }
 
   void _setUploadProgress(double progress) {
     _uploadProgress = progress;
-    Future.microtask(() => notifyListeners());
+    notifyListeners();
   }
 
   void _setRemovingImage(bool removing) {
     _isRemovingImage = removing;
-    Future.microtask(() => notifyListeners());
+    notifyListeners();
   }
-
   void _setError(String? error) {
     _error = error;
-    Future.microtask(() => notifyListeners());
+    notifyListeners();
   }
 
   void clearError() {
     _error = null;
-    Future.microtask(() => notifyListeners());
+    notifyListeners();
   }
 
   // Load addresses from user document
@@ -433,10 +431,9 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       await _firestore.collection('stores').doc(userId).update({
         'profilePicture': downloadUrl,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Update local state
+      });      // Update local state
       _storeProfilePicture = downloadUrl;
+      notifyListeners(); // Notify UI immediately after state change
 
       // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
@@ -452,7 +449,8 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     } finally {
       _setLoading(false);
     }
-  }  // Remove profile picture
+  } // Remove profile picture
+
   Future<String?> removeProfilePicture() async {
     try {
       debugPrint('🗑️ [ViewModel] Starting removeProfilePicture...');
@@ -465,7 +463,9 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       }
 
       debugPrint('🗑️ [ViewModel] User ID: $userId');
-      debugPrint('🗑️ [ViewModel] Current profile picture: $_storeProfilePicture');
+      debugPrint(
+        '🗑️ [ViewModel] Current profile picture: $_storeProfilePicture',
+      );
 
       // Get current profile picture URL before deleting
       final currentProfilePicture = _storeProfilePicture;
@@ -484,16 +484,19 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
           debugPrint('🗑️ [ViewModel] Deleting file from Storage...');
           final ref = _storage.refFromURL(currentProfilePicture);
           await ref.delete();
-          debugPrint('🗑️ [ViewModel] Profile picture file deleted from Storage');
+          debugPrint(
+            '🗑️ [ViewModel] Profile picture file deleted from Storage',
+          );
         } catch (storageError) {
           // Log but don't fail the operation if file doesn't exist
-          debugPrint('🗑️ [ViewModel] Error deleting file from Storage: $storageError');
+          debugPrint(
+            '🗑️ [ViewModel] Error deleting file from Storage: $storageError',
+          );
         }
-      }
-
-      // Update local state
+      }      // Update local state
       debugPrint('🗑️ [ViewModel] Updating local state...');
       _storeProfilePicture = null;
+      notifyListeners(); // Notify UI immediately after state change
 
       // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
@@ -521,13 +524,11 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       if (userId == null) {
         debugPrint('User not authenticated');
         return;
-      }
-
-      final doc = await _firestore.collection('stores').doc(userId).get();
+      }      final doc = await _firestore.collection('stores').doc(userId).get();
       if (doc.exists) {
         final data = doc.data();
         _storeProfilePicture = data?['profilePicture'];
-        Future.microtask(() => notifyListeners());
+        notifyListeners();
         debugPrint('Store profile picture fetched: $_storeProfilePicture');
       }
     } catch (e) {
