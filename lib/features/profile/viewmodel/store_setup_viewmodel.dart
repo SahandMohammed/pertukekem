@@ -6,7 +6,7 @@ import '../../../core/interfaces/state_clearable.dart';
 import '../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../dashboards/model/store_model.dart';
 
-class StoreViewModel extends ChangeNotifier implements StateClearable {
+class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -195,7 +195,7 @@ class StoreViewModel extends ChangeNotifier implements StateClearable {
 
   @override
   Future<void> clearState() async {
-    debugPrint('🧹 Clearing StoreViewModel state...');
+    debugPrint('🧹 Clearing StoreSetupViewmodel state...');
 
     // Clear all state
     _store = null;
@@ -205,6 +205,6 @@ class StoreViewModel extends ChangeNotifier implements StateClearable {
     // Notify listeners
     notifyListeners();
 
-    debugPrint('✅ StoreViewModel state cleared');
+    debugPrint('✅ StoreSetupViewmodel state cleared');
   }
 }

@@ -14,7 +14,7 @@ import 'package:pertukekem/features/payments/viewmodel/payment_card_viewmodel.da
 import 'package:provider/provider.dart';
 import 'features/authentication/viewmodel/auth_viewmodel.dart';
 import 'features/authentication/view/auth_wrapper.dart';
-import 'features/profile/viewmodel/store_viewmodel.dart';
+import 'features/profile/viewmodel/store_setup_viewmodel.dart';
 import 'features/cart/services/cart_service.dart';
 import 'core/router/app_router.dart';
 
@@ -34,7 +34,7 @@ void main() async {
       providers: [
         // Create ViewModels
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
-        ChangeNotifierProvider(create: (_) => StoreViewModel()),
+        ChangeNotifierProvider(create: (_) => StoreSetupViewmodel()),
         ChangeNotifierProvider(create: (_) => ManageListingsViewModel()),
         ChangeNotifierProvider(create: (_) => OrderViewModel()),
         ChangeNotifierProvider(create: (_) => CustomerHomeViewModel()),
@@ -63,7 +63,7 @@ void _registerStateClearables(
   AuthViewModel authViewModel,
 ) {
   // Register all ViewModels that implement StateClearable
-  final storeViewModel = context.read<StoreViewModel>();
+  final storeViewModel = context.read<StoreSetupViewmodel>();
   final manageListingsViewModel = context.read<ManageListingsViewModel>();
   final orderViewModel = context.read<OrderViewModel>();
   final customerHomeViewModel = context.read<CustomerHomeViewModel>();

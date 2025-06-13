@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../authentication/viewmodel/auth_viewmodel.dart';
-import '../../viewmodel/store_viewmodel.dart';
+import '../../viewmodel/store_setup_viewmodel.dart';
 
 class StoreSetupScreen extends StatefulWidget {
   const StoreSetupScreen({super.key});
@@ -62,7 +62,7 @@ class _StoreSetupScreenState extends State<StoreSetupScreen> {
         if (authViewModel.user!.storeId != null &&
             authViewModel.user!.storeId!.isNotEmpty) {
           try {
-            await Provider.of<StoreViewModel>(
+            await Provider.of<StoreSetupViewmodel>(
               context,
               listen: false,
             ).fetchStoreById(authViewModel.user!.storeId!);
@@ -70,7 +70,7 @@ class _StoreSetupScreenState extends State<StoreSetupScreen> {
             // Add this check to ensure the widget is still mounted before navigating
             if (!mounted) return;
 
-            final storeViewModel = Provider.of<StoreViewModel>(
+            final storeViewModel = Provider.of<StoreSetupViewmodel>(
               context,
               listen: false,
             );
@@ -128,8 +128,8 @@ class _StoreSetupScreenState extends State<StoreSetupScreen> {
         });
       }
 
-      // Create the store using StoreViewModel
-      final storeViewModel = Provider.of<StoreViewModel>(
+      // Create the store using StoreSetupViewmodel
+      final storeViewModel = Provider.of<StoreSetupViewmodel>(
         context,
         listen: false,
       );
