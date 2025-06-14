@@ -694,10 +694,10 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     order_model.Order order,
     order_model.OrderStatus newStatus,
   ) async {
-    final success = await context.read<StoreOrderViewModel>().updateOrderStatus(
-      order.id,
-      newStatus,
-    );
+    if (!mounted) return;
+
+    final viewModel = context.read<StoreOrderViewModel>();
+    final success = await viewModel.updateOrderStatus(order.id, newStatus);
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
