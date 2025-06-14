@@ -36,7 +36,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => StoreSetupViewmodel()),
         ChangeNotifierProvider(create: (_) => ManageListingsViewModel()),
-        ChangeNotifierProvider(create: (_) => OrderViewModel()),
         ChangeNotifierProvider(create: (_) => CustomerHomeViewModel()),
         ChangeNotifierProvider(create: (_) => CustomerOrdersViewModel()),
         ChangeNotifierProvider(create: (_) => LibraryViewModel()),
@@ -65,7 +64,6 @@ void _registerStateClearables(
   // Register all ViewModels that implement StateClearable
   final storeViewModel = context.read<StoreSetupViewmodel>();
   final manageListingsViewModel = context.read<ManageListingsViewModel>();
-  final orderViewModel = context.read<OrderViewModel>();
   final customerHomeViewModel = context.read<CustomerHomeViewModel>();
   final customerOrdersViewModel = context.read<CustomerOrdersViewModel>();
   final libraryViewModel = context.read<LibraryViewModel>();
@@ -76,7 +74,6 @@ void _registerStateClearables(
   // Register clearState methods with AuthViewModel
   authViewModel.registerStateClearable(storeViewModel.clearState);
   authViewModel.registerStateClearable(manageListingsViewModel.clearState);
-  authViewModel.registerStateClearable(orderViewModel.clearState);
   authViewModel.registerStateClearable(customerHomeViewModel.clearState);
   authViewModel.registerStateClearable(customerOrdersViewModel.clearState);
   authViewModel.registerStateClearable(libraryViewModel.clearState);

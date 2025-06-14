@@ -715,18 +715,11 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
       );
 
       // Create OrderViewModel instance and run debug/fix
-      final orderViewModel = OrderViewModel();
-      await orderViewModel.debugAndFixOrderIssues();
 
       // Close loading dialog
       if (mounted) Navigator.of(context).pop();
 
       // Check if there was an error
-      final errorMessage = orderViewModel.errorMessage;
-      final title = errorMessage != null ? 'Debug Error' : 'Debug Complete';
-      final message =
-          errorMessage ??
-          'Debug and fix operation completed successfully. Check the console logs for details. The dashboard will now refresh to show any fixed orders.';
 
       // Show result dialog
       if (mounted) {
@@ -734,8 +727,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
           context: context,
           builder:
               (context) => AlertDialog(
-                title: Text(title),
-                content: SingleChildScrollView(child: Text(message)),
                 actions: [
                   TextButton(
                     onPressed: () {
