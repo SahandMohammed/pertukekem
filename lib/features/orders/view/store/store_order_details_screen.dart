@@ -118,7 +118,7 @@ class OrderDetailsScreen extends StatelessWidget {
         ),
       ),
       actions: [
-        Consumer<OrderViewModel>(
+        Consumer<StoreOrderViewModel>(
           builder: (context, viewModel, child) {
             return PopupMenuButton<OrderStatus>(
               icon: Container(
@@ -1051,7 +1051,7 @@ class OrderDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Consumer<OrderViewModel>(
+    return Consumer<StoreOrderViewModel>(
       builder: (context, viewModel, child) {
         return Column(
           children: [
@@ -1286,7 +1286,7 @@ class OrderDetailsScreen extends StatelessWidget {
   void _updateOrderStatus(
     BuildContext context,
     OrderStatus newStatus,
-    OrderViewModel viewModel,
+    StoreOrderViewModel viewModel,
   ) {
     viewModel.updateOrderStatus(order.id, newStatus);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1298,7 +1298,10 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  void _showShipOrderDialog(BuildContext context, OrderViewModel viewModel) {
+  void _showShipOrderDialog(
+    BuildContext context,
+    StoreOrderViewModel viewModel,
+  ) {
     final trackingController = TextEditingController();
 
     showDialog(

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../model/order_model.dart' as order_model;
 import '../../viewmodel/store_order_viewmodel.dart';
+import 'store_order_details_screen.dart';
 
 class ManageOrdersScreen extends StatefulWidget {
   const ManageOrdersScreen({super.key});
@@ -678,14 +679,8 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   }
 
   void _navigateToOrderDetails(BuildContext context, order_model.Order order) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Order details for #${order.id.substring(0, 8).toUpperCase()}',
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => OrderDetailsScreen(order: order)),
     );
   }
 
