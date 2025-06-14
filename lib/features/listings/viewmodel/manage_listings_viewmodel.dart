@@ -10,30 +10,10 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   final ListingService _listingService = ListingService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  StreamController<List<Listing>>? _controller;
-  StreamSubscription<List<Listing>>? _subscription;
-  Stream<List<Listing>>? get sellerListingsStream {
-    debugPrint(
-      '🔍 Getting sellerListingsStream - controller exists: ${_controller != null}, closed: ${_controller?.isClosed}',
-    );
 
-    // Ensure we have a valid controller before returning the stream
-    if (_controller == null || _controller!.isClosed) {
-      // Initialize controller if it doesn't exist
-      _controller = StreamController<List<Listing>>.broadcast();
-      // Re-initialize the stream if not already initialized
-      if (_subscription == null) {
-        _initSellerListingsStream();
-      }
-    }
-
-    if (_searchTerm.isEmpty) {
-      return _controller!.stream;
-    } else {
-      return _controller!.stream.map((listings) => _filterListings(listings));
-    }
-  }
-
+  // State management
+  List<Listing> _listings = [];
+  StreamSubscription<List<Listing>>? _listingsSubscription;
   String _searchTerm = '';
   String get searchTerm => _searchTerm;
 
@@ -53,17 +33,23 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   // UI state for showing messages
   String? _successMessage;
   String? get successMessage => _successMessage;
-  ManageListingsViewModel() {
-    _controller = StreamController<List<Listing>>.broadcast();
-    // Delay initialization to avoid potential issues during provider setup
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initSellerListingsStream();
-    });
+
+  // Getters
+  List<Listing> get listings => _listings;
+
+  // Get filtered listings based on search term
+  List<Listing> get filteredListings {
+    if (_searchTerm.isEmpty) {
+      return _listings;
+    }
+    return _filterListings(_listings);
   }
+
+  ManageListingsViewModel();
+
   @override
   void dispose() {
-    _subscription?.cancel();
-    _controller?.close();
+    _listingsSubscription?.cancel();
     super.dispose();
   }
 
@@ -71,16 +57,12 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing ManageListingsViewModel state...');
 
-    // Cancel subscription and close stream controller
-    _subscription?.cancel();
-    _subscription = null;
-
-    if (_controller != null && !_controller!.isClosed) {
-      await _controller!.close();
-    }
-    _controller = null;
+    // Cancel subscription
+    await _listingsSubscription?.cancel();
+    _listingsSubscription = null;
 
     // Clear all state
+    _listings = [];
     _searchTerm = '';
     _errorMessage = null;
     _isLoading = false;
@@ -94,116 +76,100 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     debugPrint('✅ ManageListingsViewModel state cleared');
   }
 
-  void _initSellerListingsStream() {
-    final currentUser = _auth.currentUser;
-    print('Loading seller listings for user: ${currentUser?.uid}');
-
-    if (currentUser == null) {
-      print('No authenticated user');
-      _errorMessage = "User not authenticated.";
-      _isRefreshing = false;
-      notifyListeners();
-      return;
-    }
-
-    // Prevent multiple initializations
-    if (_subscription != null) {
-      print('Stream already initialized, skipping...');
-      return;
-    }
-
-    // Ensure we have a valid controller
-    if (_controller == null || _controller!.isClosed) {
-      _controller = StreamController<List<Listing>>.broadcast();
-    }
-
-    String sellerId = currentUser.uid;
-
-    // Setup the stream asynchronously to avoid nested stream issues
-    _setupListingsStream(sellerId);
-  }
-
-  Future<void> _setupListingsStream(String sellerId) async {
+  /// Load all listings for the current seller
+  Future<void> loadListings() async {
     try {
-      // Check if we already have a subscription (avoid duplicate setups)
-      if (_subscription != null) {
-        print('Stream already setup, cancelling existing subscription...');
-        _subscription!.cancel();
-        _subscription = null;
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      // Cancel existing subscription
+      await _listingsSubscription?.cancel();
+
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        _errorMessage = "User not authenticated.";
+        _isLoading = false;
+        notifyListeners();
+        return;
       }
 
-      // First check if user is a store owner
+      print('Loading seller listings for user: ${currentUser.uid}');
+
+      // Determine seller type and create seller reference
       final storeDoc =
-          await _firestore.collection('stores').doc(sellerId).get();
+          await _firestore.collection('stores').doc(currentUser.uid).get();
 
-      print('Store doc exists: ${storeDoc.exists}');
-      print('Store id: ${storeDoc.id}');
-
-      // Use the appropriate collection based on seller type
       String sellerType = storeDoc.exists ? "store" : "user";
       DocumentReference sellerRef = _firestore
           .collection(sellerType == 'store' ? 'stores' : 'users')
-          .doc(sellerId);
+          .doc(currentUser.uid);
 
       print('Setting up listings stream with:');
       print('- sellerType: $sellerType');
       print('- sellerRef: ${sellerRef.path}');
 
-      // Set up the stream with both filters
-      final firestoreStream = _listingService.watchAllListings(
-        sellerRef: sellerRef,
-        sellerType: sellerType,
-      );
+      // Start listening to listings stream
+      _listingsSubscription = _listingService
+          .watchAllListings(sellerRef: sellerRef, sellerType: sellerType)
+          .listen(
+            (listings) {
+              print('📦 Received ${listings.length} listings from Firestore');
+              _listings = listings;
+              _isLoading = false;
+              _errorMessage = null;
 
-      // Subscribe to the Firestore stream and forward data to our controller
-      _subscription = firestoreStream.listen(
-        (listings) {
-          print('📦 Received ${listings.length} listings from Firestore');
-          listings.forEach((listing) {
-            print(
-              '- ${listing.id}: ${listing.title}, type: ${listing.sellerType}, ref: ${listing.sellerRef.path}',
-            );
-          });
+              // Clear refreshing state when we get new data
+              if (_isRefreshing) {
+                _isRefreshing = false;
+              }
 
-          // Add data to our controller if it's still valid
-          if (_controller != null && !_controller!.isClosed) {
-            print('✅ Adding listings to stream controller');
-            _controller!.add(listings);
-          } else {
-            print('❌ Controller is null or closed, cannot add listings');
-          }
-
-          // Clear refreshing state when we get new data
-          if (_isRefreshing) {
-            print('🔄 Clearing refresh state');
-            _isRefreshing = false;
-            notifyListeners();
-          }
-        },
-        onError: (error) {
-          print('Error in listings stream: $error');
-          _errorMessage = error.toString();
-          _isRefreshing = false;
-          notifyListeners();
-
-          // Add error to controller if it's still valid
-          if (_controller != null && !_controller!.isClosed) {
-            _controller!.addError(error);
-          }
-        },
-      );
-
-      notifyListeners();
-    } catch (error) {
-      print('Error setting up listings stream: $error');
-      _errorMessage = "Error determining seller type: $error";
+              notifyListeners();
+            },
+            onError: (error) {
+              print('Error in listings stream: $error');
+              _errorMessage = error.toString();
+              _isLoading = false;
+              _isRefreshing = false;
+              notifyListeners();
+            },
+          );
+    } catch (e) {
+      print('Error setting up listings stream: $e');
+      _errorMessage = "Error determining seller type: $e";
+      _isLoading = false;
       _isRefreshing = false;
       notifyListeners();
+    }
+  }
 
-      // Add empty list on error if controller is still valid
-      if (_controller != null && !_controller!.isClosed) {
-        _controller!.add([]);
-      }
+  /// Force refresh listings from server
+  Future<void> refreshListings() async {
+    // Prevent multiple simultaneous refresh operations
+    if (_isRefreshing) {
+      print('⏳ Refresh already in progress, skipping...');
+      return;
+    }
+
+    print('🔄 Refreshing listings...');
+    _isRefreshing = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Cancel existing subscription and reload
+      await _listingsSubscription?.cancel();
+      _listingsSubscription = null;
+
+      // Reload listings
+      await loadListings();
+
+      print('✅ Listings refresh completed');
+    } catch (e) {
+      print('❌ Error refreshing listings: $e');
+      _errorMessage = e.toString();
+      _isRefreshing = false;
+      notifyListeners();
     }
   }
 
@@ -286,39 +252,15 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     }
   } // Call this if you need to refresh the listings manually
 
-  Future<void> refreshListings() async {
-    // Prevent multiple simultaneous refresh operations
-    if (_isRefreshing) {
-      print('⏳ Refresh already in progress, skipping...');
-      return;
-    }
+  Future<void> oldRefreshListings() async {
+    // This method is deprecated - use refreshListings() instead
+    await refreshListings();
+  }
 
-    print('🔄 Refreshing listings...');
-    _isRefreshing = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      // Cancel existing subscription and recreate stream controller
-      _subscription?.cancel();
-      _subscription = null;
-
-      // Close and recreate the stream controller
-      if (_controller != null && !_controller!.isClosed) {
-        await _controller!.close();
-      }
-      _controller = StreamController<List<Listing>>.broadcast();
-
-      // Reinitialize the stream to get fresh data
-      _initSellerListingsStream();
-
-      print('✅ Listings refresh initiated');
-    } catch (e) {
-      print('❌ Error refreshing listings: $e');
-      _errorMessage = e.toString();
-      _isRefreshing = false;
-      notifyListeners();
-    }
+  // Public method to reinitialize the stream (useful after auth state changes)
+  void reinitializeStream() {
+    debugPrint('🔄 Manually reinitializing ManageListingsViewModel stream...');
+    loadListings();
   }
 
   // Navigation and UI state management methods
@@ -417,7 +359,7 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
   }
 
-  bool get hasListings => _controller?.stream != null;
+  bool get hasListings => _listings.isNotEmpty;
 
   bool get shouldShowEmptyState {
     return !_isLoading && !_isRefreshing && _errorMessage == null;
@@ -447,10 +389,12 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
 
   // Debug method to check controller state
   void debugControllerState() {
+    debugPrint('🔍 Listings count: ${_listings.length}');
     debugPrint(
-      '🔍 Controller state: exists=${_controller != null}, closed=${_controller?.isClosed}',
+      '🔍 Subscription state: exists=${_listingsSubscription != null}',
     );
-    debugPrint('🔍 Subscription state: exists=${_subscription != null}');
+    debugPrint('🔍 Current user: ${_auth.currentUser?.uid}');
     debugPrint('🔍 Current refresh state: $_isRefreshing');
+    debugPrint('🔍 Error message: $_errorMessage');
   }
 }

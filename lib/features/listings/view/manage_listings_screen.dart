@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../model/listing_model.dart';
 import '../viewmodel/manage_listings_viewmodel.dart';
@@ -15,11 +16,23 @@ class ManageListingsScreen extends StatefulWidget {
 class _ManageListingsScreenState extends State<ManageListingsScreen>
     with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Load listings when the screen is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = Provider.of<ManageListingsViewModel>(
+        context,
+        listen: false,
+      );
+      // Load listings if not already loaded
+      if (viewModel.listings.isEmpty && !viewModel.isLoading) {
+        debugPrint('🔧 ManageListingsScreen: Loading listings...');
+        viewModel.loadListings();
+      }
+    });
   }
 
   @override
@@ -122,29 +135,27 @@ class _ManageListingsScreenState extends State<ManageListingsScreen>
   ) {
     return RefreshIndicator(
       onRefresh: viewModel.refreshListings,
-      child: StreamBuilder<List<Listing>>(
-        stream: viewModel.sellerListingsStream,
-        builder: (context, snapshot) {
-          if (viewModel.shouldShowLoadingState ||
-              snapshot.connectionState == ConnectionState.waiting) {
+      child: Consumer<ManageListingsViewModel>(
+        builder: (context, vm, child) {
+          if (vm.shouldShowLoadingState) {
             return _buildLoadingState();
           }
 
-          if (snapshot.hasError) {
+          if (vm.shouldShowErrorState) {
             return _buildErrorState(
               context,
-              snapshot.error.toString(),
-              viewModel,
+              vm.errorMessage ?? 'Unknown error',
+              vm,
               colorScheme,
             );
           }
 
-          final listings = snapshot.data ?? [];
+          final listings = vm.filteredListings;
           if (listings.isEmpty) {
-            return _buildEmptyState(context, viewModel, colorScheme);
+            return _buildEmptyState(context, vm, colorScheme);
           }
 
-          return _buildListingsGrid(context, listings, viewModel, colorScheme);
+          return _buildListingsGrid(context, listings, vm, colorScheme);
         },
       ),
     );
