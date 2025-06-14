@@ -1,24 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-// Mock data classes for UI only
-class MockOrder {
-  final String id;
-  final DateTime createdAt;
-  final int quantity;
-  final double totalAmount;
-  final String? shippingAddress;
-  final String status;
-
-  MockOrder({
-    required this.id,
-    required this.createdAt,
-    required this.quantity,
-    required this.totalAmount,
-    this.shippingAddress,
-    required this.status,
-  });
-}
+import 'package:provider/provider.dart';
+import '../../model/order_model.dart' as order_model;
+import '../../viewmodel/store_order_viewmodel.dart';
 
 class ManageOrdersScreen extends StatefulWidget {
   const ManageOrdersScreen({super.key});
@@ -29,42 +13,24 @@ class ManageOrdersScreen extends StatefulWidget {
 
 class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   String selectedFilter = 'all';
-  bool autoRefreshEnabled = false;
-
-  // Mock data for UI
-  final List<MockOrder> mockOrders = [
-    MockOrder(
-      id: 'order123456',
-      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      quantity: 3,
-      totalAmount: 149.99,
-      shippingAddress: '123 Main St, New York, NY 10001',
-      status: 'pending',
-    ),
-    MockOrder(
-      id: 'order789012',
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      quantity: 1,
-      totalAmount: 49.99,
-      shippingAddress: '456 Oak Ave, Los Angeles, CA 90210',
-      status: 'shipped',
-    ),
-    MockOrder(
-      id: 'order345678',
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      quantity: 2,
-      totalAmount: 99.98,
-      shippingAddress: '789 Pine Rd, Chicago, IL 60601',
-      status: 'delivered',
-    ),
-  ];
 
   final Map<String, Map<String, dynamic>> filterConfigs = {
     'all': {'label': 'All Orders', 'icon': Icons.list},
     'pending': {'label': 'Pending', 'icon': Icons.pending},
+    'confirmed': {'label': 'Confirmed', 'icon': Icons.check_circle_outline},
     'shipped': {'label': 'Shipped', 'icon': Icons.local_shipping},
     'delivered': {'label': 'Delivered', 'icon': Icons.check_circle},
+    'cancelled': {'label': 'Cancelled', 'icon': Icons.cancel},
+    'rejected': {'label': 'Rejected', 'icon': Icons.block},
   };
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<StoreOrderViewModel>().loadOrders();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,39 +68,6 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () {
-              setState(() {
-                autoRefreshEnabled = !autoRefreshEnabled;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Auto-refresh ${autoRefreshEnabled ? 'enabled' : 'disabled'}',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color:
-                    autoRefreshEnabled
-                        ? colorScheme.primaryContainer
-                        : colorScheme.surfaceVariant,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                autoRefreshEnabled ? Icons.sync : Icons.sync_disabled,
-                size: 18,
-                color:
-                    autoRefreshEnabled
-                        ? colorScheme.onPrimaryContainer
-                        : colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
           IconButton(
             onPressed: () => _showFilterDialog(context),
             icon: Container(
@@ -210,6 +143,17 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
               setState(() {
                 selectedFilter = filterKey;
               });
+
+              // Update the viewmodel filter
+              final viewModel = context.read<StoreOrderViewModel>();
+              if (filterKey == 'all') {
+                viewModel.loadOrders();
+              } else {
+                final status = order_model.OrderStatus.values.firstWhere(
+                  (s) => s.name == filterKey,
+                );
+                viewModel.loadOrdersWithFilter(status);
+              }
             },
             backgroundColor: colorScheme.surface,
             selectedColor: colorScheme.primary,
@@ -229,33 +173,101 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
   }
 
   Widget _buildOrdersList(BuildContext context) {
-    final filteredOrders = _filterOrders();
+    return Consumer<StoreOrderViewModel>(
+      builder: (context, viewModel, child) {
+        if (viewModel.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    if (filteredOrders.isEmpty) {
-      return _buildEmptyState(context);
-    }
+        if (viewModel.error != null) {
+          return _buildErrorState(context, viewModel.error!);
+        }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        // Mock refresh
-        await Future.delayed(const Duration(seconds: 1));
+        final filteredOrders = _filterOrders(viewModel.orders);
+
+        if (filteredOrders.isEmpty) {
+          return _buildEmptyState(context);
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => viewModel.refreshOrders(),
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: filteredOrders.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              return _buildOrderCard(context, filteredOrders[index]);
+            },
+          ),
+        );
       },
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: filteredOrders.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          return _buildOrderCard(context, filteredOrders[index]);
-        },
-      ),
     );
   }
 
-  List<MockOrder> _filterOrders() {
+  List<order_model.Order> _filterOrders(List<order_model.Order> orders) {
     if (selectedFilter == 'all') {
-      return mockOrders;
+      return orders;
     }
-    return mockOrders.where((order) => order.status == selectedFilter).toList();
+    return orders
+        .where((order) => order.status.name == selectedFilter)
+        .toList();
+  }
+
+  Widget _buildErrorState(BuildContext context, String error) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: colorScheme.onErrorContainer,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Error Loading Orders',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error,
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () {
+                  context.read<StoreOrderViewModel>().clearError();
+                  context.read<StoreOrderViewModel>().loadOrders();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -362,11 +374,11 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, MockOrder order) {
+  Widget _buildOrderCard(BuildContext context, order_model.Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final statusColor = _getStatusColor(order.status);
+    final statusColor = _getStatusColor(order.status.name);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -401,7 +413,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        _getStatusIcon(order.status),
+                        _getStatusIcon(order.status.name),
                         color: statusColor,
                         size: 18,
                       ),
@@ -422,7 +434,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                           Text(
                             DateFormat(
                               'MMM dd, yyyy • hh:mm a',
-                            ).format(order.createdAt),
+                            ).format(order.createdAt.toDate()),
                             style: textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -440,7 +452,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        _getStatusText(order.status),
+                        _getStatusText(order.status.name),
                         style: textTheme.labelSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -554,7 +566,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                         color: colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: PopupMenuButton<String>(
+                      child: PopupMenuButton<order_model.OrderStatus>(
                         icon: Icon(
                           Icons.more_horiz,
                           color: colorScheme.onPrimaryContainer,
@@ -567,7 +579,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                         ),
                         itemBuilder: (context) {
                           final availableStatuses =
-                              ['pending', 'shipped', 'delivered']
+                              order_model.OrderStatus.values
                                   .where((status) => status != order.status)
                                   .toList();
 
@@ -581,13 +593,13 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                                         width: 8,
                                         height: 8,
                                         decoration: BoxDecoration(
-                                          color: _getStatusColor(status),
+                                          color: _getStatusColor(status.name),
                                           shape: BoxShape.circle,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
                                       Text(
-                                        'Mark as ${_getStatusText(status)}',
+                                        'Mark as ${_getStatusText(status.name)}',
                                         style: textTheme.bodyMedium,
                                       ),
                                     ],
@@ -612,10 +624,16 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     switch (status) {
       case 'pending':
         return Colors.orange;
-      case 'shipped':
+      case 'confirmed':
         return Colors.blue;
+      case 'shipped':
+        return Colors.purple;
       case 'delivered':
         return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      case 'rejected':
+        return Colors.red.shade700;
       default:
         return Colors.grey;
     }
@@ -625,10 +643,16 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     switch (status) {
       case 'pending':
         return Icons.pending;
+      case 'confirmed':
+        return Icons.check_circle_outline;
       case 'shipped':
         return Icons.local_shipping;
       case 'delivered':
         return Icons.check_circle;
+      case 'cancelled':
+        return Icons.cancel;
+      case 'rejected':
+        return Icons.block;
       default:
         return Icons.help;
     }
@@ -638,16 +662,22 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     switch (status) {
       case 'pending':
         return 'Pending';
+      case 'confirmed':
+        return 'Confirmed';
       case 'shipped':
         return 'Shipped';
       case 'delivered':
         return 'Delivered';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'rejected':
+        return 'Rejected';
       default:
         return 'Unknown';
     }
   }
 
-  void _navigateToOrderDetails(BuildContext context, MockOrder order) {
+  void _navigateToOrderDetails(BuildContext context, order_model.Order order) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -661,15 +691,37 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
 
   void _updateOrderStatus(
     BuildContext context,
-    MockOrder order,
-    String newStatus,
-  ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Order status updated to ${_getStatusText(newStatus)}'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+    order_model.Order order,
+    order_model.OrderStatus newStatus,
+  ) async {
+    final success = await context.read<StoreOrderViewModel>().updateOrderStatus(
+      order.id,
+      newStatus,
     );
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Order status updated to ${_getStatusText(newStatus.name)}',
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Failed to update order status'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 }

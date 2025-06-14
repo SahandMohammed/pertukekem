@@ -42,6 +42,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => CartService()),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
         ChangeNotifierProvider(create: (_) => PaymentCardViewModel()),
+        ChangeNotifierProvider(create: (_) => StoreOrderViewModel()),
       ],
       child: Consumer<AuthViewModel>(
         builder: (context, authViewModel, child) {
@@ -70,6 +71,7 @@ void _registerStateClearables(
   final cartService = context.read<CartService>();
   final profileViewModel = context.read<ProfileViewModel>();
   final paymentCardViewModel = context.read<PaymentCardViewModel>();
+  final storeOrderViewModel = context.read<StoreOrderViewModel>();
 
   // Register clearState methods with AuthViewModel
   authViewModel.registerStateClearable(storeViewModel.clearState);
@@ -80,6 +82,7 @@ void _registerStateClearables(
   authViewModel.registerStateClearable(cartService.clearState);
   authViewModel.registerStateClearable(profileViewModel.clearState);
   authViewModel.registerStateClearable(paymentCardViewModel.clearState);
+  authViewModel.registerStateClearable(storeOrderViewModel.clearState);
 }
 
 class MyApp extends StatelessWidget {

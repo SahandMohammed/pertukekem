@@ -112,70 +112,6 @@ class OrderService {
     }
   }
 
-  Stream<List<order_model.Order>> getSellerOrders() {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) {
-      return Stream.error(Exception('User not authenticated'));
-    }
-
-    // Create a stream controller to manage the orders stream
-    late StreamController<List<order_model.Order>> controller;
-    StreamSubscription<QuerySnapshot<order_model.Order>>? ordersSubscription;
-    controller = StreamController<List<order_model.Order>>.broadcast(
-      onListen: () async {
-        try {
-          debugPrint('🔍 Getting store ID for orders stream...');
-
-          // Get store ID directly without stream chaining
-          final userDoc =
-              await _firestore.collection('users').doc(currentUser.uid).get();
-
-          if (!userDoc.exists) {
-            controller.addError(Exception('User document not found'));
-            return;
-          }
-
-          final storeId = userDoc.data()?['storeId'];
-          if (storeId == null || storeId.isEmpty) {
-            controller.addError(Exception('Store ID not found'));
-            return;
-          }
-
-          debugPrint('✅ Store ID found: $storeId');
-
-          final storeRef = _firestore.collection('stores').doc(storeId);
-
-          // Subscribe to orders stream
-          ordersSubscription = _ordersRef
-              .where('sellerRef', isEqualTo: storeRef)
-              .orderBy('createdAt', descending: true)
-              .snapshots(includeMetadataChanges: false)
-              .listen(
-                (snapshot) {
-                  final orders =
-                      snapshot.docs.map((doc) => doc.data()).toList();
-                  debugPrint('📦 Loaded ${orders.length} orders from stream');
-                  controller.add(orders);
-                },
-                onError: (error) {
-                  debugPrint('❌ Orders stream error: $error');
-                  controller.addError(error);
-                },
-              );
-        } catch (e) {
-          debugPrint('❌ Error setting up orders stream: $e');
-          controller.addError(e);
-        }
-      },
-      onCancel: () {
-        debugPrint('🔄 Cancelling orders stream subscription');
-        ordersSubscription?.cancel();
-      },
-    );
-
-    return controller.stream;
-  }
-
   // Check if store exists
   Future<bool> checkStoreExists() async {
     final currentUser = _auth.currentUser;
@@ -377,36 +313,6 @@ class OrderService {
       throw Exception('Failed to update tracking number: $e');
     }
   }
-
-  // Force refresh seller orders from server (no cache)
-  Future<List<order_model.Order>> getSellerOrdersFromServer() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) {
-      throw Exception('User not authenticated');
-    }
-
-    // Get the user's store ID
-    final userDoc =
-        await _firestore.collection('users').doc(currentUser.uid).get();
-
-    if (!userDoc.exists) {
-      throw Exception('User document not found');
-    }
-
-    final storeId = userDoc.data()?['storeId'];
-
-    if (storeId == null || storeId.isEmpty) {
-      throw Exception('Store ID not found');
-    }
-
-    final storeRef = _firestore.collection('stores').doc(storeId);
-    final snapshot = await _ordersRef
-        .where('sellerRef', isEqualTo: storeRef)
-        .orderBy('createdAt', descending: true)
-        .get(GetOptions(source: Source.server)); // Force server data
-
-    return snapshot.docs.map((doc) => doc.data()).toList();
-  } // Check if orders collection exists and has data
 
   Future<void> checkOrdersCollectionStatus() async {
     try {
@@ -666,6 +572,105 @@ class OrderService {
     } catch (e) {
       print('❌ Error fixing order references: $e');
       throw e;
+    }
+  }
+
+  // Get orders for a seller (store)
+  Stream<List<order_model.Order>> getSellerOrders() {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    // Use store reference for consistent seller identification
+    final storeRef = _firestore.collection('stores').doc(currentUser.uid);
+
+    return _ordersRef
+        .where('sellerRef', isEqualTo: storeRef)
+        .orderBy('createdAt', descending: true)
+        .snapshots(includeMetadataChanges: false)
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  // Get orders for a seller with status filter
+  Stream<List<order_model.Order>> getSellerOrdersByStatus(
+    order_model.OrderStatus status,
+  ) {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final storeRef = _firestore.collection('stores').doc(currentUser.uid);
+
+    return _ordersRef
+        .where('sellerRef', isEqualTo: storeRef)
+        .where('status', isEqualTo: status.name)
+        .orderBy('createdAt', descending: true)
+        .snapshots(includeMetadataChanges: false)
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  // Force refresh seller orders from server (no cache)
+  Future<List<order_model.Order>> getSellerOrdersFromServer() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    print(
+      '🔍 Fetching seller orders from server for store: ${currentUser.uid}',
+    );
+    final storeRef = _firestore.collection('stores').doc(currentUser.uid);
+
+    final snapshot = await _ordersRef
+        .where('sellerRef', isEqualTo: storeRef)
+        .orderBy('createdAt', descending: true)
+        .get(GetOptions(source: Source.server)); // Force server data
+
+    final orders = snapshot.docs.map((doc) => doc.data()).toList();
+    print('🎯 Server returned ${orders.length} seller orders');
+    print(
+      '📊 Snapshot metadata - from cache: ${snapshot.metadata.isFromCache}',
+    );
+
+    return orders;
+  }
+
+  // Get seller orders count by status
+  Future<Map<String, int>> getSellerOrdersCountByStatus() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    final storeRef = _firestore.collection('stores').doc(currentUser.uid);
+    final counts = <String, int>{};
+
+    try {
+      // Get count for each status
+      for (final status in order_model.OrderStatus.values) {
+        final snapshot =
+            await _ordersRef
+                .where('sellerRef', isEqualTo: storeRef)
+                .where('status', isEqualTo: status.name)
+                .count()
+                .get();
+        counts[status.name] = snapshot.count ?? 0;
+      }
+
+      // Get total count
+      final totalSnapshot =
+          await _ordersRef
+              .where('sellerRef', isEqualTo: storeRef)
+              .count()
+              .get();
+      counts['all'] = totalSnapshot.count ?? 0;
+
+      return counts;
+    } catch (e) {
+      print('Error getting seller orders count: $e');
+      return {};
     }
   }
 }
