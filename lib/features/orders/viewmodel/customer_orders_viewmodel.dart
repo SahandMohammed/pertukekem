@@ -43,11 +43,15 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
   double get totalSpent => _orders
       .where((order) => order.status == OrderStatus.delivered)
       .fold(0.0, (sum, order) => sum + order.totalAmount);
+  bool _disposed = false;
 
   CustomerOrdersViewModel() {
     loadOrders();
   }
+
   Future<void> loadOrders() async {
+    if (_disposed) return;
+
     try {
       _setLoading(true);
       _errorMessage = null;
@@ -55,6 +59,8 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
       print('📱 Loading orders from server...');
       // Force fresh data from server to avoid cache issues
       _orders = await _orderService.getBuyerOrdersFromServer();
+
+      if (_disposed) return; // Check again after async operation
 
       print('📦 Loaded ${_orders.length} orders from server');
       if (_orders.isNotEmpty) {
@@ -64,47 +70,63 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
       }
 
       _orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      notifyListeners();
+
+      if (!_disposed) {
+        notifyListeners();
+      }
     } catch (e) {
-      _errorMessage = 'Failed to load orders: ${e.toString()}';
-      print('❌ Error loading customer orders: $e');
-      debugPrint('Error loading customer orders: $e');
+      if (!_disposed) {
+        _errorMessage = 'Failed to load orders: ${e.toString()}';
+        print('❌ Error loading customer orders: $e');
+        debugPrint('Error loading customer orders: $e');
+      }
     } finally {
-      _setLoading(false);
+      if (!_disposed) {
+        _setLoading(false);
+      }
     }
   }
 
   Future<void> refreshOrders() async {
+    if (_disposed) return;
+
     print('🔄 Starting order refresh...');
 
     try {
       // Force reload from server without cache
       await loadOrders();
-      print('✅ Order refresh completed');
+      if (!_disposed) {
+        print('✅ Order refresh completed');
+      }
     } catch (e) {
-      print('❌ Order refresh failed: $e');
-      _errorMessage = 'Failed to refresh orders: $e';
-      notifyListeners();
+      if (!_disposed) {
+        print('❌ Order refresh failed: $e');
+        _errorMessage = 'Failed to refresh orders: $e';
+        notifyListeners();
+      }
     }
   }
 
   void setStatusFilter(String status) {
+    if (_disposed) return;
     _selectedStatus = status;
     notifyListeners();
   }
 
   void clearError() {
+    if (_disposed) return;
     _errorMessage = null;
     notifyListeners();
   }
 
   void _setLoading(bool loading) {
+    if (_disposed) return;
     _isLoading = loading;
     notifyListeners();
   }
 
-  // Get order status color
-  Color getStatusColor(OrderStatus status) {
+  // Static utility methods for status handling (to avoid creating instances)
+  static Color getOrderStatusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
         return Colors.orange;
@@ -121,8 +143,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Get order status icon
-  IconData getStatusIcon(OrderStatus status) {
+  static IconData getOrderStatusIcon(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
         return Icons.schedule_rounded;
@@ -139,8 +160,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Get user-friendly status text
-  String getStatusText(OrderStatus status) {
+  static String getOrderStatusText(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
         return 'Pending';
@@ -157,8 +177,18 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
+  // Get order status color
+  Color getStatusColor(OrderStatus status) => getOrderStatusColor(status);
+
+  // Get order status icon
+  IconData getStatusIcon(OrderStatus status) => getOrderStatusIcon(status);
+
+  // Get user-friendly status text
+  String getStatusText(OrderStatus status) => getOrderStatusText(status);
   // Debug method to check if data is coming from cache or server
   Future<void> debugOrderSource() async {
+    if (_disposed) return;
+
     try {
       print('=== ORDER DEBUG INFO ===');
 
@@ -190,6 +220,8 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
 
   @override
   void dispose() {
+    debugPrint('🧹 Disposing CustomerOrdersViewModel...');
+    _disposed = true;
     _ordersSubscription?.cancel();
     super.dispose();
   }
@@ -208,8 +240,10 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     _errorMessage = null;
     _selectedStatus = 'all';
 
-    // Notify listeners
-    notifyListeners();
+    // Notify listeners only if not disposed
+    if (!_disposed) {
+      notifyListeners();
+    }
 
     debugPrint('✅ CustomerOrdersViewModel state cleared');
   }

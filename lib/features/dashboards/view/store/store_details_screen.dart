@@ -259,7 +259,9 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
               _buildInfoRow(
                 Icons.location_on_outlined,
                 'Address',
-                widget.store.address ?? 'Not provided',
+                widget.store.storeAddress != null
+                    ? widget.store.storeAddress!['street'] ?? 'Not provided'
+                    : 'Not provided',
               ),
               const SizedBox(height: 12), // Email and Phone from contact info
               ...widget.store.contactInfo.map((contact) {

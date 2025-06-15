@@ -10,15 +10,30 @@ class CustomerOrdersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => CustomerOrdersViewModel(),
-      child: const _CustomerOrdersContent(),
-    );
+    // Use the globally provided CustomerOrdersViewModel instead of creating a new one
+    return const _CustomerOrdersContent();
   }
 }
 
-class _CustomerOrdersContent extends StatelessWidget {
+class _CustomerOrdersContent extends StatefulWidget {
   const _CustomerOrdersContent();
+
+  @override
+  State<_CustomerOrdersContent> createState() => _CustomerOrdersContentState();
+}
+
+class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
+  @override
+  void initState() {
+    super.initState();
+    // Ensure orders are loaded when this tab is accessed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = context.read<CustomerOrdersViewModel>();
+      if (viewModel.orders.isEmpty && !viewModel.isLoading) {
+        viewModel.loadOrders();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

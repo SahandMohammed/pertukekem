@@ -48,7 +48,6 @@ class OrderDetailsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final viewModel = CustomerOrdersViewModel();
 
     return SliverAppBar(
       expandedHeight: kToolbarHeight, // Changed to fixed height
@@ -96,21 +95,23 @@ class OrderDetailsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: CustomerOrdersViewModel()
-                  .getStatusColor(order.status)
-                  .withOpacity(0.1),
+              color: CustomerOrdersViewModel.getOrderStatusColor(
+                order.status,
+              ).withOpacity(0.1),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: CustomerOrdersViewModel()
-                    .getStatusColor(order.status)
-                    .withOpacity(0.3),
+                color: CustomerOrdersViewModel.getOrderStatusColor(
+                  order.status,
+                ).withOpacity(0.3),
                 width: 1,
               ),
             ),
             child: Text(
-              CustomerOrdersViewModel().getStatusText(order.status),
+              CustomerOrdersViewModel.getOrderStatusText(order.status),
               style: textTheme.labelSmall?.copyWith(
-                color: CustomerOrdersViewModel().getStatusColor(order.status),
+                color: CustomerOrdersViewModel.getOrderStatusColor(
+                  order.status,
+                ),
                 fontWeight: FontWeight.w600,
                 fontSize: 9,
               ),
@@ -250,7 +251,6 @@ class OrderDetailsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final viewModel = CustomerOrdersViewModel();
 
     final statusSteps = [
       {
@@ -345,7 +345,9 @@ class OrderDetailsScreen extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color:
                                         isCompleted
-                                            ? viewModel.getStatusColor(status)
+                                            ? CustomerOrdersViewModel.getOrderStatusColor(
+                                              status,
+                                            )
                                             : colorScheme.outline.withOpacity(
                                               0.3,
                                             ),
@@ -354,7 +356,9 @@ class OrderDetailsScreen extends StatelessWidget {
                                   child: Icon(
                                     isCompleted
                                         ? (isCurrent
-                                            ? viewModel.getStatusIcon(status)
+                                            ? CustomerOrdersViewModel.getOrderStatusIcon(
+                                              status,
+                                            )
                                             : Icons.check)
                                         : Icons.radio_button_unchecked,
                                     color:
@@ -370,11 +374,10 @@ class OrderDetailsScreen extends StatelessWidget {
                                     height: 40,
                                     color:
                                         isCompleted
-                                            ? viewModel
-                                                .getStatusColor(
-                                                  status,
-                                                ) // Restored .getStatusColor(status)
-                                                .withOpacity(0.3)
+                                            ? CustomerOrdersViewModel.getOrderStatusColor(
+                                              status,
+                                            ) // Restored .getStatusColor(status)
+                                            .withOpacity(0.3)
                                             : colorScheme.outline.withOpacity(
                                               0.2,
                                             ),

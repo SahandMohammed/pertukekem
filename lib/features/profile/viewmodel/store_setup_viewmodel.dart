@@ -215,11 +215,9 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   Future<void> createStore({
     required String storeName,
     String? description,
-    String? address,
     Map<String, dynamic>? storeAddress,
     List<Map<String, String>>? contactInfo,
     String? logoUrl,
-    String? profilePicture,
     List<String>? categories,
     BuildContext? context,
   }) async {
@@ -232,23 +230,25 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     try {
       _isLoading = true;
       _error = null;
-      notifyListeners(); // Use the user's auth UID as the store document ID
+      notifyListeners();
+
+      // Use the user's auth UID as the store document ID
       final userId = _auth.currentUser!.uid;
       final storeRef = _firestore.collection('stores').doc(userId);
 
-      final now = DateTime.now(); // Create store model
+      final now = DateTime.now();
+
+      // Create store model
       final newStore = StoreModel(
         storeId: userId, // Use the user's auth UID as the store ID
         ownerId: userId,
         storeName: storeName,
         description: description,
-        address: address,
         storeAddress: storeAddress,
         contactInfo: contactInfo ?? [],
         createdAt: now,
         updatedAt: now,
         logoUrl: logoUrl,
-        profilePicture: profilePicture,
         categories: categories ?? [],
       );
 
@@ -337,8 +337,7 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
         updatedAt: now,
         logoUrl: logoUrl,
         bannerUrl: bannerUrl,
-        profilePicture:
-            logoUrl, // Same as logoUrl for backward compatibility        categories: _categories,
+        categories: _categories,
         businessHours: _businessHours, // Always save business hours
         socialMedia:
             _socialMedia.isEmpty
