@@ -1,4 +1,3 @@
-import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -15,17 +14,63 @@ class AddressForm extends StatefulWidget {
 }
 
 class _AddressFormState extends State<AddressForm> {
-  Country? selectedCountry;
+  String? selectedState;
+  List<String> availableCities = [];
+
+  // Iraq states and their cities
+  static const Map<String, List<String>> iraqStatesAndCities = {
+    'Baghdad': ['Baghdad', 'Abu Ghraib', 'Taji', 'Mahmudiyah', 'Tarmiyah'],
+    'Basra': ['Basra', 'Zubair', 'Umm Qasr', 'Qurna', 'Abu Al-Khaseeb'],
+    'Nineveh': ['Mosul', 'Sinjar', 'Tal Afar', 'Hamdaniya', 'Sheikhan'],
+    'Erbil': ['Erbil', 'Makhmur', 'Koya', 'Shaqlawa', 'Soran'],
+    'Najaf': ['Najaf', 'Kufa', 'Mishkhab', 'Manathera', 'Haidariya'],
+    'Karbala': ['Karbala', 'Ain Tamr', 'Hindiya', 'Hur', 'Razzaza'],
+    'Sulaymaniyah': ['Sulaymaniyah', 'Halabja', 'Rania', 'Dokan', 'Penjwin'],
+    'Anbar': ['Ramadi', 'Fallujah', 'Hit', 'Haditha', 'Ana', 'Qaim'],
+    'Diyala': ['Baqubah', 'Muqdadiyah', 'Khalis', 'Balad Ruz', 'Khanaqin'],
+    'Kirkuk': ['Kirkuk', 'Hawija', 'Dibis', 'Daquq', 'Multaqa'],
+    'Maysan': [
+      'Amarah',
+      'Majar al-Kabir',
+      'Qalat Salih',
+      'Ali al-Gharbi',
+      'Kahla',
+    ],
+    'Muthanna': ['Samawah', 'Rumaitha', 'Khidr', 'Salman', 'Warka'],
+    'Qadisiyyah': ['Diwaniyah', 'Afak', 'Hamza', 'Ghamas', 'Mahaweel'],
+    'Saladin': ['Tikrit', 'Samarra', 'Baiji', 'Tuz Khurmatu', 'Daur'],
+    'Dhi Qar': [
+      'Nasiriyah',
+      'Shatra',
+      'Suq al-Shuyukh',
+      'Rifai',
+      'Qalat Sukkar',
+    ],
+    'Wasit': ['Kut', 'Hay', 'Badra', 'Aziziyah', 'Numaniyah'],
+    'Babylon': ['Hillah', 'Mahawil', 'Hashimiyah', 'Musayyib', 'Qasim'],
+    'Dohuk': ['Dohuk', 'Zakho', 'Simele', 'Shekhan', 'Amedi'],
+  };
 
   @override
   void initState() {
     super.initState();
     if (widget.initialAddress != null) {
-      final countryCode = widget.initialAddress!['countryCode'] as String?;
-      if (countryCode != null) {
-        selectedCountry = Country.tryParse(countryCode);
+      selectedState = widget.initialAddress!['state'] as String?;
+      if (selectedState != null &&
+          iraqStatesAndCities.containsKey(selectedState)) {
+        availableCities = iraqStatesAndCities[selectedState]!;
       }
     }
+  }
+
+  void _onStateChanged(String? state) {
+    setState(() {
+      selectedState = state;
+      availableCities = state != null ? iraqStatesAndCities[state]! : [];
+    });
+
+    // Clear city selection when state changes
+    widget.formKey.currentState?.fields['city']?.didChange(null);
   }
 
   @override
@@ -52,95 +97,101 @@ class _AddressFormState extends State<AddressForm> {
           ),
           const SizedBox(height: 16),
 
-          // Country Selector
-          InkWell(
-            onTap: () {
-              showCountryPicker(
-                context: context,
-                showPhoneCode: false,
-                onSelect: (Country country) {
-                  setState(() {
-                    selectedCountry = country;
-                  });
-                  widget.formKey.currentState?.fields['countryCode']?.didChange(
-                    country.countryCode,
-                  );
-                },
-                countryListTheme: CountryListThemeData(
-                  backgroundColor: colorScheme.surface,
-                  textStyle: textTheme.bodyMedium,
-                  searchTextStyle: textTheme.bodyMedium,
+          // Country (Iraq - disabled field)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outline.withOpacity(0.5)),
+              borderRadius: BorderRadius.circular(12),
+              color: colorScheme.surfaceContainer.withOpacity(0.5),
+            ),
+            child: Row(
+              children: [
+                const Text('🇮🇶', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Iraq',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
                 ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                border: Border.all(color: colorScheme.outline),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  if (selectedCountry != null)
-                    Text(
-                      selectedCountry!.flagEmoji,
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      selectedCountry?.displayName ?? 'Select Country',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color:
-                            selectedCountry != null
-                                ? colorScheme.onSurface
-                                : colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ],
-              ),
+              ],
             ),
           ),
 
           // Hidden field to store country code
           FormBuilderTextField(
             name: 'countryCode',
+            initialValue: 'IQ',
             style: const TextStyle(height: 0, color: Colors.transparent),
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
             ),
-            validator: FormBuilderValidators.required(
-              errorText: 'Please select a country',
-            ),
           ),
 
           const SizedBox(height: 16),
 
-          // City
-          FormBuilderTextField(
-            name: 'city',
+          // State Dropdown
+          FormBuilderDropdown<String>(
+            name: 'state',
             decoration: InputDecoration(
-              labelText: 'City *',
-              hintText: 'Enter city name',
+              labelText: 'State/Province *',
+              hintText: 'Select state',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               filled: true,
               fillColor: colorScheme.surfaceContainer,
-            ),
-            validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(errorText: 'City is required'),
-              FormBuilderValidators.minLength(
-                2,
-                errorText: 'City name too short',
+              prefixIcon: Icon(
+                Icons.location_city,
+                color: colorScheme.onSurfaceVariant,
               ),
-            ]),
+            ),
+            items:
+                iraqStatesAndCities.keys
+                    .map(
+                      (state) =>
+                          DropdownMenuItem(value: state, child: Text(state)),
+                    )
+                    .toList(),
+            onChanged: _onStateChanged,
+            validator: FormBuilderValidators.required(
+              errorText: 'Please select a state',
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // City Dropdown
+          FormBuilderDropdown<String>(
+            name: 'city',
+            decoration: InputDecoration(
+              labelText: 'City *',
+              hintText:
+                  selectedState != null ? 'Select city' : 'Select state first',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: colorScheme.surfaceContainer,
+              prefixIcon: Icon(
+                Icons.location_on,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            items:
+                availableCities
+                    .map(
+                      (city) =>
+                          DropdownMenuItem(value: city, child: Text(city)),
+                    )
+                    .toList(),
+            validator: FormBuilderValidators.required(
+              errorText: 'Please select a city',
+            ),
           ),
 
           const SizedBox(height: 16),
@@ -156,6 +207,7 @@ class _AddressFormState extends State<AddressForm> {
               ),
               filled: true,
               fillColor: colorScheme.surfaceContainer,
+              prefixIcon: Icon(Icons.home, color: colorScheme.onSurfaceVariant),
             ),
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(
@@ -181,6 +233,10 @@ class _AddressFormState extends State<AddressForm> {
               ),
               filled: true,
               fillColor: colorScheme.surfaceContainer,
+              prefixIcon: Icon(
+                Icons.markunread_mailbox,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
 
@@ -198,6 +254,10 @@ class _AddressFormState extends State<AddressForm> {
               ),
               filled: true,
               fillColor: colorScheme.surfaceContainer,
+              prefixIcon: Icon(
+                Icons.info_outline,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],

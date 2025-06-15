@@ -333,6 +333,7 @@ class _StoreSetupStep3ContactScreenState
 
   bool _isFormValid(StoreSetupViewmodel viewModel) {
     return viewModel.storeAddress.isNotEmpty &&
+        viewModel.storeAddress['state'] != null &&
         viewModel.storeAddress['city'] != null &&
         viewModel.storeAddress['street'] != null &&
         viewModel.contactInfo.isNotEmpty;
