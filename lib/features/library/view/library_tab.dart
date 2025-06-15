@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodel/library_viewmodel.dart';
 import '../model/library_model.dart';
+import '../notifiers/library_notifier.dart';
 import 'book_details_screen.dart';
 
 class LibraryTab extends StatefulWidget {
@@ -13,6 +14,8 @@ class LibraryTab extends StatefulWidget {
 
 class _LibraryTabState extends State<LibraryTab> {
   final TextEditingController _searchController = TextEditingController();
+  final LibraryNotifier _libraryNotifier = LibraryNotifier();
+
   @override
   void initState() {
     super.initState();
@@ -22,12 +25,23 @@ class _LibraryTabState extends State<LibraryTab> {
       final viewModel = context.read<LibraryViewModel>();
       viewModel.refreshAll();
     });
+
+    // Listen to library changes for immediate UI updates
+    _libraryNotifier.addListener(_onLibraryChanged);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _libraryNotifier.removeListener(_onLibraryChanged);
     super.dispose();
+  }
+
+  void _onLibraryChanged() {
+    // Trigger a rebuild to show updated data immediately
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override

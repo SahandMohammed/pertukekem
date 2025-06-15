@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../model/library_model.dart';
 import '../../listings/model/listing_model.dart';
+import '../notifiers/library_notifier.dart';
 
 class LibraryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -32,13 +33,15 @@ class LibraryService {
       totalPages: listing.pageCount,
       downloadUrl: listing.ebookUrl,
     );
-
     await _firestore
         .collection('users')
         .doc(userId)
         .collection('library')
         .doc(libraryBook.id)
         .set(libraryBook.toMap());
+
+    // Notify listeners that a book has been added to the library
+    LibraryNotifier().notifyBookAddedToLibrary();
   }
 
   // Get user's library books

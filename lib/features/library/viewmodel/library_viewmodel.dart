@@ -2,9 +2,31 @@ import 'package:flutter/foundation.dart';
 import '../../../core/interfaces/state_clearable.dart';
 import '../model/library_model.dart';
 import '../service/library_service.dart';
+import '../notifiers/library_notifier.dart';
 
 class LibraryViewModel extends ChangeNotifier implements StateClearable {
   final LibraryService _libraryService = LibraryService();
+  final LibraryNotifier _libraryNotifier = LibraryNotifier();
+
+  // Constructor to set up listeners
+  LibraryViewModel() {
+    _libraryNotifier.addListener(_onLibraryChanged);
+  }
+
+  @override
+  void dispose() {
+    _libraryNotifier.removeListener(_onLibraryChanged);
+    super.dispose();
+  }
+
+  // Handle library change notifications
+  void _onLibraryChanged() {
+    if (kDebugMode) {
+      print('LibraryViewModel: Library changed, refreshing data');
+    }
+    // Refresh all library data when notified of changes
+    refreshAll();
+  }
 
   // State variables
   List<LibraryBook> _allBooks = [];
