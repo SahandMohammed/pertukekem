@@ -158,11 +158,11 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     switch (step) {
       case 0: // Basics
         return _storeName.isNotEmpty && _storeName.length >= 3;
-      case 1: // Contact & Address
+      case 1: // Address
         return _storeAddress.isNotEmpty &&
+            _storeAddress['state'] != null &&
             _storeAddress['city'] != null &&
-            _storeAddress['street'] != null &&
-            _contactInfo.isNotEmpty;
+            _storeAddress['street'] != null;
       case 2: // Branding & Hours
         return true; // Optional fields
       default:

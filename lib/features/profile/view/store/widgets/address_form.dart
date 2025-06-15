@@ -98,48 +98,31 @@ class _AddressFormState extends State<AddressForm> {
           const SizedBox(height: 16),
 
           // Country (Iraq - disabled field)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              border: Border.all(color: colorScheme.outline.withOpacity(0.5)),
-              borderRadius: BorderRadius.circular(12),
-              color: colorScheme.surfaceContainer.withOpacity(0.5),
-            ),
-            child: Row(
-              children: [
-                const Text('🇮🇶', style: TextStyle(fontSize: 20)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Iraq',
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Hidden field to store country code
           FormBuilderTextField(
-            name: 'countryCode',
-            initialValue: 'IQ',
-            style: const TextStyle(height: 0, color: Colors.transparent),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+            name: 'country',
+            initialValue: 'Iraq',
+            enabled: false,
+            decoration: InputDecoration(
+              labelText: 'Country',
+              hintText: 'Iraq',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: colorScheme.surfaceContainer.withOpacity(0.5),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text('🇮🇶', style: TextStyle(fontSize: 20)),
+              ),
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // State Dropdown
+          const SizedBox(height: 16), // State Dropdown
           FormBuilderDropdown<String>(
             name: 'state',
             decoration: InputDecoration(
               labelText: 'State/Province *',
-              hintText: 'Select state',
+              hintText: 'Choose your state or province',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -163,15 +146,15 @@ class _AddressFormState extends State<AddressForm> {
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // City Dropdown
+          const SizedBox(height: 16), // City Dropdown
           FormBuilderDropdown<String>(
             name: 'city',
             decoration: InputDecoration(
               labelText: 'City *',
               hintText:
-                  selectedState != null ? 'Select city' : 'Select state first',
+                  selectedState != null
+                      ? 'Choose your city'
+                      : 'Select state first',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -194,14 +177,12 @@ class _AddressFormState extends State<AddressForm> {
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // Street Address
+          const SizedBox(height: 16), // Street Address
           FormBuilderTextField(
             name: 'street',
             decoration: InputDecoration(
               labelText: 'Street Address *',
-              hintText: 'Enter street address',
+              hintText: 'Enter your full street address',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -220,14 +201,12 @@ class _AddressFormState extends State<AddressForm> {
             ]),
           ),
 
-          const SizedBox(height: 16),
-
-          // Postal Code (Optional)
+          const SizedBox(height: 16), // Postal Code (Optional)
           FormBuilderTextField(
             name: 'postalCode',
             decoration: InputDecoration(
               labelText: 'Postal Code',
-              hintText: 'Enter postal code (optional)',
+              hintText: 'Enter postal or ZIP code (optional)',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -248,7 +227,7 @@ class _AddressFormState extends State<AddressForm> {
             maxLines: 2,
             decoration: InputDecoration(
               labelText: 'Additional Info',
-              hintText: 'Apartment, suite, floor, etc. (optional)',
+              hintText: 'Building name, floor, landmark, etc. (optional)',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

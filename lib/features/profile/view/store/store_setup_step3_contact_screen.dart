@@ -3,10 +3,9 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/store_setup_viewmodel.dart';
 import 'widgets/address_form.dart';
-import 'widgets/contact_info_list.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Step 3: Contact & Address
+/// Store Setup Step 3: Address
 class StoreSetupStep3ContactScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
@@ -58,7 +57,7 @@ class _StoreSetupStep3ContactScreenState
         return Scaffold(
           backgroundColor: colorScheme.surface,
           appBar: AppBar(
-            title: const Text('Contact & Address'),
+            title: const Text('Store Address'),
             centerTitle: true,
             backgroundColor: colorScheme.surface,
             elevation: 0,
@@ -160,14 +159,14 @@ class _StoreSetupStep3ContactScreenState
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Store Location & Contact',
+                                    'Store Address Information',
                                     style: textTheme.headlineSmall?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Help customers find and reach your store',
+                                    'Help customers find your store location',
                                     style: textTheme.bodyMedium?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -175,64 +174,9 @@ class _StoreSetupStep3ContactScreenState
                                   const SizedBox(height: 24),
 
                                   // Address Section
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.location_on,
-                                        color: colorScheme.primary,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Store Address *',
-                                        style: textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Enter your store\'s physical address',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
                                   AddressForm(
                                     formKey: _addressFormKey,
                                     initialAddress: viewModel.storeAddress,
-                                  ),
-                                  const SizedBox(height: 32),
-
-                                  // Contact Information Section
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.contact_phone,
-                                        color: colorScheme.primary,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Contact Information *',
-                                        style: textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Add ways for customers to contact you',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ContactInfoList(
-                                    initialContacts: viewModel.contactInfo,
-                                    onContactsChanged: viewModel.setContactInfo,
                                   ),
                                 ],
                               ),
@@ -335,8 +279,7 @@ class _StoreSetupStep3ContactScreenState
     return viewModel.storeAddress.isNotEmpty &&
         viewModel.storeAddress['state'] != null &&
         viewModel.storeAddress['city'] != null &&
-        viewModel.storeAddress['street'] != null &&
-        viewModel.contactInfo.isNotEmpty;
+        viewModel.storeAddress['street'] != null;
   }
 
   void _onNext() {
