@@ -481,18 +481,42 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
       );
 
       // Use createStoreFromForm which handles image uploads and all form data
-      await viewModel.createStoreFromForm(context: context);
-
-      if (mounted && viewModel.error == null) {
-        // Navigate back to profile or show success
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Store created successfully!'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+      await viewModel.createStoreFromForm(context: context);      if (mounted && viewModel.error == null) {
+        // Navigate to store dashboard by resetting navigation stack
+        // This allows AuthWrapper to re-evaluate and show StoreDashboard
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
         );
+        
+        // Show success message after a brief delay to ensure navigation completes
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Store created successfully! Welcome to your dashboard.',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+                margin: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+        });
       } else if (mounted && viewModel.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
