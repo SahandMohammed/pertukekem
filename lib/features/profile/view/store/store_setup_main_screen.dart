@@ -50,6 +50,7 @@ class _StoreSetupScreenState extends State<StoreSetupScreen> {
   }
 
   void _navigateToStep(int step, StoreSetupViewmodel viewModel) {
+    viewModel.setCurrentStep(step);
     _pageController.animateToPage(
       step,
       duration: const Duration(milliseconds: 300),

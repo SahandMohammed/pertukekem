@@ -1,31 +1,199 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../core/interfaces/state_clearable.dart';
 import '../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../dashboards/model/store_model.dart';
+import '../view/store/store_setup_service.dart';
 
 class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final StoreSetupService _storeService = StoreSetupService();
 
   bool _isLoading = false;
   StoreModel? _store;
   String? _error;
+  int _currentStep = 0;
+
+  // Form data
+  String _storeName = '';
+  String _description = '';
+  List<String> _categories = [];
+  Map<String, dynamic> _storeAddress = {};
+  List<Map<String, String>> _contactInfo = [];
+  File? _logoFile;
+  File? _bannerFile;
+  Map<String, dynamic> _businessHours = {};
+  Map<String, String> _socialMedia = {};
 
   // Getters
   bool get isLoading => _isLoading;
   StoreModel? get store => _store;
   String? get error => _error;
+  int get currentStep => _currentStep;
+  String get storeName => _storeName;
+  String get description => _description;
+  List<String> get categories => _categories;
+  Map<String, dynamic> get storeAddress => _storeAddress;
+  List<Map<String, String>> get contactInfo => _contactInfo;
+  File? get logoFile => _logoFile;
+  File? get bannerFile => _bannerFile;
+  Map<String, dynamic> get businessHours => _businessHours;
+  Map<String, String> get socialMedia => _socialMedia;
+  // Safe notification method to avoid setState during build
+  void _safeNotifyListeners() {
+    // Check if we're currently in a build context
+    try {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    } catch (e) {
+      // If addPostFrameCallback fails, just notify immediately
+      notifyListeners();
+    }
+  }
 
-  // Create a new store in Firestore
+  // Setters with safe notifications
+  void setCurrentStep(int step) {
+    if (_currentStep != step) {
+      _currentStep = step;
+      notifyListeners();
+    }
+  }
+
+  void setStoreName(String name) {
+    if (_storeName != name) {
+      _storeName = name;
+      _safeNotifyListeners();
+    }
+  }
+
+  void setDescription(String desc) {
+    if (_description != desc) {
+      _description = desc;
+      _safeNotifyListeners();
+    }
+  }
+
+  void setCategories(List<String> cats) {
+    _categories = cats;
+    _safeNotifyListeners();
+  }
+
+  void setStoreAddress(Map<String, dynamic> address) {
+    _storeAddress = address;
+    _safeNotifyListeners();
+  }
+
+  void setContactInfo(List<Map<String, String>> contacts) {
+    _contactInfo = contacts;
+    _safeNotifyListeners();
+  }
+
+  void setBusinessHours(Map<String, dynamic> hours) {
+    _businessHours = hours;
+    _safeNotifyListeners();
+  }
+
+  void setSocialMedia(Map<String, String> social) {
+    _socialMedia = social;
+    _safeNotifyListeners();
+  }
+
+  void setLogoFile(File? file) {
+    _logoFile = file;
+    _safeNotifyListeners();
+  }
+
+  void setBannerFile(File? file) {
+    _bannerFile = file;
+    _safeNotifyListeners();
+  }
+
+  // Image selection methods
+  Future<void> selectLogo() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (pickedFile != null) {
+        _logoFile = File(pickedFile.path);
+        _safeNotifyListeners();
+      }
+    } catch (e) {
+      _error = 'Failed to select logo: $e';
+      _safeNotifyListeners();
+    }
+  }
+
+  Future<void> selectBanner() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (pickedFile != null) {
+        _bannerFile = File(pickedFile.path);
+        _safeNotifyListeners();
+      }
+    } catch (e) {
+      _error = 'Failed to select banner: $e';
+      _safeNotifyListeners();
+    }
+  }
+
+  // Validation methods
+  bool isStepValid(int step) {
+    switch (step) {
+      case 0: // Basics
+        return _storeName.isNotEmpty && _storeName.length >= 3;
+      case 1: // Contact & Address
+        return _storeAddress.isNotEmpty &&
+            _storeAddress['city'] != null &&
+            _storeAddress['street'] != null &&
+            _contactInfo.isNotEmpty;
+      case 2: // Branding & Hours
+        return true; // Optional fields
+      default:
+        return false;
+    }
+  }
+
+  bool get canCreateStore {
+    return isStepValid(0) && isStepValid(1);
+  }
+
+  // Check if store name is available
+  Future<bool> checkStoreNameAvailability(String name) async {
+    if (name.isEmpty || name.length < 3) return false;
+
+    try {
+      return await _storeService.isStoreNameAvailable(name);
+    } catch (e) {
+      debugPrint('Error checking store name availability: $e');
+      return false;
+    }
+  } // Create a new store in Firestore
+
   Future<void> createStore({
     required String storeName,
     String? description,
     String? address,
+    Map<String, dynamic>? storeAddress,
     List<Map<String, String>>? contactInfo,
     String? logoUrl,
+    String? profilePicture,
     List<String>? categories,
     BuildContext? context,
   }) async {
@@ -42,19 +210,19 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
       final userId = _auth.currentUser!.uid;
       final storeRef = _firestore.collection('stores').doc(userId);
 
-      final now = DateTime.now();
-
-      // Create store model
+      final now = DateTime.now(); // Create store model
       final newStore = StoreModel(
         storeId: userId, // Use the user's auth UID as the store ID
         ownerId: userId,
         storeName: storeName,
         description: description,
         address: address,
+        storeAddress: storeAddress,
         contactInfo: contactInfo ?? [],
         createdAt: now,
         updatedAt: now,
         logoUrl: logoUrl,
+        profilePicture: profilePicture,
         categories: categories ?? [],
       );
 
@@ -66,6 +234,88 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
         'storeId': userId, // Store ID is now the same as user ID
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Refresh the AuthViewModel to get updated user data
+      if (context != null) {
+        final authViewModel = Provider.of<AuthViewModel>(
+          context,
+          listen: false,
+        );
+        await authViewModel.refreshUserData();
+      }
+
+      _store = newStore;
+    } catch (e) {
+      _error = 'Failed to create store: $e';
+      debugPrint(_error);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Create a new store with complete form data
+  Future<void> createStoreFromForm({BuildContext? context}) async {
+    if (_auth.currentUser == null) {
+      _error = 'No authenticated user found';
+      notifyListeners();
+      return;
+    }
+
+    if (!canCreateStore) {
+      _error = 'Please complete all required fields';
+      notifyListeners();
+      return;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final userId = _auth.currentUser!.uid;
+      String? logoUrl;
+      String? bannerUrl;
+
+      // Upload images if selected
+      if (_logoFile != null) {
+        logoUrl = await _storeService.uploadImage(
+          imageFile: _logoFile!,
+          path: 'stores/$userId/logo.png',
+        );
+      }
+
+      if (_bannerFile != null) {
+        bannerUrl = await _storeService.uploadImage(
+          imageFile: _bannerFile!,
+          path: 'stores/$userId/banner.jpg',
+        );
+      }
+
+      final now = DateTime.now();
+
+      // Create store model
+      final newStore = StoreModel(
+        storeId: userId,
+        ownerId: userId,
+        storeName: _storeName,
+        description: _description.isEmpty ? null : _description,
+        storeAddress: _storeAddress,
+        contactInfo: _contactInfo,
+        createdAt: now,
+        updatedAt: now,
+        logoUrl: logoUrl,
+        bannerUrl: bannerUrl,
+        categories: _categories,
+        businessHours: _businessHours.isEmpty ? null : _businessHours,
+        socialMedia: _socialMedia.isEmpty ? null : _socialMedia,
+      );
+
+      // Create store and update user in batch
+      await _storeService.createStoreWithUserUpdate(
+        storeData: newStore.toMap(),
+        userId: userId,
+      );
 
       // Refresh the AuthViewModel to get updated user data
       if (context != null) {
@@ -201,6 +451,18 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     _store = null;
     _error = null;
     _isLoading = false;
+    _currentStep = 0;
+
+    // Clear form data
+    _storeName = '';
+    _description = '';
+    _categories = [];
+    _storeAddress = {};
+    _contactInfo = [];
+    _logoFile = null;
+    _bannerFile = null;
+    _businessHours = {};
+    _socialMedia = {};
 
     // Notify listeners
     notifyListeners();

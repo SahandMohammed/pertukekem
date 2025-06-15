@@ -6,25 +6,30 @@ class StoreModel {
   final String ownerId; // UID of the user who owns the store
   final String storeName; // Store name (must be unique if public)
   final String? description; // Short summary of the store (optional)
-  final String? address; // Physical address (optional)
-  final List<Map<String, String>> contactInfo; // List of contact methods (phone, email)
+  final String?
+  address; // Physical address (optional) - for backward compatibility
+  final Map<String, dynamic>? storeAddress; // Detailed address structure
+  final List<Map<String, String>>
+  contactInfo; // List of contact methods (phone, email)
   final double rating; // Average rating of the store
-  final int totalRatings; // Count of ratings for computing averages
-  final DateTime createdAt; // When the store was created
+  final int
+  totalRatings; // Count of ratings for computing averages  final DateTime createdAt; // When the store was created
   final DateTime updatedAt; // Last update timestamp
   final String? logoUrl; // URL to store logo image
   final String? bannerUrl; // URL to store banner image
+  final String? profilePicture; // URL to store profile picture
   final bool isVerified; // Whether the store is verified by admin
   final List<String> categories; // Categories of products sold by the store
   final Map<String, dynamic>? businessHours; // Opening and closing hours
   final Map<String, dynamic>? socialMedia; // Social media links
-  
+  final DateTime createdAt;
   StoreModel({
     required this.storeId,
     required this.ownerId,
     required this.storeName,
     this.description,
     this.address,
+    this.storeAddress,
     required this.contactInfo,
     this.rating = 0.0,
     this.totalRatings = 0,
@@ -32,6 +37,7 @@ class StoreModel {
     required this.updatedAt,
     this.logoUrl,
     this.bannerUrl,
+    this.profilePicture,
     this.isVerified = false,
     this.categories = const [],
     this.businessHours,
@@ -46,6 +52,7 @@ class StoreModel {
       storeName: map['storeName'] ?? '',
       description: map['description'],
       address: map['address'],
+      storeAddress: map['storeAddress'],
       contactInfo: List<Map<String, String>>.from(
         (map['contactInfo'] ?? []).map(
           (contact) => Map<String, String>.from(contact),
@@ -57,6 +64,7 @@ class StoreModel {
       updatedAt: (map['updatedAt'] as Timestamp).toDate(),
       logoUrl: map['logoUrl'],
       bannerUrl: map['bannerUrl'],
+      profilePicture: map['profilePicture'],
       isVerified: map['isVerified'] ?? false,
       categories: List<String>.from(map['categories'] ?? []),
       businessHours: map['businessHours'],
@@ -72,6 +80,7 @@ class StoreModel {
       'storeName': storeName,
       'description': description,
       'address': address,
+      'storeAddress': storeAddress,
       'contactInfo': contactInfo,
       'rating': rating,
       'totalRatings': totalRatings,
@@ -79,6 +88,7 @@ class StoreModel {
       'updatedAt': Timestamp.fromDate(updatedAt),
       'logoUrl': logoUrl,
       'bannerUrl': bannerUrl,
+      'profilePicture': profilePicture,
       'isVerified': isVerified,
       'categories': categories,
       'businessHours': businessHours,
@@ -93,6 +103,7 @@ class StoreModel {
     String? storeName,
     String? description,
     String? address,
+    Map<String, dynamic>? storeAddress,
     List<Map<String, String>>? contactInfo,
     double? rating,
     int? totalRatings,
@@ -100,6 +111,7 @@ class StoreModel {
     DateTime? updatedAt,
     String? logoUrl,
     String? bannerUrl,
+    String? profilePicture,
     bool? isVerified,
     List<String>? categories,
     Map<String, dynamic>? businessHours,
@@ -111,6 +123,7 @@ class StoreModel {
       storeName: storeName ?? this.storeName,
       description: description ?? this.description,
       address: address ?? this.address,
+      storeAddress: storeAddress ?? this.storeAddress,
       contactInfo: contactInfo ?? this.contactInfo,
       rating: rating ?? this.rating,
       totalRatings: totalRatings ?? this.totalRatings,
@@ -118,6 +131,7 @@ class StoreModel {
       updatedAt: updatedAt ?? this.updatedAt,
       logoUrl: logoUrl ?? this.logoUrl,
       bannerUrl: bannerUrl ?? this.bannerUrl,
+      profilePicture: profilePicture ?? this.profilePicture,
       isVerified: isVerified ?? this.isVerified,
       categories: categories ?? this.categories,
       businessHours: businessHours ?? this.businessHours,
