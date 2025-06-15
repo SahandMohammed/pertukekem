@@ -1008,31 +1008,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color:
-                  listing.condition == 'new'
-                      ? Colors.green.withOpacity(0.2)
-                      : Colors.orange.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color:
-                    listing.condition == 'new' ? Colors.green : Colors.orange,
-                width: 1.5,
-              ),
-            ),
-            child: Text(
-              listing.condition.toUpperCase(),
-              style: textTheme.labelLarge?.copyWith(
-                color:
-                    listing.condition == 'new'
-                        ? Colors.green.shade700
-                        : Colors.orange.shade700,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
         ],
       ),
     );

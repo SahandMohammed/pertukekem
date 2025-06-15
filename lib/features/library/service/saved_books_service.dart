@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../model/library_model.dart';
+import '../notifiers/saved_books_notifier.dart';
 import '../../listings/model/listing_model.dart';
 
 class SavedBooksService {
@@ -19,36 +20,39 @@ class SavedBooksService {
           .doc(currentUser.uid)
           .collection('savedBooks')
           .doc(book.bookId) // Use bookId as the document ID for consistency
-          .set({
-            'bookId': book.bookId,
-            'title': book.title,
-            'author': book.author,
-            'isbn': book.isbn,
-            'coverUrl': book.coverUrl,
-            'bookType': book.bookType,
-            'downloadUrl': book.downloadUrl,
-            'totalPages': book.totalPages,
-            'currentPage': book.currentPage,
-            'userId': currentUser.uid,
-            'sellerId': book.sellerId,
-            'sellerName': book.sellerName,
-            'savedAt': FieldValue.serverTimestamp(),
-            'purchaseDate': Timestamp.fromDate(book.purchaseDate),
-            'purchasePrice': book.purchasePrice,
-            'transactionId': book.transactionId,
-            'lastReadDate':
-                book.lastReadDate != null
-                    ? Timestamp.fromDate(book.lastReadDate!)
-                    : null,
-            'isCompleted': book.isCompleted,
-            'localFilePath': book.localFilePath,
-            'isDownloaded': book.isDownloaded,
-          });
-
-      // Also add the book ID to the user's favorites array for quick lookup
+          .set(
+            {
+              'bookId': book.bookId,
+              'title': book.title,
+              'author': book.author,
+              'isbn': book.isbn,
+              'coverUrl': book.coverUrl,
+              'bookType': book.bookType,
+              'downloadUrl': book.downloadUrl,
+              'totalPages': book.totalPages,
+              'currentPage': book.currentPage,
+              'userId': currentUser.uid,
+              'sellerId': book.sellerId,
+              'sellerName': book.sellerName,
+              'savedAt': FieldValue.serverTimestamp(),
+              'purchaseDate': Timestamp.fromDate(book.purchaseDate),
+              'purchasePrice': book.purchasePrice,
+              'transactionId': book.transactionId,
+              'lastReadDate':
+                  book.lastReadDate != null
+                      ? Timestamp.fromDate(book.lastReadDate!)
+                      : null,
+              'isCompleted': book.isCompleted,
+              'localFilePath': book.localFilePath,
+              'isDownloaded': book.isDownloaded,
+            },
+          ); // Also add the book ID to the user's favorites array for quick lookup
       await _firestore.collection('users').doc(currentUser.uid).update({
         'favorites': FieldValue.arrayUnion([book.bookId]),
       });
+
+      // Notify listeners that saved books have changed
+      SavedBooksNotifier().notifyBookSavedStatusChanged();
     } catch (e) {
       throw Exception('Failed to save book: $e');
     }
@@ -70,40 +74,44 @@ class SavedBooksService {
           .doc(currentUser.uid)
           .collection('savedBooks')
           .doc(listing.id!)
-          .set({
-            'bookId': listing.id!,
-            'title': listing.title,
-            'author': listing.author,
-            'isbn': listing.isbn,
-            'coverUrl': listing.coverUrl,
-            'bookType': listing.bookType,
-            'downloadUrl': listing.ebookUrl,
-            'totalPages': listing.pageCount,
-            'currentPage': 0,
-            'userId': currentUser.uid,
-            'sellerId': sellerId,
-            'sellerName': sellerName,
-            'savedAt': FieldValue.serverTimestamp(),
-            'purchaseDate': DateTime.now(), // Not applicable for saved listings
-            'purchasePrice': 0.0, // Not applicable for saved listings
-            'transactionId': '', // Not applicable for saved listings
-            'lastReadDate': null,
-            'isCompleted': false,
-            'localFilePath': null,
-            'isDownloaded': false,
-            'description': listing.description,
-            'publisher': listing.publisher,
-            'language': listing.language,
-            'year': listing.year,
-            'format': listing.format,
-            'condition': listing.condition,
-            'price': listing.price,
-          });
-
-      // Also add the book ID to the user's favorites array for quick lookup
+          .set(
+            {
+              'bookId': listing.id!,
+              'title': listing.title,
+              'author': listing.author,
+              'isbn': listing.isbn,
+              'coverUrl': listing.coverUrl,
+              'bookType': listing.bookType,
+              'downloadUrl': listing.ebookUrl,
+              'totalPages': listing.pageCount,
+              'currentPage': 0,
+              'userId': currentUser.uid,
+              'sellerId': sellerId,
+              'sellerName': sellerName,
+              'savedAt': FieldValue.serverTimestamp(),
+              'purchaseDate':
+                  DateTime.now(), // Not applicable for saved listings
+              'purchasePrice': 0.0, // Not applicable for saved listings
+              'transactionId': '', // Not applicable for saved listings
+              'lastReadDate': null,
+              'isCompleted': false,
+              'localFilePath': null,
+              'isDownloaded': false,
+              'description': listing.description,
+              'publisher': listing.publisher,
+              'language': listing.language,
+              'year': listing.year,
+              'format': listing.format,
+              'condition': listing.condition,
+              'price': listing.price,
+            },
+          ); // Also add the book ID to the user's favorites array for quick lookup
       await _firestore.collection('users').doc(currentUser.uid).update({
         'favorites': FieldValue.arrayUnion([listing.id!]),
       });
+
+      // Notify listeners that saved books have changed
+      SavedBooksNotifier().notifyBookSavedStatusChanged();
     } catch (e) {
       throw Exception('Failed to save book: $e');
     }
@@ -121,12 +129,13 @@ class SavedBooksService {
           .doc(currentUser.uid)
           .collection('savedBooks')
           .doc(bookId)
-          .delete();
-
-      // Remove from favorites array
+          .delete(); // Remove from favorites array
       await _firestore.collection('users').doc(currentUser.uid).update({
         'favorites': FieldValue.arrayRemove([bookId]),
       });
+
+      // Notify listeners that saved books have changed
+      SavedBooksNotifier().notifyBookSavedStatusChanged();
     } catch (e) {
       throw Exception('Failed to unsave book: $e');
     }

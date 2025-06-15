@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../../authentication/model/user_model.dart';
 import '../../../payments/view/user_cards_screen.dart';
 import '../../../payments/view/user_transaction_history_screen.dart';
+import '../../../library/notifiers/saved_books_notifier.dart';
 import 'manage_address_screen.dart';
 import 'saved_books_screen.dart';
 import '../../viewmodel/store_profile_viewmodel.dart';
@@ -23,11 +25,24 @@ class _ProfileTabState extends State<ProfileTab> {
   int _purchaseCount = 0;
   bool _isLoading = true;
   String? _error;
-
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+
+    // Listen to saved books changes
+    SavedBooksNotifier().addListener(_onSavedBooksChanged);
+  }
+
+  @override
+  void dispose() {
+    SavedBooksNotifier().removeListener(_onSavedBooksChanged);
+    super.dispose();
+  }
+
+  void _onSavedBooksChanged() {
+    // Refresh stats when saved books change
+    _refreshStats();
   }
 
   Future<void> _loadUserProfile() async {
@@ -65,6 +80,32 @@ class _ProfileTabState extends State<ProfileTab> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _refreshStats() async {
+    final authViewModel = context.read<AuthViewModel>();
+    final user = authViewModel.user;
+
+    if (user?.userId == null) return;
+
+    try {
+      final savedBooksCount = await _userProfileService.getUserSavedBooksCount(
+        user!.userId,
+      );
+      final purchaseCount = await _userProfileService.getUserPurchaseCount(
+        user.userId,
+      );
+
+      if (mounted) {
+        setState(() {
+          _savedBooksCount = savedBooksCount;
+          _purchaseCount = purchaseCount;
+        });
+      }
+    } catch (e) {
+      // Silently handle errors for stats refresh
+      debugPrint('Error refreshing stats: $e');
     }
   }
 
@@ -154,13 +195,28 @@ class _ProfileTabState extends State<ProfileTab> {
                       Row(
                         children: [
                           Expanded(
-                            child: _buildStatCard(
-                              context,
-                              'Books Saved',
-                              '$_savedBooksCount',
-                              Icons.bookmark_outline,
-                              colorScheme.primaryContainer,
-                              colorScheme.onPrimaryContainer,
+                            child: GestureDetector(
+                              onTap: () async {
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => const SavedBooksScreen(),
+                                  ),
+                                );
+
+                                // Refresh stats when returning from saved books screen
+                                if (mounted) {
+                                  _refreshStats();
+                                }
+                              },
+                              child: _buildStatCard(
+                                context,
+                                'Books Saved',
+                                '$_savedBooksCount',
+                                Icons.bookmark_outline,
+                                colorScheme.primaryContainer,
+                                colorScheme.onPrimaryContainer,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -191,12 +247,17 @@ class _ProfileTabState extends State<ProfileTab> {
                           icon: Icons.bookmark_outline,
                           title: 'Saved Books',
                           subtitle: 'Your bookmarked items',
-                          onTap: () {
-                            Navigator.of(context).push(
+                          onTap: () async {
+                            await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => const SavedBooksScreen(),
                               ),
                             );
+
+                            // Refresh stats when returning from saved books screen
+                            if (mounted) {
+                              _refreshStats();
+                            }
                           },
                         ),
                         _MenuOption(

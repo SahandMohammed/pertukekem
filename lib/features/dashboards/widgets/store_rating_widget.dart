@@ -293,6 +293,7 @@ class _StoreRatingWidgetState extends State<StoreRatingWidget> {
                               viewModel.hasUserRated
                                   ? 'Update Review'
                                   : 'Submit Review',
+                              style: TextStyle(color: Colors.white),
                             ),
                   ),
                 ),
