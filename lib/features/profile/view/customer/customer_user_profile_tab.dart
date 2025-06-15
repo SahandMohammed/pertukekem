@@ -5,6 +5,7 @@ import '../../../authentication/model/user_model.dart';
 import '../../../payments/view/user_cards_screen.dart';
 import '../../../payments/view/user_transaction_history_screen.dart';
 import 'manage_address_screen.dart';
+import 'saved_books_screen.dart';
 import '../../viewmodel/store_profile_viewmodel.dart';
 import '../../services/user_profile_service.dart';
 
@@ -190,7 +191,13 @@ class _ProfileTabState extends State<ProfileTab> {
                           icon: Icons.bookmark_outline,
                           title: 'Saved Books',
                           subtitle: 'Your bookmarked items',
-                          onTap: () => _showComingSoon(context, 'Saved Books'),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const SavedBooksScreen(),
+                              ),
+                            );
+                          },
                         ),
                         _MenuOption(
                           icon: Icons.location_on_outlined,

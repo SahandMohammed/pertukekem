@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../model/library_model.dart';
 import '../viewmodel/library_viewmodel.dart';
 import '../service/download_service.dart';
+import '../service/saved_books_service.dart';
 import 'ebook_reader_screen.dart';
 import '../../listings/model/listing_model.dart';
 import '../../listings/view/add_edit_listing_screen.dart';
@@ -22,16 +23,19 @@ class BookDetailsScreen extends StatefulWidget {
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
   final DownloadService _downloadService = DownloadService();
+  final SavedBooksService _savedBooksService = SavedBooksService();
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   bool _isFileAvailable = false;
   bool _isStoreAccount = false;
-
+  bool _isBookSaved = false;
+  bool _isLoadingSavedState = true;
   @override
   void initState() {
     super.initState();
     _checkFileAvailability();
     _checkUserType();
+    _checkSavedState();
   }
 
   Future<void> _checkUserType() async {
@@ -159,6 +163,48 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     );
   }
 
+  Future<void> _checkSavedState() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      setState(() => _isLoadingSavedState = false);
+      return;
+    }
+
+    setState(() => _isLoadingSavedState = true);
+    try {
+      final isSaved = await _savedBooksService.isBookSaved(widget.book.bookId);
+      setState(() {
+        _isBookSaved = isSaved;
+      });
+    } catch (e) {
+      print('Error checking saved state: $e');
+    } finally {
+      setState(() => _isLoadingSavedState = false);
+    }
+  }
+
+  Future<void> _toggleSavedState() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      _showErrorSnackBar('Please sign in to save books');
+      return;
+    }
+
+    try {
+      if (_isBookSaved) {
+        await _savedBooksService.unsaveBook(widget.book.bookId);
+        setState(() => _isBookSaved = false);
+        _showSuccessSnackBar('Book removed from saved');
+      } else {
+        await _savedBooksService.saveBook(widget.book);
+        setState(() => _isBookSaved = true);
+        _showSuccessSnackBar('Book saved to your collection');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error: ${e.toString()}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -198,6 +244,29 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                 expandedHeight: 300,
                 pinned: true,
                 backgroundColor: colorScheme.primary,
+                actions: [
+                  IconButton(
+                    onPressed: _toggleSavedState,
+                    icon:
+                        _isLoadingSavedState
+                            ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                            : Icon(
+                              _isBookSaved
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: _isBookSaved ? Colors.red : Colors.white,
+                            ),
+                  ),
+                ],
                 flexibleSpace: FlexibleSpaceBar(
                   title: Text(updatedBook.title),
                   background:

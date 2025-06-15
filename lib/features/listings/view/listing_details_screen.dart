@@ -11,6 +11,7 @@ import '../../../core/services/review_service.dart';
 import '../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../payments/view/payment_screen.dart';
 import '../../library/service/library_service.dart';
+import '../../library/service/saved_books_service.dart';
 import '../../cart/services/cart_service.dart';
 import '../../cart/view/cart_screen.dart';
 
@@ -26,6 +27,7 @@ class ListingDetailsScreen extends StatefulWidget {
 class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   final ReviewService _reviewService = ReviewService();
   final LibraryService _libraryService = LibraryService();
+  final SavedBooksService _savedBooksService = SavedBooksService();
   StoreModel? _storeInfo;
   Map<String, dynamic>? _reviewStats;
   bool _isLoadingStore = true;
@@ -33,11 +35,15 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   bool _isCheckingOwnership = true;
   bool _userOwnsBook = false;
   bool _isStoreAccount = false;
-
+  bool _isBookSaved = false;
+  bool _isLoadingSavedState = true;
   Listing get listing => widget.listing;
 
   bool get _isAnyLoading =>
-      _isLoadingStore || _isLoadingReviews || _isCheckingOwnership;
+      _isLoadingStore ||
+      _isLoadingReviews ||
+      _isCheckingOwnership ||
+      _isLoadingSavedState;
   @override
   void initState() {
     super.initState();
@@ -45,6 +51,7 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     _loadReviewStats();
     _checkBookOwnership();
     _checkUserType();
+    _checkSavedState();
 
     // Initialize cart service
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -145,6 +152,103 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     } catch (e) {
       debugPrint('Error checking user type: $e');
       setState(() => _isStoreAccount = false);
+    }
+  }
+
+  Future<void> _checkSavedState() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || listing.id == null) {
+      setState(() => _isLoadingSavedState = false);
+      return;
+    }
+
+    setState(() => _isLoadingSavedState = true);
+    try {
+      final isSaved = await _savedBooksService.isBookSaved(listing.id!);
+      setState(() {
+        _isBookSaved = isSaved;
+      });
+    } catch (e) {
+      debugPrint('Error checking saved state: $e');
+    } finally {
+      setState(() => _isLoadingSavedState = false);
+    }
+  }
+
+  Future<void> _toggleSavedState() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to save books'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (listing.id == null) return;
+
+    try {
+      if (_isBookSaved) {
+        await _savedBooksService.unsaveBook(listing.id!);
+        setState(() => _isBookSaved = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Book removed from saved'),
+            backgroundColor: Colors.grey,
+          ),
+        );
+      } else {
+        // Get seller info for the saved book
+        String sellerId = '';
+        String sellerName = '';
+
+        if (listing.sellerType == 'store' && _storeInfo != null) {
+          sellerId = listing.sellerRef.id;
+          sellerName = _storeInfo!.storeName;
+        } else {
+          // For individual sellers, get the user's name
+          try {
+            final userDoc =
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(listing.sellerRef.id)
+                    .get();
+            if (userDoc.exists) {
+              final userData = userDoc.data()!;
+              sellerId = listing.sellerRef.id;
+              sellerName =
+                  userData['displayName'] ??
+                  userData['email'] ??
+                  'Unknown Seller';
+            }
+          } catch (e) {
+            sellerId = listing.sellerRef.id;
+            sellerName = 'Unknown Seller';
+          }
+        }
+
+        await _savedBooksService.saveBookFromListing(
+          listing,
+          sellerId,
+          sellerName,
+        );
+        setState(() => _isBookSaved = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Book saved to your collection'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -591,10 +695,28 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                   ],
                 ),
                 child: IconButton(
-                  onPressed: () {
-                    // TODO: Add to favorites/share functionality
-                  },
-                  icon: const Icon(Icons.favorite_border),
+                  onPressed: _toggleSavedState,
+                  icon:
+                      _isLoadingSavedState
+                          ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.primary,
+                              ),
+                            ),
+                          )
+                          : Icon(
+                            _isBookSaved
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color:
+                                _isBookSaved
+                                    ? Colors.red
+                                    : colorScheme.onSurface,
+                          ),
                 ),
               ),
             ],
