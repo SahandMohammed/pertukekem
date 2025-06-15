@@ -16,7 +16,13 @@ class StoreSetupService {
     required String path,
   }) async {
     try {
-      final ref = _storage.ref().child(path);
+      // Get file extension from the original file
+      final fileName = imageFile.path.split('/').last;
+      final extension =
+          fileName.contains('.') ? fileName.split('.').last : 'jpg';
+      final fullPath = '$path.$extension';
+
+      final ref = _storage.ref().child(fullPath);
       final uploadTask = await ref.putFile(imageFile);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {

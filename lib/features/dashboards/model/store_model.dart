@@ -12,8 +12,8 @@ class StoreModel {
   final List<Map<String, String>>
   contactInfo; // List of contact methods (phone, email)
   final double rating; // Average rating of the store
-  final int
-  totalRatings; // Count of ratings for computing averages  final DateTime createdAt; // When the store was created
+  final int totalRatings; // Count of ratings for computing averages
+  final DateTime createdAt; // When the store was created
   final DateTime updatedAt; // Last update timestamp
   final String? logoUrl; // URL to store logo image
   final String? bannerUrl; // URL to store banner image
@@ -22,7 +22,6 @@ class StoreModel {
   final List<String> categories; // Categories of products sold by the store
   final Map<String, dynamic>? businessHours; // Opening and closing hours
   final Map<String, dynamic>? socialMedia; // Social media links
-  final DateTime createdAt;
   StoreModel({
     required this.storeId,
     required this.ownerId,

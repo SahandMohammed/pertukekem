@@ -469,14 +469,11 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
 
   Future<void> _createStore(StoreSetupViewmodel viewModel) async {
     try {
-      await viewModel.createStore(
-        storeName: viewModel.storeName,
-        description: viewModel.description,
-        storeAddress: viewModel.storeAddress,
-        contactInfo: viewModel.contactInfo,
-        categories: viewModel.categories,
-        context: context,
-      );
+      // Save form data first
+      _formKey.currentState?.save();
+
+      // Use createStoreFromForm which handles image uploads and all form data
+      await viewModel.createStoreFromForm(context: context);
 
       if (mounted && viewModel.error == null) {
         // Navigate back to profile or show success

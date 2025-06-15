@@ -156,14 +156,13 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   // Validation methods
   bool isStepValid(int step) {
     switch (step) {
-      case 0: // Basics
+      case 0: // Basics - Step 1
         return _storeName.isNotEmpty && _storeName.length >= 3;
-      case 1: // Address
-        return _storeAddress.isNotEmpty &&
-            _storeAddress['state'] != null &&
-            _storeAddress['city'] != null &&
-            _storeAddress['street'] != null;
-      case 2: // Branding & Hours
+      case 1: // Images - Step 2 (optional)
+        return true; // Images are optional
+      case 2: // Address - Step 3 (optional but should have some info)
+        return true; // Address is optional
+      case 3: // Business Hours & Social Media - Step 4 (optional)
         return true; // Optional fields
       default:
         return false;
@@ -171,7 +170,7 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   }
 
   bool get canCreateStore {
-    return isStepValid(0) && isStepValid(1);
+    return isStepValid(0); // Only step 1 (basics) is required
   }
 
   // Check if store name is available
@@ -275,26 +274,22 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
 
       final userId = _auth.currentUser!.uid;
       String? logoUrl;
-      String? bannerUrl;
-
-      // Upload images if selected
+      String? bannerUrl; // Upload images if selected
       if (_logoFile != null) {
         logoUrl = await _storeService.uploadImage(
           imageFile: _logoFile!,
-          path: 'stores/$userId/logo.png',
+          path: 'stores/$userId/profilePicture',
         );
       }
 
       if (_bannerFile != null) {
         bannerUrl = await _storeService.uploadImage(
           imageFile: _bannerFile!,
-          path: 'stores/$userId/banner.jpg',
+          path: 'stores/$userId/banner',
         );
       }
 
-      final now = DateTime.now();
-
-      // Create store model
+      final now = DateTime.now(); // Create store model
       final newStore = StoreModel(
         storeId: userId,
         ownerId: userId,
@@ -306,9 +301,13 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
         updatedAt: now,
         logoUrl: logoUrl,
         bannerUrl: bannerUrl,
+        profilePicture: logoUrl, // Same as logoUrl for backward compatibility
         categories: _categories,
         businessHours: _businessHours.isEmpty ? null : _businessHours,
-        socialMedia: _socialMedia.isEmpty ? null : _socialMedia,
+        socialMedia:
+            _socialMedia.isEmpty
+                ? null
+                : Map<String, dynamic>.from(_socialMedia),
       );
 
       // Create store and update user in batch
