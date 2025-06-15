@@ -51,9 +51,13 @@ class _StoreSetupStep3ContactScreenState
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
     return Consumer<StoreSetupViewmodel>(
       builder: (context, viewModel, child) {
+        // Debug print for current state when UI rebuilds
+        debugPrint(
+          '🎨 UI Rebuild - Current validation state: ${_isFormValid(viewModel)}',
+        );
+
         return Scaffold(
           backgroundColor: colorScheme.surface,
           appBar: AppBar(
@@ -276,25 +280,61 @@ class _StoreSetupStep3ContactScreenState
   }
 
   bool _isFormValid(StoreSetupViewmodel viewModel) {
-    return viewModel.storeAddress.isNotEmpty &&
+    // Debug prints for all address fields
+    debugPrint('🔍 _isFormValid Debug:');
+    debugPrint('  storeAddress: ${viewModel.storeAddress}');
+    debugPrint('  storeAddress.isEmpty: ${viewModel.storeAddress.isEmpty}');
+    debugPrint(
+      '  storeAddress.isNotEmpty: ${viewModel.storeAddress.isNotEmpty}',
+    );
+    debugPrint('  state: ${viewModel.storeAddress['state']}');
+    debugPrint('  city: ${viewModel.storeAddress['city']}');
+    debugPrint('  street: ${viewModel.storeAddress['street']}');
+    debugPrint('  country: ${viewModel.storeAddress['country']}');
+    debugPrint('  postalCode: ${viewModel.storeAddress['postalCode']}');
+    debugPrint('  additionalInfo: ${viewModel.storeAddress['additionalInfo']}');
+
+    final isValid =
+        viewModel.storeAddress.isNotEmpty &&
         viewModel.storeAddress['state'] != null &&
         viewModel.storeAddress['city'] != null &&
         viewModel.storeAddress['street'] != null;
+
+    debugPrint('  isValid result: $isValid');
+    debugPrint('🔍 End _isFormValid Debug\n');
+
+    return isValid;
   }
 
   void _onNext() {
+    debugPrint('🚀 _onNext called');
+
     // Save address form data first
+    debugPrint('📝 Saving form data...');
     _addressFormKey.currentState?.save();
     final addressData = _addressFormKey.currentState?.value;
+
+    debugPrint('📝 Form data from FormBuilder: $addressData');
+
     if (addressData != null) {
+      debugPrint('📝 Setting store address in viewmodel...');
       context.read<StoreSetupViewmodel>().setStoreAddress(
         Map<String, dynamic>.from(addressData),
       );
+      debugPrint('📝 Store address set successfully');
+    } else {
+      debugPrint('⚠️ Address data is null!');
     }
 
     // Check if form is valid after saving
-    if (_isFormValid(context.read<StoreSetupViewmodel>())) {
+    debugPrint('🔍 Checking form validity after saving...');
+    final isValidAfterSave = _isFormValid(context.read<StoreSetupViewmodel>());
+
+    if (isValidAfterSave) {
+      debugPrint('✅ Form is valid, proceeding to next step');
       widget.onNext();
+    } else {
+      debugPrint('❌ Form is not valid, cannot proceed');
     }
   }
 }

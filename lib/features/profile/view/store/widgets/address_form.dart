@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:provider/provider.dart';
+import '../../../viewmodel/store_setup_viewmodel.dart';
 
 /// Widget for collecting store address information
 class AddressForm extends StatefulWidget {
@@ -50,7 +52,6 @@ class _AddressFormState extends State<AddressForm> {
     'Babylon': ['Hillah', 'Mahawil', 'Hashimiyah', 'Musayyib', 'Qasim'],
     'Dohuk': ['Dohuk', 'Zakho', 'Simele', 'Shekhan', 'Amedi'],
   };
-
   @override
   void initState() {
     super.initState();
@@ -61,9 +62,15 @@ class _AddressFormState extends State<AddressForm> {
         availableCities = iraqStatesAndCities[selectedState]!;
       }
     }
+
+    // Trigger initial update to set the country value
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateStoreAddress();
+    });
   }
 
   void _onStateChanged(String? state) {
+    debugPrint('🏛️ State changed to: $state');
     setState(() {
       selectedState = state;
       availableCities = state != null ? iraqStatesAndCities[state]! : [];
@@ -71,6 +78,23 @@ class _AddressFormState extends State<AddressForm> {
 
     // Clear city selection when state changes
     widget.formKey.currentState?.fields['city']?.didChange(null);
+
+    // Update store address in real-time
+    _updateStoreAddress();
+  }
+
+  void _updateStoreAddress() {
+    // Get current form values
+    widget.formKey.currentState?.save();
+    final formData = widget.formKey.currentState?.value;
+
+    if (formData != null) {
+      debugPrint('📝 Updating store address in real-time: $formData');
+      // Update the viewmodel with current form data
+      context.read<StoreSetupViewmodel>().setStoreAddress(
+        Map<String, dynamic>.from(formData),
+      );
+    }
   }
 
   @override
@@ -95,9 +119,7 @@ class _AddressFormState extends State<AddressForm> {
               color: colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Country (Iraq - disabled field)
+          const SizedBox(height: 16), // Country (Iraq - disabled field)
           FormBuilderTextField(
             name: 'country',
             initialValue: 'Iraq',
@@ -115,6 +137,10 @@ class _AddressFormState extends State<AddressForm> {
                 child: Text('🇮🇶', style: TextStyle(fontSize: 20)),
               ),
             ),
+            onChanged: (value) {
+              debugPrint('🌍 Country: $value');
+              _updateStoreAddress();
+            },
           ),
 
           const SizedBox(height: 16), // State Dropdown
@@ -172,6 +198,10 @@ class _AddressFormState extends State<AddressForm> {
                           DropdownMenuItem(value: city, child: Text(city)),
                     )
                     .toList(),
+            onChanged: (value) {
+              debugPrint('🏙️ City changed to: $value');
+              _updateStoreAddress();
+            },
             validator: FormBuilderValidators.required(
               errorText: 'Please select a city',
             ),
@@ -190,6 +220,10 @@ class _AddressFormState extends State<AddressForm> {
               fillColor: colorScheme.surfaceContainer,
               prefixIcon: Icon(Icons.home, color: colorScheme.onSurfaceVariant),
             ),
+            onChanged: (value) {
+              debugPrint('🏠 Street changed to: $value');
+              _updateStoreAddress();
+            },
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(
                 errorText: 'Street address is required',
@@ -217,6 +251,10 @@ class _AddressFormState extends State<AddressForm> {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
+            onChanged: (value) {
+              debugPrint('📮 Postal code changed to: $value');
+              _updateStoreAddress();
+            },
           ),
 
           const SizedBox(height: 16),
@@ -238,6 +276,10 @@ class _AddressFormState extends State<AddressForm> {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
+            onChanged: (value) {
+              debugPrint('ℹ️ Additional info changed to: $value');
+              _updateStoreAddress();
+            },
           ),
         ],
       ),
