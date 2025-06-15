@@ -24,8 +24,15 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     if (kDebugMode) {
       print('LibraryViewModel: Library changed, refreshing data');
     }
-    // Refresh all library data when notified of changes
-    refreshAll();
+    // Only refresh if not currently loading to prevent multiple concurrent refreshes
+    if (!_isLoadingLibrary && !_isLoadingStats && !_isLoadingCurrentlyReading) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        // Small delay to batch rapid changes
+        if (!_isLoadingLibrary) {
+          refreshAll();
+        }
+      });
+    }
   }
 
   // State variables

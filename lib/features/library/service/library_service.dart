@@ -198,10 +198,17 @@ class LibraryService {
 
   // Remove download information
   Future<void> removeDownload(String libraryBookId) async {
-    await _firestore.collection('users').doc(libraryBookId).update({
-      'isDownloaded': false,
-      'localFilePath': FieldValue.delete(),
-    });
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    await _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('library')
+        .doc(libraryBookId)
+        .update({'isDownloaded': false, 'localFilePath': FieldValue.delete()});
   }
 
   // Get library statistics
@@ -270,7 +277,17 @@ class LibraryService {
 
   // Remove book from library (if needed)
   Future<void> removeFromLibrary(String libraryBookId) async {
-    await _firestore.collection('users').doc(libraryBookId).delete();
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    await _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('library')
+        .doc(libraryBookId)
+        .delete();
   }
 
   // Stream user's library for real-time updates

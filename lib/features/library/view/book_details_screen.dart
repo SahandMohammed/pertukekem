@@ -10,7 +10,6 @@ import '../service/saved_books_service.dart';
 import 'ebook_reader_screen.dart';
 import '../../listings/model/listing_model.dart';
 import '../../listings/view/add_edit_listing_screen.dart';
-import '../../listings/viewmodel/manage_listings_viewmodel.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   final LibraryBook book;
@@ -30,12 +29,33 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   bool _isStoreAccount = false;
   bool _isBookSaved = false;
   bool _isLoadingSavedState = true;
+  bool _isInitializing = true;
+
+  // Store the updated book information after download
+  LibraryBook? _updatedBook;
+
+  // Get the current book (updated if available, otherwise original)
+  LibraryBook get currentBook => _updatedBook ?? widget.book;
+
   @override
   void initState() {
     super.initState();
-    _checkFileAvailability();
-    _checkUserType();
-    _checkSavedState();
+    _initializeScreenData();
+  }
+
+  Future<void> _initializeScreenData() async {
+    // Initialize all data in parallel to reduce loading time and state changes
+    await Future.wait([
+      _checkFileAvailability(),
+      _checkUserType(),
+      _checkSavedState(),
+    ]);
+
+    if (mounted) {
+      setState(() {
+        _isInitializing = false;
+      });
+    }
   }
 
   Future<void> _checkUserType() async {
@@ -49,26 +69,32 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                 .doc(currentUser.uid)
                 .get();
 
-        setState(() {
-          _isStoreAccount = storeDoc.exists;
-        });
+        if (mounted) {
+          setState(() {
+            _isStoreAccount = storeDoc.exists;
+          });
+        }
       } catch (e) {
         print('Error checking user type: $e');
-        setState(() {
-          _isStoreAccount = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isStoreAccount = false;
+          });
+        }
       }
     }
   }
 
   Future<void> _checkFileAvailability() async {
-    if (widget.book.isEbook && widget.book.localFilePath != null) {
+    if (currentBook.isEbook && currentBook.localFilePath != null) {
       final available = await _downloadService.isFileDownloaded(
-        widget.book.localFilePath,
+        currentBook.localFilePath,
       );
-      setState(() {
-        _isFileAvailable = available;
-      });
+      if (mounted) {
+        setState(() {
+          _isFileAvailable = available;
+        });
+      }
     }
   }
 
@@ -94,16 +120,19 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             _downloadProgress = progress;
           });
         },
-      );
-
-      // Update library service to mark as downloaded
+      ); // Update library service to mark as downloaded
       final viewModel = context.read<LibraryViewModel>();
       await viewModel.markBookAsDownloaded(
         libraryBookId: widget.book.id,
         localFilePath: localPath,
       );
 
+      // Update the local book object with the new file path
       setState(() {
+        _updatedBook = widget.book.copyWith(
+          localFilePath: localPath,
+          isDownloaded: true,
+        );
         _isFileAvailable = true;
         _isDownloading = false;
       });
@@ -118,16 +147,19 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   }
 
   Future<void> _deleteDownload() async {
-    if (widget.book.localFilePath == null) return;
+    if (currentBook.localFilePath == null) return;
 
     try {
-      await _downloadService.deleteFile(widget.book.localFilePath!);
+      await _downloadService.deleteFile(currentBook.localFilePath!);
 
       // Update library service
       final viewModel = context.read<LibraryViewModel>();
       await viewModel.removeDownload(widget.book.id);
-
       setState(() {
+        _updatedBook = widget.book.copyWith(
+          localFilePath: null,
+          isDownloaded: false,
+        );
         _isFileAvailable = false;
       });
 
@@ -146,7 +178,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EbookReaderScreen(book: widget.book),
+        builder: (context) => EbookReaderScreen(book: currentBook),
       ),
     );
   }
@@ -166,20 +198,29 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   Future<void> _checkSavedState() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      setState(() => _isLoadingSavedState = false);
+      if (mounted) {
+        setState(() => _isLoadingSavedState = false);
+      }
       return;
     }
 
-    setState(() => _isLoadingSavedState = true);
+    if (mounted) {
+      setState(() => _isLoadingSavedState = true);
+    }
+
     try {
       final isSaved = await _savedBooksService.isBookSaved(widget.book.bookId);
-      setState(() {
-        _isBookSaved = isSaved;
-      });
+      if (mounted) {
+        setState(() {
+          _isBookSaved = isSaved;
+          _isLoadingSavedState = false;
+        });
+      }
     } catch (e) {
       print('Error checking saved state: $e');
-    } finally {
-      setState(() => _isLoadingSavedState = false);
+      if (mounted) {
+        setState(() => _isLoadingSavedState = false);
+      }
     }
   }
 
@@ -207,241 +248,372 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(widget.book.userId)
-              .collection('library')
-              .doc(widget.book.id)
-              .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    // Show loading indicator during initialization
+    if (_isInitializing) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          title: Text(widget.book.title),
+          centerTitle: true,
+          elevation: 0,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return Scaffold(
-            appBar: AppBar(title: Text(widget.book.title)),
-            body: const Center(child: Text('Book not found.')),
-          );
-        }
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: CustomScrollView(
+        slivers: [
+          _buildModernAppBar(theme),
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                // Action Buttons Section - Moved to top
+                _buildActionButtonsSection(theme),
+                const SizedBox(height: 24),
 
-        final bookData = snapshot.data!.data() as Map<String, dynamic>;
-        final updatedBook = widget.book.copyWith(
-          currentPage: bookData['currentPage'],
-          totalPages: bookData['totalPages'],
-          isCompleted: bookData['isCompleted'],
-        );
-
-        return Scaffold(
-          backgroundColor: Colors.grey.shade50,
-          body: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 300,
-                pinned: true,
-                backgroundColor: colorScheme.primary,
-                actions: [
-                  IconButton(
-                    onPressed: _toggleSavedState,
-                    icon:
-                        _isLoadingSavedState
-                            ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                            : Icon(
-                              _isBookSaved
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: _isBookSaved ? Colors.red : Colors.white,
-                            ),
-                  ),
-                ],
-                flexibleSpace: FlexibleSpaceBar(
-                  title: Text(updatedBook.title),
-                  background:
-                      updatedBook.coverUrl != null
-                          ? Image.network(
-                            updatedBook.coverUrl!,
-                            fit: BoxFit.cover,
-                          )
-                          : _buildCoverPlaceholder(),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                // Book Content Sections
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildReadingProgress(updatedBook),
+                      _buildReadingProgressCard(theme),
                       const SizedBox(height: 16),
-                      _buildBookInformation(updatedBook),
+                      _buildBookInformationCard(theme),
                       const SizedBox(height: 16),
-                      _buildPurchaseInformation(updatedBook),
-                      const SizedBox(height: 16),
-                      // Show different actions based on user type
-                      if (_isStoreAccount)
-                        _buildStoreActions(updatedBook)
-                      else if (updatedBook.isEbook)
-                        _buildEbookActions(updatedBook),
+                      _buildPurchaseInformationCard(theme),
+                      const SizedBox(height: 24),
+                      if (_isStoreAccount) _buildStoreActionsCard(theme),
+                      const SizedBox(height: 32),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernAppBar(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
+    return SliverAppBar(
+      expandedHeight: 350,
+      pinned: true,
+      stretch: true,
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+      elevation: 0,
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withOpacity(0.9),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            onPressed: _toggleSavedState,
+            icon:
+                _isLoadingSavedState
+                    ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    )
+                    : Icon(
+                      _isBookSaved ? Icons.favorite : Icons.favorite_border,
+                      color:
+                          _isBookSaved
+                              ? colorScheme.error
+                              : colorScheme.onSurface,
+                    ),
+          ),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground,
+        ],
+        centerTitle: true,
+        titlePadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        title: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            currentBook.title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 2,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [colorScheme.surfaceContainer, colorScheme.surface],
+            ),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (currentBook.coverUrl != null &&
+                  currentBook.coverUrl!.isNotEmpty)
+                Positioned.fill(
+                  child: ClipRRect(
+                    child: Image.network(
+                      currentBook.coverUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) =>
+                              _buildModernCoverPlaceholder(theme),
+                    ),
+                  ),
+                )
+              else
+                _buildModernCoverPlaceholder(theme),
+
+              // Gradient overlay for better text readability
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        colorScheme.surface.withOpacity(0.7),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildCoverPlaceholder() {
+  Widget _buildModernCoverPlaceholder(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      color: Colors.grey.shade300,
-      child: Icon(Icons.book, size: 60, color: Colors.grey.shade500),
-    );
-  }
-
-  Widget _buildEbookActions(LibraryBook book) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      color: colorScheme.surfaceContainerHighest,
+      child: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'E-Book Actions',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            Icon(
+              Icons.menu_book_rounded,
+              size: 80,
+              color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
-            if (_isDownloading)
-              Column(
-                children: [
-                  LinearProgressIndicator(
-                    value: _downloadProgress,
-                    backgroundColor: Colors.grey.shade300,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.blue.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Downloading... ${(_downloadProgress * 100).toInt()}%',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
-              )
-            else if (_isFileAvailable)
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _openReader,
-                      icon: const Icon(Icons.auto_stories),
-                      label: const Text('Read Now'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _deleteDownload,
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('Remove Download'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            else
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _downloadBook,
-                  icon: const Icon(Icons.download),
-                  label: const Text('Download for Offline Reading'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
+            Text(
+              'E-Book',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStoreActions(LibraryBook book) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Store Actions',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+  Widget _buildActionButtonsSection(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    if (!currentBook.isEbook && !_isStoreAccount) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colorScheme.outlineVariant, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Actions',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _editListing(book),
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit Listing'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+          ),
+          const SizedBox(height: 16),
+          if (_isDownloading)
+            _buildDownloadProgressSection(theme)
+          else if (currentBook.isEbook)
+            _buildEbookActionButtons(theme)
+          else if (_isStoreAccount)
+            _buildStoreActionButtons(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDownloadProgressSection(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.download_rounded, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Text(
+              'Downloading...',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _deleteListing(book),
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Delete Listing'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                ),
+            const Spacer(),
+            Text(
+              '${(_downloadProgress * 100).toInt()}%',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 12),
+        LinearProgressIndicator(
+          value: _downloadProgress,
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+          borderRadius: BorderRadius.circular(8),
+          minHeight: 8,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Please wait while your book is being downloaded...',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEbookActionButtons(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
+    if (_isFileAvailable) {
+      return Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _openReader,
+              icon: const Icon(Icons.chrome_reader_mode_rounded),
+              label: const Text('Start Reading'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _deleteDownload,
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: const Text('Remove Download'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                side: BorderSide(color: colorScheme.outline),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      return SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _downloadBook,
+          icon: const Icon(Icons.download_rounded),
+          label: const Text('Download Book'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildStoreActionButtons(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _editListing(currentBook),
+            icon: const Icon(Icons.edit_rounded),
+            label: const Text('Edit Listing'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _deleteListing(currentBook),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('Delete Listing'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              side: BorderSide(color: colorScheme.error),
+              foregroundColor: colorScheme.error,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -539,15 +711,12 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             final isOwner =
                 sellerRef.path == 'users/${currentUser.uid}' ||
                 sellerRef.path == 'stores/${currentUser.uid}';
-
             if (isOwner) {
-              // Use ManageListingsViewModel to delete the listing
-              final viewModel = Provider.of<ManageListingsViewModel>(
-                context,
-                listen: false,
-              );
-
-              await viewModel.deleteListing(listingDoc.id);
+              // Delete the listing directly
+              await FirebaseFirestore.instance
+                  .collection('listings')
+                  .doc(listingDoc.id)
+                  .delete();
 
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -582,53 +751,119 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     }
   }
 
-  Widget _buildReadingProgress(LibraryBook book) {
-    final progress = book.readingProgress;
-    final currentPage = book.currentPage ?? 0;
-    final totalPages = book.totalPages ?? 0;
+  Widget _buildReadingProgressCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    final progress = currentBook.readingProgress;
+    final currentPage = currentBook.currentPage ?? 0;
+    final totalPages = currentBook.totalPages ?? 0;
+
+    if (!currentBook.isEbook || totalPages == 0) {
+      return const SizedBox.shrink();
+    }
 
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Reading Progress',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey.shade300,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-            ),
-            const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Page $currentPage of $totalPages',
-                  style: TextStyle(color: Colors.grey.shade600),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.auto_stories_rounded,
+                    color: colorScheme.onPrimaryContainer,
+                    size: 20,
+                  ),
                 ),
+                const SizedBox(width: 12),
                 Text(
-                  '${(progress * 100).toInt()}% Complete',
-                  style: TextStyle(
-                    color: Colors.blue.shade600,
-                    fontWeight: FontWeight.w500,
+                  'Reading Progress',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-            if (book.lastReadDate != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Last read: ${DateFormat('MMM dd, yyyy').format(book.lastReadDate!)}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            const SizedBox(height: 20),
+
+            // Progress bar
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Page $currentPage of $totalPages',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      '${(progress * 100).toInt()}%',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    colorScheme.primary,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  minHeight: 8,
+                ),
+              ],
+            ),
+
+            if (currentBook.isCompleted) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: colorScheme.onPrimaryContainer,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Completed',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ],
@@ -637,87 +872,199 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     );
   }
 
-  Widget _buildBookInformation(LibraryBook book) {
+  Widget _buildBookInformationCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Book Information',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    color: colorScheme.onSecondaryContainer,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Book Information',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildInfoRow('Title', book.title),
-            _buildInfoRow('Author', book.author),
-            if (book.isbn != null && book.isbn!.isNotEmpty)
-              _buildInfoRow('ISBN', book.isbn!),
-            _buildInfoRow('Type', book.isEbook ? 'E-Book' : 'Physical Book'),
-            if (book.totalPages != null)
-              _buildInfoRow('Pages', book.totalPages.toString()),
+            const SizedBox(height: 20),
+            _buildInfoRow(theme, 'Title', currentBook.title),
+            _buildInfoRow(theme, 'Author', currentBook.author),
+            if (currentBook.isbn != null && currentBook.isbn!.isNotEmpty)
+              _buildInfoRow(theme, 'ISBN', currentBook.isbn!),
+            _buildInfoRow(
+              theme,
+              'Type',
+              currentBook.isEbook ? 'E-Book' : 'Physical Book',
+            ),
+            if (currentBook.totalPages != null)
+              _buildInfoRow(theme, 'Pages', '${currentBook.totalPages}'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPurchaseInformation(LibraryBook book) {
+  Widget _buildPurchaseInformationCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Purchase Information',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.receipt_long_rounded,
+                    color: colorScheme.onTertiaryContainer,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Purchase Details',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildInfoRow(
+              theme,
+              'Price',
+              'RM ${currentBook.purchasePrice.toStringAsFixed(2)}',
+            ),
+            _buildInfoRow(
+              theme,
               'Purchase Date',
-              DateFormat('MMM dd, yyyy').format(book.purchaseDate),
+              DateFormat('MMM dd, yyyy').format(currentBook.purchaseDate),
             ),
-            _buildInfoRow(
-              'Price Paid',
-              NumberFormat.currency(symbol: '\$').format(book.purchasePrice),
-            ),
-            if (book.transactionId.isNotEmpty)
-              _buildInfoRow('Transaction ID', book.transactionId),
+            if (currentBook.transactionId.isNotEmpty)
+              _buildInfoRow(theme, 'Transaction ID', currentBook.transactionId),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildStoreActionsCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.errorContainer.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.error.withOpacity(0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.store_rounded,
+                    color: colorScheme.onErrorContainer,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Store Management',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'As a store owner, you can manage this listing.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, String label, String value) {
+    final colorScheme = theme.colorScheme;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 100,
             child: Text(
-              '$label:',
-              style: TextStyle(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey.shade700,
               ),
             ),
           ),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w400),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
         ],

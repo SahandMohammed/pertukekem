@@ -35,9 +35,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             ? path.extension(widget.book.localFilePath!).toLowerCase()
             : '';
 
-    // Hide status bar for immersive reading
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
     // Check file existence once
     _checkFileExistence();
   }
@@ -98,6 +95,13 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
     setState(() {
       _showAppBar = !_showAppBar;
     });
+
+    // Toggle fullscreen mode based on app bar visibility
+    if (_showAppBar) {
+      _exitFullScreenMode();
+    } else {
+      _enterFullScreenMode();
+    }
   }
 
   void _goToPage() {
@@ -563,5 +567,15 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
         ],
       ),
     );
+  }
+
+  void _enterFullScreenMode() {
+    // Hide status bar for immersive reading
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  void _exitFullScreenMode() {
+    // Show status bar when controls are visible
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 }

@@ -15,6 +15,7 @@ class LibraryTab extends StatefulWidget {
 class _LibraryTabState extends State<LibraryTab> {
   final TextEditingController _searchController = TextEditingController();
   final LibraryNotifier _libraryNotifier = LibraryNotifier();
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -38,9 +39,15 @@ class _LibraryTabState extends State<LibraryTab> {
   }
 
   void _onLibraryChanged() {
-    // Trigger a rebuild to show updated data immediately
-    if (mounted) {
+    // Prevent multiple rapid rebuilds
+    if (!_isRefreshing && mounted) {
+      _isRefreshing = true;
       setState(() {});
+
+      // Reset refresh flag after a short delay
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _isRefreshing = false;
+      });
     }
   }
 
