@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/customer_home_viewmodel.dart';
 import 'search_tab.dart';
-import 'customer_user_profile_tab.dart';
+import '../../../profile/view/customer/customer_user_profile_tab.dart';
 import '../../../orders/view/customer/customer_orders_tab.dart';
 import '../store/store_details_screen.dart';
 import '../../viewmodel/store_rating_viewmodel.dart';
