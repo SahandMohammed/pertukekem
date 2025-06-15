@@ -1,12 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/store_setup_viewmodel.dart';
-import 'widgets/address_form.dart';
-import 'widgets/contact_info_list.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Step 2: Contact & Address
+/// Store Setup Step 2: Store Images
 class StoreSetupStep2Screen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
@@ -23,7 +22,6 @@ class StoreSetupStep2Screen extends StatefulWidget {
 
 class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
     with TickerProviderStateMixin {
-  final _addressFormKey = GlobalKey<FormBuilderState>();
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -56,7 +54,7 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
         return Scaffold(
           backgroundColor: colorScheme.surface,
           appBar: AppBar(
-            title: const Text('Contact & Address'),
+            title: const Text('Store Images'),
             centerTitle: true,
             backgroundColor: colorScheme.surface,
             elevation: 0,
@@ -70,7 +68,7 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                 padding: const EdgeInsets.only(right: 16),
                 child: Center(
                   child: Text(
-                    'Step 2 of 3',
+                    'Step 2 of 4',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -117,6 +115,16 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(2),
+                              color: colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -148,31 +156,31 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Store Location & Contact',
+                                    'Store Images',
                                     style: textTheme.headlineSmall?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Help customers find and reach your store',
+                                    'Add a logo and banner to make your store stand out',
                                     style: textTheme.bodyMedium?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 24),
 
-                                  // Address Section
+                                  // Store Logo Section
                                   Row(
                                     children: [
                                       Icon(
-                                        Icons.location_on,
+                                        Icons.store,
                                         color: colorScheme.primary,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Store Address *',
+                                        'Store Logo',
                                         style: textTheme.titleMedium?.copyWith(
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -181,29 +189,36 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Enter your store\'s physical address',
+                                    'Square image recommended (500x500px)',
                                     style: textTheme.bodyMedium?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  AddressForm(
-                                    formKey: _addressFormKey,
-                                    initialAddress: viewModel.storeAddress,
+                                  _buildImageUploadCard(
+                                    title: 'Store Logo',
+                                    subtitle: 'Tap to upload your store logo',
+                                    currentFile: viewModel.logoFile,
+                                    onTap: () => _pickImage(viewModel, true),
+                                    onRemove: () => viewModel.setLogoFile(null),
+                                    colorScheme: colorScheme,
+                                    textTheme: textTheme,
+                                    icon: Icons.store,
+                                    aspectRatio: 1.0, // Square
                                   ),
                                   const SizedBox(height: 32),
 
-                                  // Contact Information Section
+                                  // Store Banner Section
                                   Row(
                                     children: [
                                       Icon(
-                                        Icons.contact_phone,
+                                        Icons.image,
                                         color: colorScheme.primary,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Contact Information *',
+                                        'Store Banner',
                                         style: textTheme.titleMedium?.copyWith(
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -212,15 +227,58 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Add ways for customers to contact you',
+                                    'Wide image recommended (1200x400px)',
                                     style: textTheme.bodyMedium?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  ContactInfoList(
-                                    initialContacts: viewModel.contactInfo,
-                                    onContactsChanged: viewModel.setContactInfo,
+                                  _buildImageUploadCard(
+                                    title: 'Store Banner',
+                                    subtitle: 'Tap to upload your store banner',
+                                    currentFile: viewModel.bannerFile,
+                                    onTap: () => _pickImage(viewModel, false),
+                                    onRemove:
+                                        () => viewModel.setBannerFile(null),
+                                    colorScheme: colorScheme,
+                                    textTheme: textTheme,
+                                    icon: Icons.image,
+                                    aspectRatio: 3.0, // Wide banner
+                                  ),
+                                  const SizedBox(height: 32),
+
+                                  // Optional note
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primaryContainer
+                                          .withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: colorScheme.primary.withOpacity(
+                                          0.2,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          color: colorScheme.primary,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Store images are optional but recommended. You can always add or change them later in your store settings.',
+                                            style: textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme.onSurface,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -271,7 +329,7 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                     Expanded(
                       flex: 2,
                       child: FilledButton(
-                        onPressed: _isFormValid(viewModel) ? _onNext : null,
+                        onPressed: widget.onNext, // Always allow to continue
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(56),
                           shape: RoundedRectangleBorder(
@@ -319,16 +377,176 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
     );
   }
 
-  bool _isFormValid(StoreSetupViewmodel viewModel) {
-    return viewModel.storeAddress.isNotEmpty &&
-        viewModel.storeAddress['city'] != null &&
-        viewModel.storeAddress['street'] != null &&
-        viewModel.contactInfo.isNotEmpty;
+  Widget _buildImageUploadCard({
+    required String title,
+    required String subtitle,
+    required File? currentFile,
+    required VoidCallback onTap,
+    required VoidCallback onRemove,
+    required ColorScheme colorScheme,
+    required TextTheme textTheme,
+    required IconData icon,
+    required double aspectRatio,
+  }) {
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          child: Column(
+            children: [
+              // Image preview area
+              AspectRatio(
+                aspectRatio: aspectRatio,
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color:
+                        currentFile != null
+                            ? Colors.transparent
+                            : colorScheme.surfaceContainerHighest,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child:
+                      currentFile != null
+                          ? Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  topRight: Radius.circular(12),
+                                ),
+                                child: Image.file(
+                                  currentFile,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.black54,
+                                  child: IconButton(
+                                    onPressed: onRemove,
+                                    icon: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                          : Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  size: 48,
+                                  color: colorScheme.primary,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap to upload',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                ),
+              ),
+
+              // Info section
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      icon,
+                      color:
+                          currentFile != null
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (currentFile == null)
+                      Icon(Icons.upload, color: colorScheme.primary),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  void _onNext() {
-    if (_isFormValid(context.read<StoreSetupViewmodel>())) {
-      widget.onNext();
+  Future<void> _pickImage(StoreSetupViewmodel viewModel, bool isLogo) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: isLogo ? 500 : 1200,
+        maxHeight: isLogo ? 500 : 400,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        final file = File(image.path);
+        if (isLogo) {
+          viewModel.setLogoFile(file);
+        } else {
+          viewModel.setBannerFile(file);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }

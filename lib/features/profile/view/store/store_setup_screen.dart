@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/store_setup_viewmodel.dart';
 import 'store_setup_step1_screen.dart';
-import 'store_setup_step2_screen.dart';
-import 'store_setup_step3_screen.dart';
+import 'store_setup_step2_images_screen.dart';
+import 'store_setup_step3_contact_screen.dart';
+import 'store_setup_step4_screen.dart';
 
 /// Main Store Setup Screen that coordinates navigation between steps
 class StoreSetupScreen extends StatefulWidget {
@@ -39,8 +40,12 @@ class _StoreSetupScreenState extends State<StoreSetupScreen> {
                 onNext: () => _navigateToStep(2, viewModel),
                 onBack: () => _navigateToStep(0, viewModel),
               ),
-              StoreSetupStep3Screen(
+              StoreSetupStep3ContactScreen(
+                onNext: () => _navigateToStep(3, viewModel),
                 onBack: () => _navigateToStep(1, viewModel),
+              ),
+              StoreSetupStep4Screen(
+                onBack: () => _navigateToStep(2, viewModel),
               ),
             ],
           );

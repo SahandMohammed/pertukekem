@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/store_setup_viewmodel.dart';
 import 'widgets/category_chips.dart';
@@ -63,7 +61,7 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                 padding: const EdgeInsets.only(right: 16),
                 child: Center(
                   child: Text(
-                    'Step 1 of 3',
+                    'Step 1 of 4',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -87,6 +85,16 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(2),
                               color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(2),
+                              color: colorScheme.outline.withOpacity(0.3),
                             ),
                           ),
                         ),
@@ -235,52 +243,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                                       onCategoriesChanged:
                                           viewModel.setCategories,
                                     ),
-                                    const SizedBox(height: 24),
-
-                                    // Store Images
-                                    Text(
-                                      'Store Images',
-                                      style: textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Add a logo and banner to make your store stand out',
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-
-                                    // Logo Upload
-                                    _buildImageUploadCard(
-                                      title: 'Store Logo',
-                                      subtitle:
-                                          'Square image recommended (500x500px)',
-                                      currentFile: viewModel.logoFile,
-                                      onTap: () => _pickImage(viewModel, true),
-                                      onRemove:
-                                          () => viewModel.setLogoFile(null),
-                                      colorScheme: colorScheme,
-                                      textTheme: textTheme,
-                                      icon: Icons.store,
-                                    ),
-                                    const SizedBox(height: 16),
-
-                                    // Banner Upload
-                                    _buildImageUploadCard(
-                                      title: 'Store Banner',
-                                      subtitle:
-                                          'Wide image recommended (1200x400px)',
-                                      currentFile: viewModel.bannerFile,
-                                      onTap: () => _pickImage(viewModel, false),
-                                      onRemove:
-                                          () => viewModel.setBannerFile(null),
-                                      colorScheme: colorScheme,
-                                      textTheme: textTheme,
-                                      icon: Icons.image,
-                                    ),
                                   ],
                                 ),
                               ),
@@ -349,90 +311,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
     );
   }
 
-  Widget _buildImageUploadCard({
-    required String title,
-    required String subtitle,
-    required File? currentFile,
-    required VoidCallback onTap,
-    required VoidCallback onRemove,
-    required ColorScheme colorScheme,
-    required TextTheme textTheme,
-    required IconData icon,
-  }) {
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color:
-                      currentFile != null
-                          ? colorScheme.primaryContainer
-                          : colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child:
-                    currentFile != null
-                        ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(currentFile, fit: BoxFit.cover),
-                        )
-                        : Icon(icon, color: colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (currentFile != null)
-                IconButton(
-                  onPressed: onRemove,
-                  icon: Icon(
-                    Icons.close,
-                    size: 20,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                )
-              else
-                Icon(
-                  Icons.add_photo_alternate_outlined,
-                  color: colorScheme.primary,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   bool _isFormValid(StoreSetupViewmodel viewModel) {
     return viewModel.storeName.isNotEmpty &&
         viewModel.description.isNotEmpty &&
@@ -442,36 +320,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
   void _onNext() {
     if (_formKey.currentState?.saveAndValidate() == true) {
       widget.onNext();
-    }
-  }
-
-  Future<void> _pickImage(StoreSetupViewmodel viewModel, bool isLogo) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: isLogo ? 500 : 1200,
-        maxHeight: isLogo ? 500 : 400,
-        imageQuality: 80,
-      );
-
-      if (image != null) {
-        final file = File(image.path);
-        if (isLogo) {
-          viewModel.setLogoFile(file);
-        } else {
-          viewModel.setBannerFile(file);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to pick image: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     }
   }
 }

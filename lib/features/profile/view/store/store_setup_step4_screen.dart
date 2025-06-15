@@ -5,17 +5,17 @@ import '../../viewmodel/store_setup_viewmodel.dart';
 import 'widgets/business_hours_picker.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Step 3: Branding & Hours
-class StoreSetupStep3Screen extends StatefulWidget {
+/// Store Setup Step 4: Branding & Hours
+class StoreSetupStep4Screen extends StatefulWidget {
   final VoidCallback onBack;
 
-  const StoreSetupStep3Screen({super.key, required this.onBack});
+  const StoreSetupStep4Screen({super.key, required this.onBack});
 
   @override
-  State<StoreSetupStep3Screen> createState() => _StoreSetupStep3ScreenState();
+  State<StoreSetupStep4Screen> createState() => _StoreSetupStep4ScreenState();
 }
 
-class _StoreSetupStep3ScreenState extends State<StoreSetupStep3Screen>
+class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormBuilderState>();
   late AnimationController _fadeController;
@@ -64,7 +64,7 @@ class _StoreSetupStep3ScreenState extends State<StoreSetupStep3Screen>
                 padding: const EdgeInsets.only(right: 16),
                 child: Center(
                   child: Text(
-                    'Step 3 of 3',
+                    'Step 4 of 4',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -82,6 +82,16 @@ class _StoreSetupStep3ScreenState extends State<StoreSetupStep3Screen>
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(2),
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Container(
                             height: 4,
