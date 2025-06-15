@@ -17,9 +17,7 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   bool _isLoading = false;
   StoreModel? _store;
   String? _error;
-  int _currentStep = 0;
-
-  // Form data
+  int _currentStep = 0; // Form data
   String _storeName = '';
   String _description = '';
   List<String> _categories = [];
@@ -27,8 +25,36 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   List<Map<String, String>> _contactInfo = [];
   File? _logoFile;
   File? _bannerFile;
-  Map<String, dynamic> _businessHours = {};
+  late Map<String, dynamic> _businessHours;
   Map<String, String> _socialMedia = {};
+
+  StoreSetupViewmodel() {
+    // Initialize business hours with default values
+    _businessHours = _getDefaultBusinessHours();
+  }
+
+  // Helper method to create default business hours
+  static Map<String, dynamic> _getDefaultBusinessHours() {
+    const daysOfWeek = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+
+    final Map<String, dynamic> defaultHours = {};
+    for (final day in daysOfWeek) {
+      defaultHours[day] = {
+        'isOpen': true,
+        'openTime': '09:00',
+        'closeTime': '18:00',
+      };
+    }
+    return defaultHours;
+  }
 
   // Getters
   bool get isLoading => _isLoading;
@@ -95,6 +121,7 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   }
 
   void setBusinessHours(Map<String, dynamic> hours) {
+    debugPrint('🕐 setBusinessHours called with: $hours');
     _businessHours = hours;
     _safeNotifyListeners();
   }
@@ -288,8 +315,17 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
           path: 'stores/$userId/banner',
         );
       }
+      final now = DateTime.now();
 
-      final now = DateTime.now(); // Create store model
+      // Debug: Print current state before creating store
+      debugPrint('🏪 Creating store with data:');
+      debugPrint('  storeName: $_storeName');
+      debugPrint('  businessHours: $_businessHours');
+      debugPrint('  businessHours.isEmpty: ${_businessHours.isEmpty}');
+      debugPrint('  socialMedia: $_socialMedia');
+      debugPrint('  socialMedia.isEmpty: ${_socialMedia.isEmpty}');
+
+      // Create store model
       final newStore = StoreModel(
         storeId: userId,
         ownerId: userId,
@@ -301,9 +337,9 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
         updatedAt: now,
         logoUrl: logoUrl,
         bannerUrl: bannerUrl,
-        profilePicture: logoUrl, // Same as logoUrl for backward compatibility
-        categories: _categories,
-        businessHours: _businessHours.isEmpty ? null : _businessHours,
+        profilePicture:
+            logoUrl, // Same as logoUrl for backward compatibility        categories: _categories,
+        businessHours: _businessHours, // Always save business hours
         socialMedia:
             _socialMedia.isEmpty
                 ? null
@@ -450,9 +486,7 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     _store = null;
     _error = null;
     _isLoading = false;
-    _currentStep = 0;
-
-    // Clear form data
+    _currentStep = 0; // Clear form data
     _storeName = '';
     _description = '';
     _categories = [];
@@ -460,7 +494,7 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     _contactInfo = [];
     _logoFile = null;
     _bannerFile = null;
-    _businessHours = {};
+    _businessHours = _getDefaultBusinessHours();
     _socialMedia = {};
 
     // Notify listeners

@@ -38,7 +38,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
 
   late Map<String, dynamic> businessHours;
   String? expandedDay;
-
   @override
   void initState() {
     super.initState();
@@ -52,9 +51,17 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
         'closeTime': '18:00',
       };
     }
+
+    // Notify parent about the initial business hours after build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateHours();
+    });
   }
 
   void _updateHours() {
+    debugPrint(
+      '🕐 BusinessHoursPicker._updateHours called with: $businessHours',
+    );
     widget.onHoursChanged(businessHours);
   }
 

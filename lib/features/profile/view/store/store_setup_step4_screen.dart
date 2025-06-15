@@ -472,6 +472,14 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
       // Save form data first
       _formKey.currentState?.save();
 
+      // Debug: Print business hours before creating store
+      debugPrint(
+        '🕐 Business Hours before store creation: ${viewModel.businessHours}',
+      );
+      debugPrint(
+        '📱 Social Media before store creation: ${viewModel.socialMedia}',
+      );
+
       // Use createStoreFromForm which handles image uploads and all form data
       await viewModel.createStoreFromForm(context: context);
 
