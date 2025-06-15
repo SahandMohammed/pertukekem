@@ -310,39 +310,149 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
                       );
                     }).toList(),
               ),
-            ],
-
-            // Business Hours
+            ], // Business Hours
             if (widget.store.businessHours?.isNotEmpty ?? false) ...[
               const SizedBox(height: 16),
-              Text(
-                'Business Hours',
-                style: textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface.withOpacity(0.7),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Business Hours',
+                    style: textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  _buildCurrentStatusBadge(),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorScheme.outline.withOpacity(0.1),
+                  ),
+                ),
+                child: Column(
+                  children:
+                      widget.store.businessHours!.entries.map((entry) {
+                        final hourData = _parseBusinessHours(entry.value);
+                        final isLast =
+                            entry == widget.store.businessHours!.entries.last;
+                        final isToday = _isToday(entry.key);
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                isToday
+                                    ? colorScheme.primary.withOpacity(0.05)
+                                    : null,
+                            border:
+                                isLast
+                                    ? null
+                                    : Border(
+                                      bottom: BorderSide(
+                                        color: colorScheme.outline.withOpacity(
+                                          0.1,
+                                        ),
+                                      ),
+                                    ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  if (isToday) ...[
+                                    Container(
+                                      width: 4,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Text(
+                                    _formatDayName(entry.key),
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      fontWeight:
+                                          isToday
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                      color:
+                                          isToday
+                                              ? colorScheme.primary
+                                              : colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  if (isToday) ...[
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '(Today)',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  if (hourData['isOpen'] == true) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${hourData['openTime']} - ${hourData['closeTime']}',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.errorContainer
+                                            .withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'Closed',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onErrorContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                 ),
               ),
-              const SizedBox(height: 8),
-              ...widget.store.businessHours!.entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDayName(entry.key),
-                        style: textTheme.bodySmall,
-                      ),
-                      Text(
-                        entry.value,
-                        style: textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
             ],
           ],
         ),
@@ -632,24 +742,162 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
     );
   }
 
+  Widget _buildCurrentStatusBadge() {
+    final textTheme = Theme.of(context).textTheme;
+
+    // Find today's hours
+    final today = DateTime.now();
+    final weekdays = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+    final todayName = weekdays[today.weekday - 1];
+
+    final todayEntry = widget.store.businessHours!.entries.firstWhere(
+      (entry) =>
+          entry.key.toLowerCase() == todayName ||
+          entry.key.toLowerCase() == todayName.substring(0, 3),
+      orElse: () => MapEntry('', null),
+    );
+
+    if (todayEntry.key.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final hourData = _parseBusinessHours(todayEntry.value);
+    final isOpen = hourData['isOpen'] == true;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color:
+            isOpen
+                ? Colors.green.withOpacity(0.1)
+                : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              isOpen
+                  ? Colors.green.withOpacity(0.3)
+                  : Colors.red.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isOpen ? Colors.green : Colors.red,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isOpen ? 'Open' : 'Closed',
+            style: textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isOpen ? Colors.green.shade700 : Colors.red.shade700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDayName(String day) {
     switch (day.toLowerCase()) {
       case 'monday':
-        return 'Mon';
+      case 'mon':
+        return 'Monday';
       case 'tuesday':
-        return 'Tue';
+      case 'tue':
+        return 'Tuesday';
       case 'wednesday':
-        return 'Wed';
+      case 'wed':
+        return 'Wednesday';
       case 'thursday':
-        return 'Thu';
+      case 'thu':
+        return 'Thursday';
       case 'friday':
-        return 'Fri';
+      case 'fri':
+        return 'Friday';
       case 'saturday':
-        return 'Sat';
+      case 'sat':
+        return 'Saturday';
       case 'sunday':
-        return 'Sun';
+      case 'sun':
+        return 'Sunday';
       default:
-        return day;
+        return day.substring(0, 1).toUpperCase() +
+            day.substring(1).toLowerCase();
     }
+  }
+
+  Map<String, dynamic> _parseBusinessHours(dynamic hours) {
+    if (hours == null) {
+      return {'isOpen': false, 'openTime': '', 'closeTime': ''};
+    }
+
+    if (hours is String) {
+      // Handle simple string format like "09:00 - 17:00" or "Closed"
+      if (hours.toLowerCase() == 'closed') {
+        return {'isOpen': false, 'openTime': '', 'closeTime': ''};
+      }
+
+      if (hours.contains(' - ')) {
+        final parts = hours.split(' - ');
+        return {
+          'isOpen': true,
+          'openTime': parts[0].trim(),
+          'closeTime': parts[1].trim(),
+        };
+      }
+
+      return {'isOpen': false, 'openTime': '', 'closeTime': ''};
+    }
+
+    if (hours is Map<String, dynamic>) {
+      // Handle the actual structure: {isOpen: true, closeTime: 18:00, openTime: 09:00}
+      bool isOpen = hours['isOpen'] ?? false;
+      String openTime = hours['openTime']?.toString() ?? '';
+      String closeTime = hours['closeTime']?.toString() ?? '';
+
+      // Also check alternative key names
+      openTime =
+          openTime.isEmpty ? (hours['open']?.toString() ?? '') : openTime;
+      closeTime =
+          closeTime.isEmpty ? (hours['close']?.toString() ?? '') : closeTime;
+
+      return {'isOpen': isOpen, 'openTime': openTime, 'closeTime': closeTime};
+    }
+
+    return {'isOpen': false, 'openTime': '', 'closeTime': ''};
+  }
+
+  bool _isToday(String day) {
+    final today = DateTime.now();
+    final weekdays = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+    final todayName = weekdays[today.weekday - 1];
+    return day.toLowerCase() == todayName ||
+        day.toLowerCase() ==
+            todayName.substring(
+              0,
+              3,
+            ); // Handle both full and abbreviated day names
   }
 }

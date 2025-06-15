@@ -479,7 +479,58 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     ),
                   ],
                 ),
-                child: Icon(Icons.store, color: Colors.blue.shade600, size: 24),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child:
+                      store.logoUrl != null && store.logoUrl.isNotEmpty
+                          ? Image.network(
+                            store.logoUrl,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.blue.shade600,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.store,
+                                  color: Colors.blue.shade600,
+                                  size: 24,
+                                ),
+                              );
+                            },
+                          )
+                          : Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.store,
+                              color: Colors.blue.shade600,
+                              size: 24,
+                            ),
+                          ),
+                ),
               ),
               const SizedBox(height: 12),
               // Store Name
