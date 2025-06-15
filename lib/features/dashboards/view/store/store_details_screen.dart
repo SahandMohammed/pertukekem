@@ -552,9 +552,12 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
           )
         else if (_storeListings.isEmpty)
           Card(
-            child: Padding(
+            child: Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(32),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.book_outlined,
