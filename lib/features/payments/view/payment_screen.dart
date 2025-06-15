@@ -1020,27 +1020,29 @@ class _PaymentScreenState extends State<PaymentScreen>
         } catch (e) {
           debugPrint('Error completing transaction: $e');
         }
-      }
-
-      // Create order record
+      } // Only create order records for physical books
       String? orderId;
-      try {
-        orderId = await _orderService.createOrder(
-          buyerId: authViewModel.user!.userId,
-          sellerRef: widget.listing.sellerRef,
-          listingRef: widget.listing.sellerRef
-              .collection('listings')
-              .doc(widget.listing.id),
-          totalAmount: widget.listing.price,
-          quantity: 1,
-        );
-        debugPrint('Order created with ID: $orderId');
-      } catch (e) {
-        debugPrint('Error creating order: $e');
-        // Continue with payment flow even if order creation fails
+      if (widget.listing.bookType == 'physical') {
+        try {
+          orderId = await _orderService.createOrder(
+            buyerId: authViewModel.user!.userId,
+            sellerRef: widget.listing.sellerRef,
+            listingRef: widget.listing.sellerRef
+                .collection('listings')
+                .doc(widget.listing.id),
+            totalAmount: widget.listing.price,
+            quantity: 1,
+          );
+          debugPrint('Order created with ID: $orderId');
+        } catch (e) {
+          debugPrint('Error creating order: $e');
+          // Continue with payment flow even if order creation fails
+        }
+      } else {
+        debugPrint('Skipping order creation for ebook purchase');
       }
 
-      // Add book to user's library (especially important for eBooks)
+      // Add book to user's library (for all book types, but especially important for eBooks)
       try {
         await _libraryService.addBookToLibrary(
           userId: authViewModel.user!.userId,

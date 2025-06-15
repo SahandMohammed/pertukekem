@@ -76,7 +76,7 @@ class CheckoutService {
     }
   }
 
-  /// Process individual cart item to create order
+  /// Process individual cart item - create orders only for physical books
   Future<CheckoutResult> _processCartItem({
     required CartItem cartItem,
     required String buyerId,
@@ -87,20 +87,26 @@ class CheckoutService {
     required PaymentSimulationResult paymentResult,
   }) async {
     try {
-      // Create order with correct parameters
-      final sellerRef = cartItem.listing.sellerRef;
-      final listingRef = _firestore
-          .collection('listings')
-          .doc(cartItem.listing.id);
+      String? orderId;
 
-      final orderId = await _orderService.createOrder(
-        buyerId: buyerId,
-        sellerRef: sellerRef,
-        listingRef: listingRef,
-        totalAmount: cartItem.totalPrice,
-        quantity: cartItem.quantity,
-        shippingAddress: shippingAddress,
-      ); // Create transaction record with correct parameters
+      // Only create orders for physical books
+      if (cartItem.listing.bookType == 'physical') {
+        final sellerRef = cartItem.listing.sellerRef;
+        final listingRef = _firestore
+            .collection('listings')
+            .doc(cartItem.listing.id);
+
+        orderId = await _orderService.createOrder(
+          buyerId: buyerId,
+          sellerRef: sellerRef,
+          listingRef: listingRef,
+          totalAmount: cartItem.totalPrice,
+          quantity: cartItem.quantity,
+          shippingAddress: shippingAddress,
+        );
+      }
+
+      // Create transaction record for all purchases (both physical and ebooks)
       await _transactionService.createTransaction(
         transactionId: transactionId,
         buyerId: buyerId,
@@ -109,23 +115,26 @@ class CheckoutService {
         listingTitle: cartItem.listing.title,
         amount: cartItem.totalPrice,
         paymentMethod: paymentMethod,
-        orderId: orderId,
+        orderId: orderId, // Will be null for ebooks
       );
 
-      // Add book to buyer's library if it's a digital item
+      // Add ebooks to buyer's library immediately
       if (cartItem.listing.bookType == 'ebook') {
         await _libraryService.addBookToLibrary(
           userId: buyerId,
           listing: cartItem.listing,
           purchaseDate: DateTime.now(),
-          orderId: orderId,
+          orderId: orderId, // Will be null for ebooks
           transactionId: transactionId,
         );
-      } // Reduce available quantity in listing
+      }
+
+      // Reduce available quantity in listing
       await _reduceListingQuantity(cartItem.listing.id!, cartItem.quantity);
+
       return CheckoutResult(
         success: true,
-        orderId: orderId,
+        orderId: orderId ?? '', // Use empty string for ebooks
         listingId: cartItem.listing.id!,
         listingTitle: cartItem.listing.title,
         sellerId: cartItem.listing.sellerRef.id,
