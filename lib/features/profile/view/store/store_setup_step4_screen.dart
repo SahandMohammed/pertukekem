@@ -481,14 +481,12 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
       );
 
       // Use createStoreFromForm which handles image uploads and all form data
-      await viewModel.createStoreFromForm(context: context);      if (mounted && viewModel.error == null) {
+      await viewModel.createStoreFromForm(context: context);
+      if (mounted && viewModel.error == null) {
         // Navigate to store dashboard by resetting navigation stack
         // This allows AuthWrapper to re-evaluate and show StoreDashboard
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/',
-          (route) => false,
-        );
-        
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+
         // Show success message after a brief delay to ensure navigation completes
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {

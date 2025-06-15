@@ -41,18 +41,8 @@ class StoreSetupService {
     // Reference to store document
     final storeRef = _firestore.collection('stores').doc(userId);
 
-    // Reference to user document
-    final userRef = _firestore.collection('users').doc(userId);
-
     // Add store creation to batch
     batch.set(storeRef, storeData);
-
-    // Add user update to batch
-    batch.update(userRef, {
-      'storeId': userId,
-      'role': 'storeOwner',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
 
     // Execute batch operation
     await batch.commit();
