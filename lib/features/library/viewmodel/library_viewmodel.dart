@@ -225,6 +225,33 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
+  // Download book
+  Future<String> downloadBook({
+    required String libraryBookId,
+    required String downloadUrl,
+    required String fileName,
+    required Function(double) onProgress,
+  }) async {
+    try {
+      final filePath = await _libraryService.downloadBook(
+        libraryBookId: libraryBookId,
+        downloadUrl: downloadUrl,
+        fileName: fileName,
+        onProgress: onProgress,
+      );
+
+      // Reload library to reflect changes
+      await loadLibrary();
+
+      return filePath;
+    } catch (e) {
+      _errorMessage = 'Failed to download book: $e';
+      debugPrint(_errorMessage);
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   // Set search query
   void setSearchQuery(String query) {
     _searchQuery = query;

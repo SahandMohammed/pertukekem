@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../model/library_model.dart';
 import '../../listings/model/listing_model.dart';
 import '../notifiers/library_notifier.dart';
@@ -196,19 +199,51 @@ class LibraryService {
         .update({'isDownloaded': true, 'localFilePath': localFilePath});
   }
 
-  // Remove download information
+  // Remove download information and file
   Future<void> removeDownload(String libraryBookId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
       throw Exception('User not authenticated');
     }
 
-    await _firestore
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('library')
-        .doc(libraryBookId)
-        .update({'isDownloaded': false, 'localFilePath': FieldValue.delete()});
+    try {
+      // Get the book details first to get the local file path
+      final bookDoc =
+          await _firestore
+              .collection('users')
+              .doc(currentUser.uid)
+              .collection('library')
+              .doc(libraryBookId)
+              .get();
+
+      if (bookDoc.exists) {
+        final book = LibraryBook.fromFirestore(bookDoc);
+
+        // Delete the physical file if it exists
+        if (book.localFilePath != null && book.localFilePath!.isNotEmpty) {
+          final file = File(book.localFilePath!);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        }
+      }
+
+      // Update the database
+      await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('library')
+          .doc(libraryBookId)
+          .update({
+            'isDownloaded': false,
+            'localFilePath': FieldValue.delete(),
+          });
+
+      // Notify listeners that the library has changed
+      LibraryNotifier().notifyLibraryChanged();
+    } catch (e) {
+      throw Exception('Failed to remove download: $e');
+    }
   }
 
   // Get library statistics
@@ -311,5 +346,56 @@ class LibraryService {
       (snapshot) =>
           snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList(),
     );
+  }
+
+  // Download book from Firebase Storage
+  Future<String> downloadBook({
+    required String libraryBookId,
+    required String downloadUrl,
+    required String fileName,
+    required Function(double) onProgress,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      // Get the application documents directory
+      final appDir = await getApplicationDocumentsDirectory();
+      final booksDir = Directory('${appDir.path}/books');
+
+      // Create books directory if it doesn't exist
+      if (!await booksDir.exists()) {
+        await booksDir.create(recursive: true);
+      }
+
+      // Create the file path
+      final filePath = '${booksDir.path}/$fileName';
+      final file = File(filePath);
+
+      // Download the file from the URL
+      final response = await http.get(Uri.parse(downloadUrl));
+
+      if (response.statusCode == 200) {
+        // Write the file
+        await file.writeAsBytes(response.bodyBytes);
+
+        // Update the database with the local file path
+        await markAsDownloaded(
+          libraryBookId: libraryBookId,
+          localFilePath: filePath,
+        );
+
+        // Notify listeners that the library has changed
+        LibraryNotifier().notifyLibraryChanged();
+
+        return filePath;
+      } else {
+        throw Exception('Failed to download file: HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Download failed: $e');
+    }
   }
 }

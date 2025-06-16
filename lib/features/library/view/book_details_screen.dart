@@ -826,27 +826,41 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
     });
 
     _downloadController.forward();
-
     try {
-      // Simulate download progress
-      for (int i = 0; i <= 100; i += 5) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        if (mounted) {
-          setState(() {
-            _downloadProgress = i / 100.0;
-          });
-        }
+      // Get the download URL from the book
+      if (widget.book.downloadUrl == null || widget.book.downloadUrl!.isEmpty) {
+        throw Exception('Download URL not available for this book');
       }
 
-      // Mock local file path
-      final localPath = '/storage/emulated/0/Download/${widget.book.title}.pdf';
+      // Create a safe filename
+      final fileName =
+          '${widget.book.title.replaceAll(RegExp(r'[^\w\s]+'), '')}_${widget.book.id}.pdf';
 
-      await viewModel.markBookAsDownloaded(
+      // Download the book using the ViewModel
+      final localPath = await viewModel.downloadBook(
         libraryBookId: widget.book.id,
-        localFilePath: localPath,
+        downloadUrl: widget.book.downloadUrl!,
+        fileName: fileName,
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() {
+              _downloadProgress = progress;
+            });
+          }
+        },
       );
 
-      // Refresh book data to get updated state
+      // Update local state immediately to reflect the change
+      if (mounted) {
+        setState(() {
+          _currentBook = (_currentBook ?? widget.book).copyWith(
+            isDownloaded: true,
+            localFilePath: localPath,
+          );
+        });
+      }
+
+      // Also refresh from the database
       await _refreshBookData(viewModel);
 
       if (mounted) {
