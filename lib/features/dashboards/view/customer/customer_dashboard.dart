@@ -14,6 +14,7 @@ import '../../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../../cart/services/cart_service.dart';
 import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
 import '../../../notifications/view/customer_notification_list_screen.dart';
+import '../../../community/view/community_tab.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -58,7 +59,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             const CustomerOrdersTab(),
             // Library Tab - User's Library (previously index 3, now index 2)
             const LibraryTab(),
-            // Profile Tab (previously index 4, now index 3)
+            // Community Tab - Community Features (new at index 3)
+            const CommunityTab(),
+            // Profile Tab (previously index 4, now index 4)
             const ProfileTab(),
           ],
         ),
@@ -85,6 +88,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               icon: Icon(Icons.library_books_outlined),
               selectedIcon: Icon(Icons.library_books),
               label: 'Library',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.people_outlined),
+              selectedIcon: Icon(Icons.people),
+              label: 'Community',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),

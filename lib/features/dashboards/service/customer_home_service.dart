@@ -5,20 +5,26 @@ import '../model/store_model.dart';
 class CustomerHomeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Get recently listed items (sorted by creation date)
+  /// Get recently listed items from stores only (sorted by creation date)
+  /// Note: This query requires a composite index in Firestore:
+  /// Collection: listings, Fields: sellerType (Ascending), createdAt (Descending)
   Future<List<Listing>> getRecentlyListedItems({int limit = 10}) async {
     try {
-      print('DEBUG: Fetching recent listings by createdAt...');
+      print('DEBUG: Fetching recent listings from stores only...');
       print('DEBUG: Limit set to: $limit');
 
       final querySnapshot =
           await _firestore
               .collection('listings')
+              .where(
+                'sellerType',
+                isEqualTo: 'store',
+              ) // Only show store listings
               .orderBy('createdAt', descending: true)
               .limit(limit)
               .get();
 
-      print('DEBUG: Found ${querySnapshot.docs.length} recent listings');
+      print('DEBUG: Found ${querySnapshot.docs.length} recent store listings');
 
       final listings =
           querySnapshot.docs.map((doc) {
@@ -31,16 +37,17 @@ class CustomerHomeService {
       // Debug logging
       for (final listing in listings) {
         final listingDate = listing.createdAt?.toDate();
-        print('DEBUG: Listing ${listing.id}: ${listing.title}');
+        print('DEBUG: Store Listing ${listing.id}: ${listing.title}');
         print(
           'DEBUG:   - Created: ${listing.createdAt} (${listingDate ?? 'No date'})',
         );
+        print('DEBUG:   - Seller Type: ${listing.sellerType}');
       }
 
       return listings;
     } catch (e) {
       print('DEBUG: Error in getRecentlyListedItems: $e');
-      throw Exception('Failed to fetch recently listed items: $e');
+      throw Exception('Failed to fetch recently listed items from stores: $e');
     }
   }
 

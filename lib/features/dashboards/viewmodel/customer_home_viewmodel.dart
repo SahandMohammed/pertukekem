@@ -54,7 +54,7 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
-  /// Load recently listed items
+  /// Load recently listed items from stores only (excludes user listings)
   Future<void> loadRecentlyListedItems() async {
     _isLoadingRecentItems = true;
     _errorMessage = null;
