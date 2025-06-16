@@ -11,6 +11,9 @@ import 'saved_books_screen.dart';
 import 'edit_profile_screen.dart';
 import '../../viewmodel/store_profile_viewmodel.dart';
 import '../../services/user_profile_service.dart';
+import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
+import '../../../notifications/view/customer_notification_list_screen.dart';
+import '../../../notifications/view/notification_debug_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -315,9 +318,22 @@ class _ProfileTabState extends State<ProfileTab> {
                         _MenuOption(
                           icon: Icons.notifications_outlined,
                           title: 'Notifications',
-                          subtitle: 'Manage your notifications',
-                          onTap:
-                              () => _showComingSoon(context, 'Notifications'),
+                          subtitle: 'View and manage your notifications',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ChangeNotifierProvider(
+                                      create:
+                                          (context) =>
+                                              CustomerNotificationViewModel()
+                                                ..initialize(),
+                                      child:
+                                          const CustomerNotificationListScreen(),
+                                    ),
+                              ),
+                            );
+                          },
                         ),
                       ]),
                       const SizedBox(height: 16),
@@ -344,6 +360,22 @@ class _ProfileTabState extends State<ProfileTab> {
                           subtitle: 'Learn more about PertuKeKem',
                           onTap: () => _showComingSoon(context, 'About'),
                         ),
+                        // Debug option - only show in debug mode
+                        if (kDebugMode)
+                          _MenuOption(
+                            icon: Icons.bug_report,
+                            title: 'Notification Testing',
+                            subtitle: 'Test notification system (Debug)',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) =>
+                                          const NotificationDebugScreen(),
+                                ),
+                              );
+                            },
+                          ),
                         _MenuOption(
                           icon: Icons.logout,
                           title: 'Sign Out',
@@ -435,6 +467,12 @@ class _ProfileTabState extends State<ProfileTab> {
                           color: colorScheme.primary.withOpacity(0.2),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
+                          spreadRadius: 2,
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -525,21 +563,21 @@ class _ProfileTabState extends State<ProfileTab> {
                     children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              displayName,
-                              style: textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            displayName,
+                            style: textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          if (isEmailVerified || isPhoneVerified)
+                          if (isEmailVerified || isPhoneVerified) ...[
+                            const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                                horizontal: 4,
+                                vertical: 1,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.green.withOpacity(0.1),
@@ -553,20 +591,14 @@ class _ProfileTabState extends State<ProfileTab> {
                                 children: [
                                   Icon(
                                     Icons.verified,
-                                    size: 12,
+                                    size: 16,
                                     color: Colors.green.shade700,
                                   ),
                                   const SizedBox(width: 2),
-                                  Text(
-                                    'Verified',
-                                    style: textTheme.labelSmall?.copyWith(
-                                      color: Colors.green.shade700,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -590,11 +622,16 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colorScheme.primary.withOpacity(0.2),
-                    ),
+                    color: colorScheme.surface.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: IconButton(
                     onPressed: () async {
@@ -628,7 +665,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     },
                     icon: Icon(
                       Icons.edit_rounded,
-                      color: colorScheme.primary,
+                      color: Colors.black,
                       size: 20,
                     ),
                     tooltip: 'Edit Profile',

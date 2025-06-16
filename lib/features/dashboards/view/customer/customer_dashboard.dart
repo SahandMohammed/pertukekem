@@ -12,6 +12,8 @@ import '../../../library/model/library_model.dart';
 import '../../../listings/view/listing_details_screen.dart';
 import '../../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../../cart/services/cart_service.dart';
+import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
+import '../../../notifications/view/customer_notification_list_screen.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -32,13 +34,20 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create:
-          (context) =>
-              CustomerHomeViewModel()
-                ..loadRecentlyListedItems()
-                ..loadRecentlyJoinedStores()
-                ..loadCurrentlyReadingBooks(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create:
+              (context) =>
+                  CustomerHomeViewModel()
+                    ..loadRecentlyListedItems()
+                    ..loadRecentlyJoinedStores()
+                    ..loadCurrentlyReadingBooks(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => CustomerNotificationViewModel()..initialize(),
+        ),
+      ],
       child: Scaffold(
         body: IndexedStack(
           index: _selectedIndex,
@@ -248,36 +257,72 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ),
               ),
               // Notification Icon
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Stack(
-                  children: [
-                    const Center(
-                      child: Icon(
-                        Icons.notifications_outlined,
-                        color: Colors.black54,
-                        size: 20,
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+              Consumer<CustomerNotificationViewModel>(
+                builder: (context, notificationViewModel, child) {
+                  final unreadCount = notificationViewModel.unreadCount;
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ChangeNotifierProvider.value(
+                                value: notificationViewModel,
+                                child: const CustomerNotificationListScreen(),
+                              ),
                         ),
+                      );
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Stack(
+                        children: [
+                          const Center(
+                            child: Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.black54,
+                              size: 20,
+                            ),
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                constraints: const BoxConstraints(minWidth: 16),
+                                height: 16,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    unreadCount > 99
+                                        ? '99+'
+                                        : unreadCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(width: 8),
               // Shopping Cart Icon
