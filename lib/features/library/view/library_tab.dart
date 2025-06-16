@@ -209,37 +209,44 @@ class _LibraryTabState extends State<LibraryTab> {
                     ),
                   ],
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child:
-                      book.coverUrl != null && book.coverUrl!.isNotEmpty
-                          ? Image.network(
-                            book.coverUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildBookPlaceholder();
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                color: colorScheme.surfaceContainerHighest,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    value:
-                                        loadingProgress.expectedTotalBytes !=
-                                                null
-                                            ? loadingProgress
-                                                    .cumulativeBytesLoaded /
-                                                loadingProgress
-                                                    .expectedTotalBytes!
-                                            : null,
-                                    strokeWidth: 2,
+                child: Hero(
+                  tag: 'book_cover_${book.id}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child:
+                        book.coverUrl != null && book.coverUrl!.isNotEmpty
+                            ? Image.network(
+                              book.coverUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildBookPlaceholder();
+                              },
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value:
+                                          loadingProgress.expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                      strokeWidth: 2,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          )
-                          : _buildBookPlaceholder(),
+                                );
+                              },
+                            )
+                            : _buildBookPlaceholder(),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
