@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/library_model.dart';
 import '../viewmodel/library_viewmodel.dart';
+import 'ebook_reader_screen.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   final LibraryBook book;
@@ -19,14 +20,15 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
   late Animation<double> _downloadAnimation;
-
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   bool _showFullDescription = false;
-
+  LibraryBook? _currentBook; // Local state to track book updates
   @override
   void initState() {
     super.initState();
+    _currentBook = widget.book;
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -343,6 +345,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
     ThemeData theme,
   ) {
     final colorScheme = theme.colorScheme;
+    final book = _currentBook ?? widget.book; // Use current book state
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -353,7 +356,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
             width: double.infinity,
             height: 56,
             child:
-                widget.book.isDownloaded
+                book.isDownloaded
                     ? FilledButton.icon(
                       onPressed: () => _openBook(context),
                       icon: const Icon(Icons.auto_stories, size: 24),
@@ -397,7 +400,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
           // Secondary Actions
           Row(
             children: [
-              if (widget.book.isDownloaded)
+              if (book.isDownloaded)
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _removeDownload(viewModel),
@@ -412,7 +415,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                     ),
                   ),
                 ),
-              if (widget.book.isDownloaded) const SizedBox(width: 12),
+              if (book.isDownloaded) const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _shareBook,
@@ -843,6 +846,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
         localFilePath: localPath,
       );
 
+      // Refresh book data to get updated state
+      await _refreshBookData(viewModel);
+
       if (mounted) {
         _showSuccessSnackBar('Book downloaded successfully!');
       }
@@ -870,6 +876,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
     if (confirmed == true) {
       try {
         await viewModel.removeDownload(widget.book.id);
+        // Refresh book data to get updated state
+        await _refreshBookData(viewModel);
         _showSuccessSnackBar('Download removed successfully');
       } catch (e) {
         _showErrorSnackBar('Failed to remove download: $e');
@@ -878,17 +886,43 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   }
 
   void _openBook(BuildContext context) {
-    // Navigate to PDF viewer or book reader
-    _showInfoSnackBar('Opening book reader...');
-    // In a real app, you would navigate to a PDF viewer or e-book reader
-    // Navigator.push(context, MaterialPageRoute(
-    //   builder: (context) => PdfViewerScreen(filePath: widget.book.localFilePath!),
-    // ));
+    final book = _currentBook ?? widget.book;
+
+    if (book.localFilePath == null || book.localFilePath!.isEmpty) {
+      _showErrorSnackBar(
+        'Book file not available. Please download the book first.',
+      );
+      return;
+    }
+
+    // Navigate to the ebook reader
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EbookReaderScreen(book: book)),
+    ).then((_) {
+      // Refresh book data when returning from reader (in case reading progress was updated)
+      final viewModel = context.read<LibraryViewModel>();
+      _refreshBookData(viewModel);
+    });
   }
 
   void _shareBook() {
     _showInfoSnackBar('Sharing book...');
     // Implement share functionality
+  }
+
+  // Add method to refresh book data
+  Future<void> _refreshBookData(LibraryViewModel viewModel) async {
+    try {
+      final updatedBook = await viewModel.getLibraryBook(widget.book.id);
+      if (updatedBook != null && mounted) {
+        setState(() {
+          _currentBook = updatedBook;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error refreshing book data: $e');
+    }
   }
 
   Future<bool?> _showConfirmationDialog(String title, String content) {
