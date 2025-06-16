@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/library_model.dart';
 import '../viewmodel/library_viewmodel.dart';
+import '../viewmodel/book_details_viewmodel.dart';
 import 'ebook_reader_screen.dart';
 
 class BookDetailsScreen extends StatefulWidget {
@@ -20,16 +21,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
   late Animation<double> _downloadAnimation;
-  bool _isDownloading = false;
-  double _downloadProgress = 0.0;
-  bool _showFullDescription = false;
-  LibraryBook? _currentBook; // Local state to track book updates
-  bool _isRefreshing = false;
 
+  BookDetailsViewModel? _bookDetailsViewModel;
   @override
   void initState() {
     super.initState();
-    _currentBook = widget.book;
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -56,9 +52,52 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Initialize BookDetailsViewModel if not already done
+    if (_bookDetailsViewModel == null) {
+      final libraryViewModel = context.read<LibraryViewModel>();
+      _bookDetailsViewModel = BookDetailsViewModel(
+        libraryViewModel,
+        widget.book,
+      );
+
+      // Listen to ViewModel state changes
+      _bookDetailsViewModel!.addListener(_onViewModelChanged);
+    }
+  }
+
+  void _onViewModelChanged() {
+    if (!mounted) return;
+
+    final viewModel = _bookDetailsViewModel!;
+
+    // Handle download animation
+    if (viewModel.isDownloading) {
+      _downloadController.forward();
+    } else {
+      _downloadController.reset();
+    }
+
+    // Handle messages
+    if (viewModel.errorMessage != null) {
+      _showErrorSnackBar(viewModel.errorMessage!);
+      viewModel.clearMessages();
+    }
+
+    if (viewModel.successMessage != null) {
+      _showSuccessSnackBar(viewModel.successMessage!);
+      viewModel.clearMessages();
+    }
+  }
+
+  @override
   void dispose() {
     _animationController.dispose();
     _downloadController.dispose();
+    _bookDetailsViewModel?.removeListener(_onViewModelChanged);
+    _bookDetailsViewModel?.dispose();
     super.dispose();
   }
 
@@ -69,38 +108,51 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
     final size = MediaQuery.of(context).size;
 
     return Consumer<LibraryViewModel>(
-      builder:
-          (context, viewModel, child) => Scaffold(
-            backgroundColor: colorScheme.surface,
-            body: CustomScrollView(
-              slivers: [
-                _buildAppBar(context, colorScheme),
-                SliverToBoxAdapter(
-                  child: AnimatedBuilder(
-                    animation: _fadeAnimation,
-                    builder:
-                        (context, child) => Opacity(
-                          opacity: _fadeAnimation.value,
-                          child: Transform.translate(
-                            offset: Offset(0, _slideAnimation.value),
-                            child: Column(
-                              children: [
-                                _buildBookHero(context, size),
-                                _buildBookInfo(context, theme),
-                                _buildActionButtons(context, viewModel, theme),
-                                _buildReadingProgress(context, theme),
-                                _buildBookDescription(context, theme),
-                                _buildBookMetadata(context, theme),
-                                const SizedBox(height: 32),
-                              ],
-                            ),
-                          ),
+      builder: (context, libraryViewModel, child) {
+        if (_bookDetailsViewModel == null) return const SizedBox.shrink();
+
+        return ChangeNotifierProvider<BookDetailsViewModel>.value(
+          value: _bookDetailsViewModel!,
+          child: Consumer<BookDetailsViewModel>(
+            builder:
+                (context, bookDetailsViewModel, child) => Scaffold(
+                  backgroundColor: colorScheme.surface,
+                  body: CustomScrollView(
+                    slivers: [
+                      _buildAppBar(context, colorScheme),
+                      SliverToBoxAdapter(
+                        child: AnimatedBuilder(
+                          animation: _fadeAnimation,
+                          builder:
+                              (context, child) => Opacity(
+                                opacity: _fadeAnimation.value,
+                                child: Transform.translate(
+                                  offset: Offset(0, _slideAnimation.value),
+                                  child: Column(
+                                    children: [
+                                      _buildBookHero(context, size),
+                                      _buildBookInfo(context, theme),
+                                      _buildActionButtons(
+                                        context,
+                                        bookDetailsViewModel,
+                                        theme,
+                                      ),
+                                      _buildReadingProgress(context, theme),
+                                      _buildBookDescription(context, theme),
+                                      _buildBookMetadata(context, theme),
+                                      const SizedBox(height: 32),
+                                    ],
+                                  ),
+                                ),
+                              ),
                         ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
           ),
+        );
+      },
     );
   }
 
@@ -343,11 +395,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
 
   Widget _buildActionButtons(
     BuildContext context,
-    LibraryViewModel viewModel,
+    BookDetailsViewModel viewModel,
     ThemeData theme,
   ) {
     final colorScheme = theme.colorScheme;
-    final book = _currentBook ?? widget.book; // Use current book state
+    final book = viewModel.currentBook ?? widget.book;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -377,10 +429,10 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                         ),
                       ),
                     )
-                    : _isDownloading
-                    ? _buildDownloadProgressButton(colorScheme)
+                    : viewModel.isDownloading
+                    ? _buildDownloadProgressButton(colorScheme, viewModel)
                     : FilledButton.icon(
-                      onPressed: () => _downloadBook(viewModel),
+                      onPressed: () => viewModel.downloadBook(),
                       icon: const Icon(Icons.download, size: 24),
                       label: Text(
                         'Download Book',
@@ -398,7 +450,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                       ),
                     ),
           ),
-          const SizedBox(height: 12), // Secondary Actions
+          const SizedBox(height: 12),
+          // Secondary Actions
           Row(
             children: [
               if (book.isDownloaded)
@@ -406,7 +459,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                   width: 56,
                   height: 48,
                   child: OutlinedButton(
-                    onPressed: () => _removeDownload(viewModel),
+                    onPressed: () => _showRemoveDownloadDialog(viewModel),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colorScheme.error,
                       side: BorderSide(color: colorScheme.error),
@@ -441,7 +494,10 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
     );
   }
 
-  Widget _buildDownloadProgressButton(ColorScheme colorScheme) {
+  Widget _buildDownloadProgressButton(
+    ColorScheme colorScheme,
+    BookDetailsViewModel viewModel,
+  ) {
     return AnimatedBuilder(
       animation: _downloadAnimation,
       builder:
@@ -463,7 +519,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                 ),
                 // Progress Fill
                 FractionallySizedBox(
-                  widthFactor: _downloadProgress,
+                  widthFactor: viewModel.downloadProgress,
                   child: Container(
                     height: 56,
                     decoration: BoxDecoration(
@@ -481,14 +537,14 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          value: _downloadProgress,
+                          value: viewModel.downloadProgress,
                           strokeWidth: 2,
                           color: colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Downloading... ${(_downloadProgress * 100).toInt()}%',
+                        'Downloading... ${(viewModel.downloadProgress * 100).toInt()}%',
                         style: TextStyle(
                           color: colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.w600,
@@ -505,100 +561,104 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   }
 
   Widget _buildReadingProgress(BuildContext context, ThemeData theme) {
-    final book = _currentBook ?? widget.book; // Use current book state
+    return Consumer<BookDetailsViewModel>(
+      builder: (context, viewModel, child) {
+        final progressData = viewModel.getReadingProgressData();
 
-    if (book.totalPages == null || book.totalPages == 0) {
-      return const SizedBox.shrink();
-    }
+        if (!progressData['hasProgress']) {
+          return const SizedBox.shrink();
+        }
 
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final progress = book.readingProgress;
-    final currentPage = book.currentPage ?? 0;
-    final totalPages = book.totalPages!;
+        final colorScheme = theme.colorScheme;
+        final textTheme = theme.textTheme;
+        final progress = progressData['progress'] as double;
+        final currentPage = progressData['currentPage'] as int;
+        final totalPages = progressData['totalPages'] as int;
+        final isCompleted = progressData['isCompleted'] as bool;
+        final lastReadDate = progressData['lastReadDate'] as DateTime?;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Reading Progress',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      widget.book.isCompleted
-                          ? colorScheme.primaryContainer
-                          : colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  widget.book.isCompleted
-                      ? 'Completed'
-                      : '${(progress * 100).toInt()}%',
-                  style: TextStyle(
-                    color:
-                        widget.book.isCompleted
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSecondaryContainer,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Reading Progress',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          isCompleted
+                              ? colorScheme.primaryContainer
+                              : colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isCompleted
+                          ? 'Completed'
+                          : '${(progress * 100).toInt()}%',
+                      style: TextStyle(
+                        color:
+                            isCompleted
+                                ? colorScheme.onPrimaryContainer
+                                : colorScheme.onSecondaryContainer,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isCompleted ? colorScheme.primary : colorScheme.secondary,
                 ),
+                borderRadius: BorderRadius.circular(4),
+                minHeight: 8,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Page $currentPage of $totalPages',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (lastReadDate != null)
+                    Text(
+                      'Last read: ${_formatDate(lastReadDate)}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              widget.book.isCompleted
-                  ? colorScheme.primary
-                  : colorScheme.secondary,
-            ),
-            borderRadius: BorderRadius.circular(4),
-            minHeight: 8,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Page $currentPage of $totalPages',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              if (widget.book.lastReadDate != null)
-                Text(
-                  'Last read: ${_formatDate(widget.book.lastReadDate!)}',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -606,91 +666,87 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    // Mock description - in real app, this would come from the book data
-    final description =
-        'Immerse yourself in this captivating literary work that takes readers on an extraordinary journey through compelling narratives and rich character development. This book offers profound insights and entertainment that will keep you engaged from the first page to the last.';
+    return Consumer<BookDetailsViewModel>(
+      builder: (context, viewModel, child) {
+        // Mock description - in real app, this would come from the book data
+        final description =
+            'Immerse yourself in this captivating literary work that takes readers on an extraordinary journey through compelling narratives and rich character development. This book offers profound insights and entertainment that will keep you engaged from the first page to the last.';
 
-    return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Description',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
+        return Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
           ),
-          const SizedBox(height: 12),
-          AnimatedCrossFade(
-            firstChild: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  description.length > 150
-                      ? '${description.substring(0, 150)}...'
-                      : description,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Description',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
                 ),
-                if (description.length > 150)
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _showFullDescription = true;
-                      });
-                    },
-                    child: Text('Read more'),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              const SizedBox(height: 12),
+              AnimatedCrossFade(
+                firstChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      description.length > 150
+                          ? '${description.substring(0, 150)}...'
+                          : description,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            secondChild: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  description,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
+                    if (description.length > 150)
+                      TextButton(
+                        onPressed: viewModel.toggleDescription,
+                        child: Text('Read more'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _showFullDescription = false;
-                    });
-                  },
-                  child: Text('Show less'),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
+                secondChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      description,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: viewModel.toggleDescription,
+                      child: Text('Show less'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            crossFadeState:
-                _showFullDescription
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 300),
+                crossFadeState:
+                    viewModel.showFullDescription
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 300),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -820,149 +876,42 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  Future<void> _downloadBook(LibraryViewModel viewModel) async {
-    if (widget.book.downloadUrl == null) {
-      _showErrorSnackBar('Download URL not available');
+  void _openBook(BuildContext context) {
+    final viewModel = _bookDetailsViewModel!;
+
+    if (!viewModel.canOpenBook()) {
+      _showErrorSnackBar(
+        'Book file not available. Please download the book first.',
+      );
       return;
     }
 
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress = 0.0;
+    // Navigate to the ebook reader
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EbookReaderScreen(book: viewModel.currentBook!),
+      ),
+    ).then((_) async {
+      // Refresh book data when returning from reader
+      await viewModel.refreshBookData();
     });
-
-    _downloadController.forward();
-    try {
-      // Get the download URL from the book
-      if (widget.book.downloadUrl == null || widget.book.downloadUrl!.isEmpty) {
-        throw Exception('Download URL not available for this book');
-      }
-
-      // Create a safe filename
-      final fileName =
-          '${widget.book.title.replaceAll(RegExp(r'[^\w\s]+'), '')}_${widget.book.id}.pdf';
-
-      // Download the book using the ViewModel
-      final localPath = await viewModel.downloadBook(
-        libraryBookId: widget.book.id,
-        downloadUrl: widget.book.downloadUrl!,
-        fileName: fileName,
-        onProgress: (progress) {
-          print(
-            'UI received progress update: ${(progress * 100).toStringAsFixed(1)}%',
-          );
-          if (mounted) {
-            setState(() {
-              _downloadProgress = progress;
-            });
-          }
-        },
-      );
-
-      // Update local state immediately to reflect the change
-      if (mounted) {
-        setState(() {
-          _currentBook = (_currentBook ?? widget.book).copyWith(
-            isDownloaded: true,
-            localFilePath: localPath,
-          );
-        });
-      }
-
-      // Also refresh from the database
-      await _refreshBookData(viewModel);
-
-      if (mounted) {
-        _showSuccessSnackBar('Book downloaded successfully!');
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('Failed to download book: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isDownloading = false;
-          _downloadProgress = 0.0;
-        });
-        _downloadController.reset();
-      }
-    }
   }
 
-  Future<void> _removeDownload(LibraryViewModel viewModel) async {
+  void _showRemoveDownloadDialog(BookDetailsViewModel viewModel) async {
     final confirmed = await _showConfirmationDialog(
       'Remove Download',
       'Are you sure you want to remove the downloaded file? You can download it again later.',
     );
 
     if (confirmed == true) {
-      try {
-        await viewModel.removeDownload(widget.book.id);
-        // Refresh book data to get updated state
-        await _refreshBookData(viewModel);
-        _showSuccessSnackBar('Download removed successfully');
-      } catch (e) {
-        _showErrorSnackBar('Failed to remove download: $e');
-      }
+      await viewModel.removeDownload();
     }
-  }
-
-  void _openBook(BuildContext context) {
-    final book = _currentBook ?? widget.book;
-
-    if (book.localFilePath == null || book.localFilePath!.isEmpty) {
-      _showErrorSnackBar(
-        'Book file not available. Please download the book first.',
-      );
-      return;
-    } // Navigate to the ebook reader
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => EbookReaderScreen(book: book)),
-    ).then((_) async {
-      // Refresh book data when returning from reader (in case reading progress was updated)
-      final viewModel = context.read<LibraryViewModel>();
-      await _refreshBookData(viewModel);
-
-      // Force a rebuild to update the reading progress display
-      if (mounted) {
-        setState(() {
-          // Trigger rebuild to show updated reading progress
-        });
-      }
-    });
   }
 
   void _shareBook() {
     _showInfoSnackBar('Sharing book...');
     // Implement share functionality
-  }
-
-  // Add method to refresh book data
-  Future<void> _refreshBookData(LibraryViewModel viewModel) async {
-    if (_isRefreshing) return; // Prevent multiple simultaneous refreshes
-
-    setState(() {
-      _isRefreshing = true;
-    });
-
-    try {
-      final updatedBook = await viewModel.getLibraryBook(widget.book.id);
-      if (updatedBook != null && mounted) {
-        setState(() {
-          _currentBook = updatedBook;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error refreshing book data: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
-      }
-    }
   }
 
   Future<bool?> _showConfirmationDialog(String title, String content) {
