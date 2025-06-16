@@ -396,38 +396,40 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                       ),
                     ),
           ),
-          const SizedBox(height: 12),
-          // Secondary Actions
+          const SizedBox(height: 12), // Secondary Actions
           Row(
             children: [
               if (book.isDownloaded)
-                Expanded(
-                  child: OutlinedButton.icon(
+                SizedBox(
+                  width: 56,
+                  height: 48,
+                  child: OutlinedButton(
                     onPressed: () => _removeDownload(viewModel),
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    label: const Text('Remove Download'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colorScheme.error,
                       side: BorderSide(color: colorScheme.error),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      padding: EdgeInsets.zero,
                     ),
+                    child: const Icon(Icons.delete_outline, size: 20),
                   ),
                 ),
               if (book.isDownloaded) const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _shareBook,
-                  icon: const Icon(Icons.share_outlined, size: 20),
-                  label: const Text('Share'),
                   style: OutlinedButton.styleFrom(
+                    fixedSize: const Size.fromHeight(48),
                     foregroundColor: colorScheme.onSurface,
                     side: BorderSide(color: colorScheme.outline),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  onPressed: _shareBook,
+                  icon: const Icon(Icons.share_outlined, size: 20),
+                  label: const Text('Share'),
                 ),
               ),
             ],
@@ -842,6 +844,9 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
         downloadUrl: widget.book.downloadUrl!,
         fileName: fileName,
         onProgress: (progress) {
+          print(
+            'UI received progress update: ${(progress * 100).toStringAsFixed(1)}%',
+          );
           if (mounted) {
             setState(() {
               _downloadProgress = progress;

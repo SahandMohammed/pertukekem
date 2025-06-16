@@ -374,23 +374,78 @@ class LibraryService {
       final filePath = '${booksDir.path}/$fileName';
       final file = File(filePath);
 
-      // Download the file from the URL
-      final response = await http.get(Uri.parse(downloadUrl));
-
+      // Start the request
+      final request = http.Request('GET', Uri.parse(downloadUrl));
+      final response = await request.send();
       if (response.statusCode == 200) {
-        // Write the file
-        await file.writeAsBytes(response.bodyBytes);
+        // Get the content length to track progress
+        final contentLength = response.contentLength;
+        var downloadedBytes = 0;
 
-        // Update the database with the local file path
-        await markAsDownloaded(
-          libraryBookId: libraryBookId,
-          localFilePath: filePath,
-        );
+        print('Starting download - Content Length: $contentLength bytes');
 
-        // Notify listeners that the library has changed
-        LibraryNotifier().notifyLibraryChanged();
+        // Create a sink to write the file
+        final sink = file.openWrite();
 
-        return filePath;
+        try {
+          // Listen to the response stream and track progress
+          await for (final chunk in response.stream) {
+            sink.add(chunk);
+            downloadedBytes += chunk.length;
+
+            // Calculate and report progress
+            if (contentLength != null && contentLength > 0) {
+              final progress = downloadedBytes / contentLength;
+              print(
+                'Download progress: ${(progress * 100).toStringAsFixed(1)}% ($downloadedBytes/$contentLength bytes)',
+              );
+              onProgress(progress);
+            } else {
+              // If content length is unknown, show indeterminate progress
+              // Report progress based on downloaded chunks (fake progress)
+              final fakeProgress = (downloadedBytes / (1024 * 1024 * 5)).clamp(
+                0.0,
+                0.95,
+              ); // Assume 5MB file
+              print(
+                'Download progress (estimated): ${(fakeProgress * 100).toStringAsFixed(1)}% ($downloadedBytes bytes)',
+              );
+              onProgress(fakeProgress);
+            }
+
+            // Add a small delay to make progress visible for smaller files
+            if (downloadedBytes % (64 * 1024) == 0) {
+              // Every 64KB
+              await Future.delayed(const Duration(milliseconds: 50));
+            }
+          }
+
+          // Close the sink
+          await sink.close();
+
+          print('Download completed - Total bytes: $downloadedBytes');
+
+          // Report 100% completion
+          onProgress(1.0);
+
+          // Update the database with the local file path
+          await markAsDownloaded(
+            libraryBookId: libraryBookId,
+            localFilePath: filePath,
+          );
+
+          // Notify listeners that the library has changed
+          LibraryNotifier().notifyLibraryChanged();
+
+          return filePath;
+        } catch (e) {
+          // Clean up the file if download fails
+          await sink.close();
+          if (await file.exists()) {
+            await file.delete();
+          }
+          rethrow;
+        }
       } else {
         throw Exception('Failed to download file: HTTP ${response.statusCode}');
       }
