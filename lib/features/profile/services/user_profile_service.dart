@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import '../../authentication/model/user_model.dart';
 
 class UserProfileService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   /// Fetch user profile data from Firestore
   Future<UserModel?> getUserProfile(String userId) async {
@@ -80,6 +83,66 @@ class UserProfileService {
       return ordersQuery.docs.length;
     } catch (e) {
       return 0;
+    }
+  }
+
+  /// Upload profile picture to Firebase Storage
+  Future<String> uploadProfilePicture(String userId, File imageFile) async {
+    try {
+      final ref = _storage.ref().child('users/$userId/profile_picture.jpg');
+
+      final uploadTask = ref.putFile(
+        imageFile,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'uploaded_by': userId,
+            'upload_time': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      throw Exception('Failed to upload profile picture: $e');
+    }
+  }
+
+  /// Delete profile picture from Firebase Storage
+  Future<void> deleteProfilePicture(
+    String userId,
+    String? currentImageUrl,
+  ) async {
+    try {
+      if (currentImageUrl != null && currentImageUrl.isNotEmpty) {
+        // Delete from Firebase Storage
+        final ref = _storage.refFromURL(currentImageUrl);
+        await ref.delete();
+      }
+    } catch (e) {
+      // Don't throw error if file doesn't exist
+      print('Warning: Could not delete profile picture: $e');
+    }
+  }
+
+  /// Update user profile picture
+  Future<void> updateProfilePicture(String userId, String? imageUrl) async {
+    try {
+      final updates = <String, dynamic>{
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (imageUrl != null) {
+        updates['profilePicture'] = imageUrl;
+      } else {
+        updates['profilePicture'] = FieldValue.delete();
+      }
+
+      await _firestore.collection('users').doc(userId).update(updates);
+    } catch (e) {
+      throw Exception('Failed to update profile picture: $e');
     }
   }
 }

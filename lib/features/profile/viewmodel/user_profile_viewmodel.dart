@@ -1,19 +1,26 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../authentication/model/user_model.dart';
 import '../services/user_profile_service.dart';
 
 class UserProfileViewModel extends ChangeNotifier {
   final UserProfileService _userProfileService = UserProfileService();
+  final ImagePicker _imagePicker = ImagePicker();
 
   UserModel? _userProfile;
   bool _isLoading = false;
   String? _error;
   bool _isUpdating = false;
+  bool _isUploadingImage = false;
+  String? _tempProfilePictureUrl;
 
   UserModel? get userProfile => _userProfile;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isUpdating => _isUpdating;
+  bool get isUploadingImage => _isUploadingImage;
+  String? get tempProfilePictureUrl => _tempProfilePictureUrl;
 
   /// Load user profile
   Future<void> loadUserProfile(String userId) async {
@@ -97,6 +104,143 @@ class UserProfileViewModel extends ChangeNotifier {
 
   void clearError() {
     _error = null;
+    notifyListeners();
+  }
+
+  /// Pick and upload profile picture
+  Future<bool> pickAndUploadProfilePicture(String userId) async {
+    try {
+      _setUploadingImage(true);
+      _setError(null);
+
+      // Pick image from gallery
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+
+      if (pickedFile == null) {
+        return false; // User cancelled
+      }
+
+      final imageFile = File(pickedFile.path);
+
+      // Upload to Firebase Storage
+      final downloadUrl = await _userProfileService.uploadProfilePicture(
+        userId,
+        imageFile,
+      );
+
+      // Update user profile in Firestore
+      await _userProfileService.updateProfilePicture(userId, downloadUrl);
+
+      // Update local model
+      if (_userProfile != null) {
+        _userProfile = _userProfile!.copyWith(
+          profilePicture: downloadUrl,
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      _tempProfilePictureUrl = downloadUrl;
+      notifyListeners();
+
+      return true;
+    } catch (e) {
+      _setError('Failed to upload profile picture: $e');
+      return false;
+    } finally {
+      _setUploadingImage(false);
+    }
+  }
+
+  /// Pick and upload profile picture from camera
+  Future<bool> takeAndUploadProfilePicture(String userId) async {
+    try {
+      _setUploadingImage(true);
+      _setError(null);
+
+      // Take photo with camera
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
+
+      if (pickedFile == null) {
+        return false; // User cancelled
+      }
+
+      final imageFile = File(pickedFile.path);
+
+      // Upload to Firebase Storage
+      final downloadUrl = await _userProfileService.uploadProfilePicture(
+        userId,
+        imageFile,
+      );
+
+      // Update user profile in Firestore
+      await _userProfileService.updateProfilePicture(userId, downloadUrl);
+
+      // Update local model
+      if (_userProfile != null) {
+        _userProfile = _userProfile!.copyWith(
+          profilePicture: downloadUrl,
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      _tempProfilePictureUrl = downloadUrl;
+      notifyListeners();
+
+      return true;
+    } catch (e) {
+      _setError('Failed to upload profile picture: $e');
+      return false;
+    } finally {
+      _setUploadingImage(false);
+    }
+  }
+
+  /// Remove profile picture
+  Future<bool> removeProfilePicture(String userId) async {
+    try {
+      _setUploadingImage(true);
+      _setError(null);
+
+      final currentImageUrl = _userProfile?.profilePicture;
+
+      // Delete from Firebase Storage
+      await _userProfileService.deleteProfilePicture(userId, currentImageUrl);
+
+      // Update user profile in Firestore
+      await _userProfileService.updateProfilePicture(userId, null);
+
+      // Update local model
+      if (_userProfile != null) {
+        _userProfile = _userProfile!.copyWith(
+          profilePicture: null,
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      _tempProfilePictureUrl = null;
+      notifyListeners();
+
+      return true;
+    } catch (e) {
+      _setError('Failed to remove profile picture: $e');
+      return false;
+    } finally {
+      _setUploadingImage(false);
+    }
+  }
+
+  void _setUploadingImage(bool uploading) {
+    _isUploadingImage = uploading;
     notifyListeners();
   }
 }

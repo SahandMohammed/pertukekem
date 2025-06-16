@@ -595,71 +595,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         ],
                                       ),
                                       child: ClipOval(
-                                        child:
-                                            widget.userProfile.profilePicture !=
-                                                        null &&
-                                                    widget
-                                                        .userProfile
-                                                        .profilePicture!
-                                                        .isNotEmpty
-                                                ? Image.network(
-                                                  widget
-                                                      .userProfile
-                                                      .profilePicture!,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) {
-                                                    return Container(
-                                                      decoration: BoxDecoration(
-                                                        gradient: LinearGradient(
-                                                          begin:
-                                                              Alignment.topLeft,
-                                                          end:
-                                                              Alignment
-                                                                  .bottomRight,
-                                                          colors: [
-                                                            colorScheme
-                                                                .primaryContainer,
-                                                            colorScheme
-                                                                .secondaryContainer,
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      child: Icon(
-                                                        Icons.person_rounded,
-                                                        size: 60,
-                                                        color:
-                                                            colorScheme
-                                                                .onPrimaryContainer,
-                                                      ),
-                                                    );
-                                                  },
-                                                )
-                                                : Container(
-                                                  decoration: BoxDecoration(
-                                                    gradient: LinearGradient(
-                                                      begin: Alignment.topLeft,
-                                                      end:
-                                                          Alignment.bottomRight,
-                                                      colors: [
-                                                        colorScheme
-                                                            .primaryContainer,
-                                                        colorScheme
-                                                            .secondaryContainer,
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.person_rounded,
-                                                    size: 60,
-                                                    color:
-                                                        colorScheme
-                                                            .onPrimaryContainer,
-                                                  ),
-                                                ),
+                                        child: _buildProfileImage(
+                                          viewModel,
+                                          colorScheme,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -681,31 +620,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                           ),
                                         ),
                                         child: IconButton(
-                                          onPressed: () {
-                                            // TODO: Implement image picker
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: const Text(
-                                                  'Profile picture upload (Coming Soon)',
-                                                ),
-                                                backgroundColor:
-                                                    colorScheme.primary,
-                                                behavior:
-                                                    SnackBarBehavior.floating,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
+                                          onPressed:
+                                              () => _showImagePickerOptions(
+                                                context,
+                                                viewModel,
                                               ),
-                                            );
-                                          },
-                                          icon: Icon(
-                                            Icons.camera_alt_rounded,
-                                            size: 20,
-                                            color: colorScheme.onPrimary,
-                                          ),
+                                          icon:
+                                              viewModel.isUploadingImage
+                                                  ? SizedBox(
+                                                    width: 16,
+                                                    height: 16,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(
+                                                            colorScheme
+                                                                .onPrimary,
+                                                          ),
+                                                    ),
+                                                  )
+                                                  : Icon(
+                                                    Icons.camera_alt_rounded,
+                                                    size: 20,
+                                                    color:
+                                                        colorScheme.onPrimary,
+                                                  ),
                                           padding: EdgeInsets.zero,
                                         ),
                                       ),
@@ -951,6 +892,227 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildProfileImage(
+    UserProfileViewModel viewModel,
+    ColorScheme colorScheme,
+  ) {
+    // Show temp image if available, otherwise show current profile picture
+    final imageUrl =
+        viewModel.tempProfilePictureUrl ?? widget.userProfile.profilePicture;
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildPlaceholderAvatar(colorScheme);
+        },
+      );
+    } else {
+      return _buildPlaceholderAvatar(colorScheme);
+    }
+  }
+
+  Widget _buildPlaceholderAvatar(ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primaryContainer,
+            colorScheme.secondaryContainer,
+          ],
+        ),
+      ),
+      child: Icon(
+        Icons.person_rounded,
+        size: 60,
+        color: colorScheme.onPrimaryContainer,
+      ),
+    );
+  }
+
+  void _showImagePickerOptions(
+    BuildContext context,
+    UserProfileViewModel viewModel,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final authViewModel = context.read<AuthViewModel>();
+    final userId = authViewModel.user?.userId;
+
+    if (userId == null) {
+      _showErrorSnackBar('User not authenticated');
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.outline.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Profile Picture',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildImageOption(
+                      context,
+                      icon: Icons.photo_library_rounded,
+                      label: 'Gallery',
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        final success = await viewModel
+                            .pickAndUploadProfilePicture(userId);
+                        if (success) {
+                          setState(() {
+                            _hasChanges = true;
+                          });
+                          _showSuccessSnackBar(
+                            'Profile picture updated successfully',
+                          );
+                        } else if (viewModel.error != null) {
+                          _showErrorSnackBar(viewModel.error!);
+                        }
+                      },
+                      colorScheme: colorScheme,
+                    ),
+                    _buildImageOption(
+                      context,
+                      icon: Icons.camera_alt_rounded,
+                      label: 'Camera',
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        final success = await viewModel
+                            .takeAndUploadProfilePicture(userId);
+                        if (success) {
+                          setState(() {
+                            _hasChanges = true;
+                          });
+                          _showSuccessSnackBar(
+                            'Profile picture updated successfully',
+                          );
+                        } else if (viewModel.error != null) {
+                          _showErrorSnackBar(viewModel.error!);
+                        }
+                      },
+                      colorScheme: colorScheme,
+                    ),
+                    if (widget.userProfile.profilePicture != null &&
+                        widget.userProfile.profilePicture!.isNotEmpty)
+                      _buildImageOption(
+                        context,
+                        icon: Icons.delete_rounded,
+                        label: 'Remove',
+                        onTap: () async {
+                          Navigator.of(context).pop();
+                          final success = await viewModel.removeProfilePicture(
+                            userId,
+                          );
+                          if (success) {
+                            setState(() {
+                              _hasChanges = true;
+                            });
+                            _showSuccessSnackBar(
+                              'Profile picture removed successfully',
+                            );
+                          } else if (viewModel.error != null) {
+                            _showErrorSnackBar(viewModel.error!);
+                          }
+                        },
+                        colorScheme: colorScheme,
+                        isDestructive: true,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget _buildImageOption(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+    bool isDestructive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color:
+              isDestructive
+                  ? colorScheme.errorContainer.withOpacity(0.3)
+                  : colorScheme.primaryContainer.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                isDestructive
+                    ? colorScheme.error.withOpacity(0.3)
+                    : colorScheme.primary.withOpacity(0.3),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: isDestructive ? colorScheme.error : colorScheme.primary,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: isDestructive ? colorScheme.error : colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
