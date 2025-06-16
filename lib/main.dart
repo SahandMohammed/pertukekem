@@ -10,6 +10,7 @@ import 'package:pertukekem/features/library/viewmodel/library_viewmodel.dart';
 import 'package:pertukekem/features/listings/viewmodel/manage_listings_viewmodel.dart';
 import 'package:pertukekem/features/orders/viewmodel/store_order_viewmodel.dart';
 import 'package:pertukekem/features/profile/viewmodel/store_profile_viewmodel.dart';
+import 'package:pertukekem/features/profile/viewmodel/user_profile_viewmodel.dart';
 import 'package:pertukekem/features/payments/viewmodel/payment_card_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'features/authentication/viewmodel/auth_viewmodel.dart';
@@ -41,6 +42,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LibraryViewModel()),
         ChangeNotifierProvider(create: (_) => CartService()),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
+        ChangeNotifierProvider(create: (_) => UserProfileViewModel()),
         ChangeNotifierProvider(create: (_) => PaymentCardViewModel()),
         ChangeNotifierProvider(create: (_) => StoreOrderViewModel()),
       ],

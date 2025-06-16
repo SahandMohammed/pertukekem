@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class UserModel {  final String userId;
+class UserModel {
+  final String userId;
   final String firstName;
   final String lastName;
   final String? storeName;
@@ -18,7 +19,8 @@ class UserModel {  final String userId;
   final bool isBlocked;
   final List<dynamic> addresses;
   final List<dynamic> favorites;
-  final String? profilePicture;  UserModel({
+  final String? profilePicture;
+  UserModel({
     required this.userId,
     required this.firstName,
     required this.lastName,
@@ -41,7 +43,8 @@ class UserModel {  final String userId;
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(      userId: map['userId'] ?? '',
+    return UserModel(
+      userId: map['userId'] ?? '',
       firstName: map['firstName'] ?? '',
       lastName: map['lastName'] ?? '',
       storeName: map['storeName'],
@@ -65,7 +68,8 @@ class UserModel {  final String userId;
   }
 
   Map<String, dynamic> toMap() {
-    return {      'userId': userId,
+    return {
+      'userId': userId,
       'firstName': firstName,
       'lastName': lastName,
       'storeName': storeName,
@@ -92,7 +96,7 @@ class UserModel {  final String userId;
     String? firstName,
     String? lastName,
     String? storeName,
-    String? storeId, 
+    String? storeId,
     String? email,
     String? emailLowercase,
     String? phoneNumber,
@@ -107,7 +111,8 @@ class UserModel {  final String userId;
     List<dynamic>? addresses,
     List<dynamic>? favorites,
     String? profilePicture,
-  }) {    return UserModel(
+  }) {
+    return UserModel(
       userId: userId ?? this.userId,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,

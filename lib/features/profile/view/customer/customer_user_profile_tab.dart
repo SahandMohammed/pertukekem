@@ -8,6 +8,7 @@ import '../../../payments/view/user_transaction_history_screen.dart';
 import '../../../library/notifiers/saved_books_notifier.dart';
 import 'manage_address_screen.dart';
 import 'saved_books_screen.dart';
+import 'edit_profile_screen.dart';
 import '../../viewmodel/store_profile_viewmodel.dart';
 import '../../services/user_profile_service.dart';
 
@@ -382,12 +383,26 @@ class _ProfileTabState extends State<ProfileTab> {
     final isPhoneVerified =
         _userProfile?.isPhoneVerified ?? authUser?.isPhoneVerified ?? false;
     final memberSince = _userProfile?.createdAt ?? authUser?.createdAt;
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.1), width: 1),
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.surface,
+            colorScheme.surfaceVariant.withOpacity(0.3),
+          ],
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -396,71 +411,111 @@ class _ProfileTabState extends State<ProfileTab> {
             Row(
               children: [
                 // Profile Picture
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: colorScheme.primary.withOpacity(0.2),
-                      width: 2,
+                Hero(
+                  tag: 'profile_picture',
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          colorScheme.primary.withOpacity(0.1),
+                          colorScheme.secondary.withOpacity(0.1),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.3),
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.primary.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: ClipOval(
-                    child:
-                        profilePictureUrl != null &&
-                                profilePictureUrl.isNotEmpty
-                            ? Image.network(
-                              profilePictureUrl,
-                              fit: BoxFit.cover,
-                              width: 64,
-                              height: 64,
-                              loadingBuilder: (
-                                context,
-                                child,
-                                loadingProgress,
-                              ) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colorScheme.primaryContainer,
-                                  ),
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        colorScheme.onPrimaryContainer,
+                    child: ClipOval(
+                      child:
+                          profilePictureUrl != null &&
+                                  profilePictureUrl.isNotEmpty
+                              ? Image.network(
+                                profilePictureUrl,
+                                fit: BoxFit.cover,
+                                width: 80,
+                                height: 80,
+                                loadingBuilder: (
+                                  context,
+                                  child,
+                                  loadingProgress,
+                                ) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          colorScheme.primaryContainer,
+                                          colorScheme.secondaryContainer,
+                                        ],
                                       ),
                                     ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              colorScheme.primary,
+                                            ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          colorScheme.primaryContainer,
+                                          colorScheme.secondaryContainer,
+                                        ],
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.person_rounded,
+                                      size: 40,
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
+                                  );
+                                },
+                              )
+                              : Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      colorScheme.primaryContainer,
+                                      colorScheme.secondaryContainer,
+                                    ],
                                   ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colorScheme.primaryContainer,
-                                  ),
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 32,
-                                    color: colorScheme.onPrimaryContainer,
-                                  ),
-                                );
-                              },
-                            )
-                            : Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: colorScheme.primaryContainer,
+                                ),
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  size: 40,
+                                  color: colorScheme.onPrimaryContainer,
+                                ),
                               ),
-                              child: Icon(
-                                Icons.person,
-                                size: 32,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                            ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -533,17 +588,51 @@ class _ProfileTabState extends State<ProfileTab> {
                     ],
                   ),
                 ),
-                IconButton(
-                  onPressed: () {
-                    // TODO: Edit profile
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Edit Profile (Coming Soon)'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_outlined),
+                Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colorScheme.primary.withOpacity(0.2),
+                    ),
+                  ),
+                  child: IconButton(
+                    onPressed: () async {
+                      final profileToEdit = _userProfile ?? authUser;
+                      if (profileToEdit != null) {
+                        final result = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder:
+                                (context) => EditProfileScreen(
+                                  userProfile: profileToEdit,
+                                ),
+                          ),
+                        );
+
+                        // Refresh profile data if edit was successful
+                        if (result == true) {
+                          _loadUserProfile();
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Unable to load user profile'),
+                            backgroundColor: colorScheme.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    icon: Icon(
+                      Icons.edit_rounded,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    tooltip: 'Edit Profile',
+                  ),
                 ),
               ],
             ),
