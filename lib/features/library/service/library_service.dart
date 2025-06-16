@@ -393,30 +393,15 @@ class LibraryService {
             sink.add(chunk);
             downloadedBytes += chunk.length;
 
-            // Calculate and report progress
+            // Calculate and report progress without artificial delays
             if (contentLength != null && contentLength > 0) {
               final progress = downloadedBytes / contentLength;
-              print(
-                'Download progress: ${(progress * 100).toStringAsFixed(1)}% ($downloadedBytes/$contentLength bytes)',
-              );
-              onProgress(progress);
+              onProgress(progress.clamp(0.0, 1.0));
             } else {
-              // If content length is unknown, show indeterminate progress
-              // Report progress based on downloaded chunks (fake progress)
-              final fakeProgress = (downloadedBytes / (1024 * 1024 * 5)).clamp(
-                0.0,
-                0.95,
-              ); // Assume 5MB file
-              print(
-                'Download progress (estimated): ${(fakeProgress * 100).toStringAsFixed(1)}% ($downloadedBytes bytes)',
-              );
-              onProgress(fakeProgress);
-            }
-
-            // Add a small delay to make progress visible for smaller files
-            if (downloadedBytes % (64 * 1024) == 0) {
-              // Every 64KB
-              await Future.delayed(const Duration(milliseconds: 50));
+              // If content length is unknown, show estimated progress
+              final estimatedProgress = (downloadedBytes / (1024 * 1024 * 5))
+                  .clamp(0.0, 0.95);
+              onProgress(estimatedProgress);
             }
           }
 

@@ -24,6 +24,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   double _downloadProgress = 0.0;
   bool _showFullDescription = false;
   LibraryBook? _currentBook; // Local state to track book updates
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
@@ -503,15 +505,17 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   }
 
   Widget _buildReadingProgress(BuildContext context, ThemeData theme) {
-    if (widget.book.totalPages == null || widget.book.totalPages == 0) {
+    final book = _currentBook ?? widget.book; // Use current book state
+
+    if (book.totalPages == null || book.totalPages == 0) {
       return const SizedBox.shrink();
     }
 
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final progress = widget.book.readingProgress;
-    final currentPage = widget.book.currentPage ?? 0;
-    final totalPages = widget.book.totalPages!;
+    final progress = book.readingProgress;
+    final currentPage = book.currentPage ?? 0;
+    final totalPages = book.totalPages!;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -912,16 +916,21 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
         'Book file not available. Please download the book first.',
       );
       return;
-    }
-
-    // Navigate to the ebook reader
+    } // Navigate to the ebook reader
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => EbookReaderScreen(book: book)),
-    ).then((_) {
+    ).then((_) async {
       // Refresh book data when returning from reader (in case reading progress was updated)
       final viewModel = context.read<LibraryViewModel>();
-      _refreshBookData(viewModel);
+      await _refreshBookData(viewModel);
+
+      // Force a rebuild to update the reading progress display
+      if (mounted) {
+        setState(() {
+          // Trigger rebuild to show updated reading progress
+        });
+      }
     });
   }
 
@@ -932,6 +941,12 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
 
   // Add method to refresh book data
   Future<void> _refreshBookData(LibraryViewModel viewModel) async {
+    if (_isRefreshing) return; // Prevent multiple simultaneous refreshes
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
     try {
       final updatedBook = await viewModel.getLibraryBook(widget.book.id);
       if (updatedBook != null && mounted) {
@@ -941,6 +956,12 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
       }
     } catch (e) {
       debugPrint('Error refreshing book data: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
