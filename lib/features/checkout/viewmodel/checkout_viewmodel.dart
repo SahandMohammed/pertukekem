@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:pertukekem/core/interfaces/state_clearable.dart';
 import '../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../cart/model/cart_item_model.dart';
 import '../../cart/services/cart_service.dart';
@@ -9,10 +10,10 @@ import '../../payments/viewmodel/payment_card_viewmodel.dart';
 import '../service/checkout_service.dart';
 import '../model/checkout_state.dart';
 
-class CheckoutViewModel extends ChangeNotifier {
+class CheckoutViewModel extends ChangeNotifier implements StateClearable {
   // Services
   final CheckoutService _checkoutService = CheckoutService();
-  
+
   // State
   CheckoutState _state = CheckoutState.initial();
   CheckoutState get state => _state;
@@ -22,7 +23,7 @@ class CheckoutViewModel extends ChangeNotifier {
   bool get isProcessing => _state.isProcessing;
   bool get isLoadingAddresses => _state.isLoadingAddresses;
   bool get isLoadingCards => _state.isLoadingCards;
-  
+
   List<AddressModel> get userAddresses => _state.userAddresses;
   List<PaymentCard> get userCards => _state.userCards;
   AddressModel? get selectedAddress => _state.selectedAddress;
@@ -88,10 +89,7 @@ class CheckoutViewModel extends ChangeNotifier {
 
   // Data loading methods
   Future<void> loadInitialData() async {
-    await Future.wait([
-      loadUserAddresses(),
-      loadUserCards(),
-    ]);
+    await Future.wait([loadUserAddresses(), loadUserCards()]);
   }
 
   Future<void> loadUserAddresses() async {
@@ -106,12 +104,13 @@ class CheckoutViewModel extends ChangeNotifier {
       await _profileViewModel.loadAddresses(user);
 
       final addresses = _profileViewModel.addresses;
-      final selectedAddress = addresses.isNotEmpty
-          ? addresses.firstWhere(
-              (addr) => addr.isDefault,
-              orElse: () => addresses.first,
-            )
-          : null;
+      final selectedAddress =
+          addresses.isNotEmpty
+              ? addresses.firstWhere(
+                (addr) => addr.isDefault,
+                orElse: () => addresses.first,
+              )
+              : null;
 
       _state = _state.copyWith(
         userAddresses: addresses,
@@ -134,17 +133,15 @@ class CheckoutViewModel extends ChangeNotifier {
       await _paymentCardViewModel.loadCards();
 
       final cards = _paymentCardViewModel.cards;
-      final selectedCard = cards.isNotEmpty
-          ? cards.firstWhere(
-              (card) => card.isDefault,
-              orElse: () => cards.first,
-            )
-          : null;
+      final selectedCard =
+          cards.isNotEmpty
+              ? cards.firstWhere(
+                (card) => card.isDefault,
+                orElse: () => cards.first,
+              )
+              : null;
 
-      _state = _state.copyWith(
-        userCards: cards,
-        selectedCard: selectedCard,
-      );
+      _state = _state.copyWith(userCards: cards, selectedCard: selectedCard);
     } catch (e) {
       debugPrint('Error loading cards: $e');
       _state = _state.copyWith(error: 'Failed to load payment cards: $e');
@@ -169,8 +166,10 @@ class CheckoutViewModel extends ChangeNotifier {
   bool canPlaceOrder() {
     return _state.selectedAddress != null &&
         (_state.selectedPaymentMethod == 'cod' ||
-            (_state.selectedPaymentMethod == 'card' && _state.selectedCard != null));
+            (_state.selectedPaymentMethod == 'card' &&
+                _state.selectedCard != null));
   }
+
   // Order processing
   Future<List<dynamic>> processOrder(Cart cart) async {
     final user = _authViewModel.user;
@@ -185,7 +184,8 @@ class CheckoutViewModel extends ChangeNotifier {
       final shippingAddress = _state.selectedAddress!.fullAddress;
 
       Map<String, String>? cardInfo;
-      if (_state.selectedPaymentMethod == 'card' && _state.selectedCard != null) {
+      if (_state.selectedPaymentMethod == 'card' &&
+          _state.selectedCard != null) {
         final card = _state.selectedCard!;
         cardInfo = {
           'cardId': card.id,
@@ -237,6 +237,12 @@ class CheckoutViewModel extends ChangeNotifier {
   // Clear errors
   void clearError() {
     _state = _state.copyWith(error: null);
+    notifyListeners();
+  }
+
+  @override
+  Future<void> clearState() async {
+    _state = CheckoutState.initial();
     notifyListeners();
   }
 
