@@ -44,6 +44,7 @@ class ListingService {
     String? category,
     String? sellerType,
     DocumentReference? sellerRef,
+    bool filterByStatus = true, // New parameter to control status filtering
   }) {
     print('Building listings query with:');
     print('- sellerRef: ${sellerRef?.path}');
@@ -63,7 +64,6 @@ class ListingService {
     if (sellerType != null) {
       query = query.where('sellerType', isEqualTo: sellerType);
     }
-
     if (condition != null) {
       query = query.where('condition', isEqualTo: condition);
     }
@@ -74,14 +74,31 @@ class ListingService {
 
     // Listen to query results
     return query.snapshots().map((snapshot) {
-      final listings = snapshot.docs.map((doc) => doc.data()).toList();
-      print('Found ${listings.length} listings matching the query');
-      listings.forEach((listing) {
+      final allListings = snapshot.docs.map((doc) => doc.data()).toList();
+
+      List<Listing> resultListings;
+      if (filterByStatus) {
+        // Filter to only show active listings (treat missing status as active for backwards compatibility)
+        resultListings =
+            allListings
+                .where(
+                  (listing) =>
+                      listing.status != 'sold' && listing.status != 'inactive',
+                )
+                .toList();
+      } else {
+        // Return all listings without status filtering
+        resultListings = allListings;
+      }
+      print(
+        'Found ${allListings.length} total listings, ${resultListings.length} filtered listings matching the query',
+      );
+      resultListings.forEach((listing) {
         print(
-          '- ${listing.id}: ${listing.title}, ref: ${listing.sellerRef.path}',
+          '- ${listing.id}: ${listing.title}, ref: ${listing.sellerRef.path}, status: "${listing.status}"',
         );
       });
-      return listings;
+      return resultListings;
     });
   }
 
@@ -186,5 +203,39 @@ class ListingService {
             .where('sellerType', isEqualTo: sellerType)
             .get();
     return snapshot.docs.map((doc) => doc.data()).toList();
+  }
+
+  Stream<List<Listing>> watchUserListings(String userId) {
+    final userDocRef = _firestore.collection('users').doc(userId);
+    return _listingsRef
+        .where('sellerRef', isEqualTo: userDocRef)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  Future<void> updateListingStatus(String listingId, String status) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated.');
+    }
+
+    final docRef = _listingsRef.doc(listingId);
+    final existingListingDoc = await docRef.get();
+    if (!existingListingDoc.exists) {
+      throw Exception('Listing not found.');
+    }
+
+    final existingListingData = existingListingDoc.data();
+    if (existingListingData == null) {
+      throw Exception('Failed to retrieve existing listing data.');
+    }
+
+    if (existingListingData.sellerRef.path != 'users/${currentUser.uid}' &&
+        existingListingData.sellerRef.path != 'stores/${currentUser.uid}') {
+      throw Exception('User not authorized to update this listing.');
+    }
+
+    await docRef.update({'status': status, 'updatedAt': Timestamp.now()});
   }
 }

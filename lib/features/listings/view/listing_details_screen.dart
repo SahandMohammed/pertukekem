@@ -1393,16 +1393,17 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                                   isCustomer && listing.bookType == 'physical'
                                       ? cartService.isInCart(listing.id ?? '')
                                       : false;
-
                               return Text(
                                 showOwnershipInfo
                                     ? 'View in Library'
-                                    : (isCustomer
-                                        ? (listing.bookType == 'physical'
-                                            ? (isInCart
-                                                ? 'View Cart'
-                                                : 'Add to Cart')
-                                            : 'Buy Now')
+                                    : (listing.sellerType == 'store'
+                                        ? (isCustomer
+                                            ? (listing.bookType == 'physical'
+                                                ? (isInCart
+                                                    ? 'View Cart'
+                                                    : 'Add to Cart')
+                                                : 'Buy Now')
+                                            : 'Contact Store')
                                         : 'Contact Seller'),
                                 style: TextStyle(
                                   fontSize: 17,
@@ -1458,6 +1459,12 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     // Check if user already owns this book
     if (_userOwnsBook) {
       _showAlreadyOwnedDialog(context);
+      return;
+    }
+
+    // For individual user listings, show contact dialog instead of purchase
+    if (listing.sellerType != 'store') {
+      _showContactDialog(context);
       return;
     }
 

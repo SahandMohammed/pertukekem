@@ -5,6 +5,7 @@ import '../../../core/services/listing_service.dart';
 import '../../listings/model/listing_model.dart';
 import '../../listings/view/listing_details_screen.dart';
 import '../../listings/view/add_edit_listing_screen.dart';
+import '../../listings/view/manage_listings_screen.dart';
 import '../../listings/viewmodel/manage_listings_viewmodel.dart';
 
 class CommunityTab extends StatefulWidget {
@@ -44,10 +45,14 @@ class _CommunityTabState extends State<CommunityTab> {
             children: [
               // Header
               _buildHeader(),
+              const SizedBox(
+                height: 24,
+              ), // Used Books Marketplace Section (NEW)
+              _buildUsedBooksMarketplace(),
               const SizedBox(height: 24),
 
-              // Used Books Marketplace Section (NEW)
-              _buildUsedBooksMarketplace(),
+              // My Listings Section (NEW)
+              _buildMyListingsSection(),
               const SizedBox(height: 24),
 
               // Community Features Placeholder
@@ -840,10 +845,502 @@ class _CommunityTabState extends State<CommunityTab> {
     );
   }
 
-  Future<void> _refreshUsedBooks() async {
-    setState(() {
-      _initializeUsedBooksStream();
-    });
+  Widget _buildMyListingsSection() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    // Only show for logged-in users
+    if (currentUser == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.inventory_2_outlined,
+                  color: Colors.green.shade600,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'My Listings',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ChangeNotifierProvider(
+                          create: (context) => ManageListingsViewModel(),
+                          child: const ManageListingsScreen(),
+                        ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.settings, size: 16),
+              label: const Text('Manage All'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.green.shade600,
+                textStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Manage your listed books and mark them as sold',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 16),
+        StreamBuilder<List<Listing>>(
+          stream: _listingService.watchUserListings(currentUser.uid),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return _buildMyListingsLoadingState();
+            }
+
+            if (snapshot.hasError) {
+              return _buildMyListingsErrorState();
+            }
+
+            final myListings = snapshot.data ?? [];
+
+            if (myListings.isEmpty) {
+              return _buildMyListingsEmptyState();
+            }
+
+            return _buildMyListingsList(myListings);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMyListingsLoadingState() {
+    return Container(
+      height: 120,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 12),
+            Text('Loading your listings...'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMyListingsErrorState() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+            const SizedBox(height: 12),
+            Text(
+              'Error Loading Listings',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Failed to load your listings',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.red.shade600),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMyListingsEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No Listings Yet',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Create your first listing to start selling!',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ChangeNotifierProvider(
+                          create: (context) => ManageListingsViewModel(),
+                          child: const AddEditListingScreen(),
+                        ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create Listing'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMyListingsList(List<Listing> myListings) {
+    // Show only first 3 listings, with option to see more
+    final displayListings = myListings.take(3).toList();
+
+    return Column(
+      children: [
+        ...displayListings
+            .map((listing) => _buildMyListingCard(listing))
+            .toList(),
+        if (myListings.length > 3) ...[
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ChangeNotifierProvider(
+                        create: (context) => ManageListingsViewModel(),
+                        child: const ManageListingsScreen(),
+                      ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.view_list),
+            label: Text('View All ${myListings.length} Listings'),
+            style: TextButton.styleFrom(foregroundColor: Colors.green.shade600),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMyListingCard(Listing listing) {
+    final isActive = listing.status == 'active';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive ? Colors.green.shade200 : Colors.grey.shade300,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Book Cover
+          Container(
+            width: 60,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey.shade200,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child:
+                  listing.coverUrl.isNotEmpty
+                      ? Image.network(
+                        listing.coverUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.book,
+                            size: 24,
+                            color: Colors.grey.shade400,
+                          );
+                        },
+                      )
+                      : Icon(Icons.book, size: 24, color: Colors.grey.shade400),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Book Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  listing.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'by ${listing.author}',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isActive
+                                ? Colors.green.shade100
+                                : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isActive ? 'ACTIVE' : 'SOLD',
+                        style: TextStyle(
+                          color:
+                              isActive
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade600,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '\$${listing.price.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: Colors.green.shade600,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Action Button
+          Column(
+            children: [
+              if (isActive) ...[
+                IconButton(
+                  onPressed: () => _showMarkAsSoldDialog(listing),
+                  icon: Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.green.shade600,
+                  ),
+                  tooltip: 'Mark as Sold',
+                ),
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => ChangeNotifierProvider(
+                              create: (context) => ManageListingsViewModel(),
+                              child: AddEditListingScreen(listing: listing),
+                            ),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.edit_outlined, color: Colors.blue.shade600),
+                  tooltip: 'Edit Listing',
+                ),
+              ] else ...[
+                IconButton(
+                  onPressed: () => _showReactivateDialog(listing),
+                  icon: Icon(
+                    Icons.replay_outlined,
+                    color: Colors.orange.shade600,
+                  ),
+                  tooltip: 'Reactivate',
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMarkAsSoldDialog(Listing listing) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Mark as Sold'),
+            content: Text(
+              'Are you sure you want to mark "${listing.title}" as sold? This will hide it from the marketplace.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _markListingAsSold(listing);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Mark as Sold'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showReactivateDialog(Listing listing) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Reactivate Listing'),
+            content: Text(
+              'Reactivate "${listing.title}" to make it available in the marketplace again?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _reactivateListing(listing);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade600,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Reactivate'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _markListingAsSold(Listing listing) async {
+    try {
+      await _listingService.updateListingStatus(listing.id!, 'sold');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${listing.title} marked as sold'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _reactivateListing(Listing listing) async {
+    try {
+      await _listingService.updateListingStatus(listing.id!, 'active');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${listing.title} reactivated'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   // ...existing code...

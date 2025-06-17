@@ -107,11 +107,15 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
 
       print('Setting up listings stream with:');
       print('- sellerType: $sellerType');
-      print('- sellerRef: ${sellerRef.path}');
-
-      // Start listening to listings stream
+      print(
+        '- sellerRef: ${sellerRef.path}',
+      ); // Start listening to listings stream
       _listingsSubscription = _listingService
-          .watchAllListings(sellerRef: sellerRef, sellerType: sellerType)
+          .watchAllListings(
+            sellerRef: sellerRef,
+            sellerType: sellerType,
+            filterByStatus: false, // Show all listings in manage screen
+          )
           .listen(
             (listings) {
               print('📦 Received ${listings.length} listings from Firestore');

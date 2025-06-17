@@ -19,6 +19,7 @@ class Listing {
   final String? format;
   final String bookType; // 'physical' or 'ebook'
   final String? ebookUrl; // URL to the eBook file for digital books
+  final String status; // 'active', 'sold', 'inactive'
   final Timestamp? createdAt;
   final Timestamp? updatedAt;
   Listing({
@@ -40,6 +41,7 @@ class Listing {
     this.format,
     required this.bookType,
     this.ebookUrl,
+    this.status = 'active',
     this.createdAt,
     this.updatedAt,
   }) : assert(price > 0, 'Price must be greater than 0'),
@@ -82,6 +84,7 @@ class Listing {
       format: data?['format'] as String?,
       bookType: data?['bookType'] as String? ?? 'physical',
       ebookUrl: data?['ebookUrl'] as String?,
+      status: data?['status'] as String? ?? 'active',
       createdAt: data?['createdAt'] as Timestamp?,
       updatedAt: data?['updatedAt'] as Timestamp?,
     );
@@ -106,6 +109,7 @@ class Listing {
       if (format != null) 'format': format,
       'bookType': bookType,
       if (ebookUrl != null) 'ebookUrl': ebookUrl,
+      'status': status,
       if (createdAt != null) 'createdAt': createdAt,
       if (updatedAt != null) 'updatedAt': updatedAt,
     };
@@ -131,6 +135,7 @@ class Listing {
     String? format,
     String? bookType,
     String? ebookUrl,
+    String? status,
     Timestamp? createdAt,
     Timestamp? updatedAt,
   }) {
@@ -153,6 +158,7 @@ class Listing {
       format: format ?? this.format,
       bookType: bookType ?? this.bookType,
       ebookUrl: ebookUrl ?? this.ebookUrl,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
