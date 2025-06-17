@@ -11,7 +11,8 @@ import '../../profile/view/customer/manage_address_screen.dart';
 import '../../payments/model/payment_card_model.dart';
 import '../../payments/viewmodel/payment_card_viewmodel.dart';
 import '../../payments/view/user_cards_screen.dart';
-import '../service/checkout_service.dart';
+import '../viewmodel/checkout_viewmodel.dart';
+import '../model/checkout_result_model.dart';
 import 'checkout_success_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -26,34 +27,29 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen>
     with TickerProviderStateMixin {
   final _pageController = PageController();
-  int _currentStep = 0;
-  bool _isProcessing = false;
+
   // Animation controllers
   late AnimationController _fadeController;
   late AnimationController _slideController;
 
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
-  // Data
-  List<AddressModel> _userAddresses = [];
-  List<PaymentCard> _userCards = [];
-  AddressModel? _selectedAddress;
-  PaymentCard? _selectedCard;
-  String _selectedPaymentMethod = 'card';
-
-  // Loading states
-  bool _isLoadingAddresses = false;
-  bool _isLoadingCards = false;
-
-  // Services
-  final CheckoutService _checkoutService = CheckoutService();
-
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _loadData();
+
+    // Initialize ViewModel dependencies
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final checkoutViewModel = context.read<CheckoutViewModel>();
+      checkoutViewModel.setDependencies(
+        authViewModel: context.read<AuthViewModel>(),
+        profileViewModel: context.read<ProfileViewModel>(),
+        paymentCardViewModel: context.read<PaymentCardViewModel>(),
+        cartService: context.read<CartService>(),
+      );
+      checkoutViewModel.loadInitialData();
+    });
   }
 
   void _initializeAnimations() {
@@ -83,62 +79,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     _slideController.forward();
   }
 
-  Future<void> _loadData() async {
-    await Future.wait([_loadUserAddresses(), _loadUserCards()]);
-  }
-
-  Future<void> _loadUserAddresses() async {
-    final user = context.read<AuthViewModel>().user;
-    if (user == null) return;
-
-    setState(() => _isLoadingAddresses = true);
-
-    try {
-      final profileViewModel = context.read<ProfileViewModel>();
-      profileViewModel.setAuthViewModel(context.read<AuthViewModel>());
-      await profileViewModel.loadAddresses(user);
-
-      setState(() {
-        _userAddresses = profileViewModel.addresses;
-        _selectedAddress =
-            _userAddresses.isNotEmpty
-                ? _userAddresses.firstWhere(
-                  (addr) => addr.isDefault,
-                  orElse: () => _userAddresses.first,
-                )
-                : null;
-      });
-    } catch (e) {
-      debugPrint('Error loading addresses: $e');
-    } finally {
-      setState(() => _isLoadingAddresses = false);
-    }
-  }
-
-  Future<void> _loadUserCards() async {
-    setState(() => _isLoadingCards = true);
-
-    try {
-      final cardViewModel = context.read<PaymentCardViewModel>();
-      await cardViewModel.loadCards();
-
-      setState(() {
-        _userCards = cardViewModel.cards;
-        _selectedCard =
-            _userCards.isNotEmpty
-                ? _userCards.firstWhere(
-                  (card) => card.isDefault,
-                  orElse: () => _userCards.first,
-                )
-                : null;
-      });
-    } catch (e) {
-      debugPrint('Error loading cards: $e');
-    } finally {
-      setState(() => _isLoadingCards = false);
-    }
-  }
-
   @override
   void dispose() {
     _fadeController.dispose();
@@ -151,34 +91,38 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: Column(
-            children: [
-              _buildModernAppBar(context),
-              _buildStepIndicator(context),
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() => _currentStep = index);
-                  },
-                  children: [
-                    _buildOrderReviewStep(context),
-                    _buildDeliveryStep(context),
-                    _buildPaymentStep(context),
-                  ],
-                ),
+    return Consumer<CheckoutViewModel>(
+      builder: (context, checkoutViewModel, child) {
+        return Scaffold(
+          backgroundColor: colorScheme.surface,
+          body: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: Column(
+                children: [
+                  _buildModernAppBar(context),
+                  _buildStepIndicator(context, checkoutViewModel),
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        checkoutViewModel.setCurrentStep(index);
+                      },
+                      children: [
+                        _buildOrderReviewStep(context),
+                        _buildDeliveryStep(context, checkoutViewModel),
+                        _buildPaymentStep(context, checkoutViewModel),
+                      ],
+                    ),
+                  ),
+                  _buildModernBottomBar(context, checkoutViewModel),
+                ],
               ),
-              _buildModernBottomBar(context),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -251,7 +195,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildStepIndicator(BuildContext context) {
+  Widget _buildStepIndicator(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -261,8 +208,8 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       padding: const EdgeInsets.all(24),
       child: Row(
         children: List.generate(steps.length, (index) {
-          final isActive = index == _currentStep;
-          final isCompleted = index < _currentStep;
+          final isActive = index == viewModel.currentStep;
+          final isCompleted = index < viewModel.currentStep;
 
           return Expanded(
             child: Row(
@@ -735,7 +682,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildDeliveryStep(BuildContext context) {
+  Widget _buildDeliveryStep(BuildContext context, CheckoutViewModel viewModel) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -759,12 +706,12 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           ),
           const SizedBox(height: 24),
 
-          if (_isLoadingAddresses)
+          if (viewModel.isLoadingAddresses)
             _buildLoadingCard(context, 'Loading addresses...')
-          else if (_userAddresses.isEmpty)
-            _buildEmptyAddressCard(context)
+          else if (viewModel.userAddresses.isEmpty)
+            _buildEmptyAddressCard(context, viewModel)
           else
-            _buildAddressSelection(context),
+            _buildAddressSelection(context, viewModel),
 
           const SizedBox(height: 32),
           _buildDeliveryOptions(context),
@@ -774,7 +721,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildPaymentStep(BuildContext context) {
+  Widget _buildPaymentStep(BuildContext context, CheckoutViewModel viewModel) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -798,20 +745,20 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           ),
           const SizedBox(height: 24),
 
-          _buildPaymentMethodSelection(context),
+          _buildPaymentMethodSelection(context, viewModel),
 
-          if (_selectedPaymentMethod == 'card') ...[
+          if (viewModel.selectedPaymentMethod == 'card') ...[
             const SizedBox(height: 24),
-            if (_isLoadingCards)
+            if (viewModel.isLoadingCards)
               _buildLoadingCard(context, 'Loading payment cards...')
-            else if (_userCards.isEmpty)
-              _buildEmptyCardsCard(context)
+            else if (viewModel.userCards.isEmpty)
+              _buildEmptyCardsCard(context, viewModel)
             else
-              _buildCardSelection(context),
+              _buildCardSelection(context, viewModel),
           ],
 
           const SizedBox(height: 32),
-          _buildSecurityInfo(context),
+          _buildSecurityInfo(context, viewModel),
           const SizedBox(height: 100), // Space for bottom bar
         ],
       ),
@@ -851,7 +798,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildEmptyAddressCard(BuildContext context) {
+  Widget _buildEmptyAddressCard(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -891,7 +841,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           ),
           const SizedBox(height: 20),
           FilledButton.icon(
-            onPressed: () => _navigateToManageAddresses(),
+            onPressed: () => _navigateToManageAddresses(viewModel),
             icon: const Icon(Icons.add_location_rounded),
             label: const Text('Add Address'),
             style: FilledButton.styleFrom(
@@ -903,7 +853,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildEmptyCardsCard(BuildContext context) {
+  Widget _buildEmptyCardsCard(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -943,7 +896,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           ),
           const SizedBox(height: 20),
           FilledButton.icon(
-            onPressed: () => _navigateToManageCards(),
+            onPressed: () => _navigateToManageCards(viewModel),
             icon: const Icon(Icons.add_card_rounded),
             label: const Text('Add Card'),
             style: FilledButton.styleFrom(
@@ -955,7 +908,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildAddressSelection(BuildContext context) {
+  Widget _buildAddressSelection(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -993,7 +949,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                 ),
                 const Spacer(),
                 TextButton.icon(
-                  onPressed: () => _navigateToManageAddresses(),
+                  onPressed: () => _navigateToManageAddresses(viewModel),
                   icon: const Icon(Icons.settings_rounded, size: 16),
                   label: const Text('Manage'),
                   style: TextButton.styleFrom(
@@ -1007,18 +963,22 @@ class _CheckoutScreenState extends State<CheckoutScreen>
               ],
             ),
           ),
-          ...(_userAddresses.map(
-            (address) => _buildAddressOption(context, address),
+          ...(viewModel.userAddresses.map(
+            (address) => _buildAddressOption(context, viewModel, address),
           )),
         ],
       ),
     );
   }
 
-  Widget _buildAddressOption(BuildContext context, AddressModel address) {
+  Widget _buildAddressOption(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+    AddressModel address,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isSelected = _selectedAddress?.id == address.id;
+    final isSelected = viewModel.selectedAddress?.id == address.id;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1026,7 +986,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            setState(() => _selectedAddress = address);
+            viewModel.selectAddress(address);
           },
           borderRadius: BorderRadius.circular(16),
           child: AnimatedContainer(
@@ -1219,7 +1179,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildPaymentMethodSelection(BuildContext context) {
+  Widget _buildPaymentMethodSelection(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -1265,6 +1228,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                 Expanded(
                   child: _buildPaymentMethodOption(
                     context,
+                    viewModel,
                     'card',
                     'Credit/Debit Card',
                     Icons.credit_card_rounded,
@@ -1274,6 +1238,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                 Expanded(
                   child: _buildPaymentMethodOption(
                     context,
+                    viewModel,
                     'cod',
                     'Cash on Delivery',
                     Icons.local_atm_rounded,
@@ -1289,19 +1254,20 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 
   Widget _buildPaymentMethodOption(
     BuildContext context,
+    CheckoutViewModel viewModel,
     String method,
     String title,
     IconData icon,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isSelected = _selectedPaymentMethod == method;
+    final isSelected = viewModel.selectedPaymentMethod == method;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          setState(() => _selectedPaymentMethod = method);
+          viewModel.selectPaymentMethod(method);
         },
         borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
@@ -1353,7 +1319,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildCardSelection(BuildContext context) {
+  Widget _buildCardSelection(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -1391,7 +1360,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                 ),
                 const Spacer(),
                 TextButton.icon(
-                  onPressed: () => _navigateToManageCards(),
+                  onPressed: () => _navigateToManageCards(viewModel),
                   icon: const Icon(Icons.settings_rounded, size: 16),
                   label: const Text('Manage'),
                   style: TextButton.styleFrom(
@@ -1405,16 +1374,22 @@ class _CheckoutScreenState extends State<CheckoutScreen>
               ],
             ),
           ),
-          ...(_userCards.map((card) => _buildCardOption(context, card))),
+          ...(viewModel.userCards.map(
+            (card) => _buildCardOption(context, viewModel, card),
+          )),
         ],
       ),
     );
   }
 
-  Widget _buildCardOption(BuildContext context, PaymentCard card) {
+  Widget _buildCardOption(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+    PaymentCard card,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final isSelected = _selectedCard?.id == card.id;
+    final isSelected = viewModel.selectedCard?.id == card.id;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1422,7 +1397,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            setState(() => _selectedCard = card);
+            viewModel.selectCard(card);
           },
           borderRadius: BorderRadius.circular(16),
           child: AnimatedContainer(
@@ -1540,7 +1515,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildSecurityInfo(BuildContext context) {
+  Widget _buildSecurityInfo(BuildContext context, CheckoutViewModel viewModel) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -1567,7 +1542,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                   ),
                 ),
                 Text(
-                  _selectedPaymentMethod == 'card'
+                  viewModel.selectedPaymentMethod == 'card'
                       ? 'Your card information is encrypted with 256-bit SSL'
                       : 'Pay cash when your order arrives at your doorstep',
                   style: textTheme.bodySmall?.copyWith(
@@ -1582,7 +1557,10 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  Widget _buildModernBottomBar(BuildContext context) {
+  Widget _buildModernBottomBar(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -1601,12 +1579,13 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       child: SafeArea(
         child: Row(
           children: [
-            if (_currentStep > 0) ...[
+            if (viewModel.currentStep > 0) ...[
               OutlinedButton(
                 onPressed:
-                    _isProcessing
+                    viewModel.isProcessing
                         ? null
                         : () {
+                          viewModel.previousStep();
                           _pageController.previousPage(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
@@ -1629,12 +1608,12 @@ class _CheckoutScreenState extends State<CheckoutScreen>
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child:
-                    _currentStep < 2
+                    viewModel.currentStep < 2
                         ? FilledButton(
-                          key: ValueKey('continue-$_currentStep'),
+                          key: ValueKey('continue-${viewModel.currentStep}'),
                           onPressed:
-                              _canProceedToNextStep()
-                                  ? _proceedToNextStep
+                              viewModel.canProceedToNextStep()
+                                  ? () => _proceedToNextStep(viewModel)
                                   : null,
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1646,7 +1625,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                _currentStep == 0
+                                viewModel.currentStep == 0
                                     ? 'Continue to Delivery'
                                     : 'Continue to Payment',
                                 style: textTheme.titleMedium?.copyWith(
@@ -1666,8 +1645,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                         : FilledButton(
                           key: const ValueKey('place-order'),
                           onPressed:
-                              _canPlaceOrder() && !_isProcessing
-                                  ? _processOrder
+                              viewModel.canPlaceOrder() &&
+                                      !viewModel.isProcessing
+                                  ? () => _processOrder(viewModel)
                                   : null,
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1676,7 +1656,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                             ),
                           ),
                           child:
-                              _isProcessing
+                              viewModel.isProcessing
                                   ? Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -1725,25 +1705,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
   }
 
-  bool _canProceedToNextStep() {
-    switch (_currentStep) {
-      case 0:
-        return true; // Always can proceed from order review
-      case 1:
-        return _selectedAddress != null;
-      default:
-        return false;
-    }
-  }
-
-  bool _canPlaceOrder() {
-    return _selectedAddress != null &&
-        (_selectedPaymentMethod == 'cod' ||
-            (_selectedPaymentMethod == 'card' && _selectedCard != null));
-  }
-
-  void _proceedToNextStep() {
-    if (_currentStep < 2) {
+  void _proceedToNextStep(CheckoutViewModel viewModel) {
+    if (viewModel.currentStep < 2) {
+      viewModel.nextStep();
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -1781,7 +1745,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     }
   }
 
-  Future<void> _navigateToManageAddresses() async {
+  Future<void> _navigateToManageAddresses(CheckoutViewModel viewModel) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -1800,65 +1764,24 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     );
 
     if (result != null && mounted) {
-      _loadUserAddresses();
+      viewModel.refreshAddresses();
     }
   }
 
-  Future<void> _navigateToManageCards() async {
+  Future<void> _navigateToManageCards(CheckoutViewModel viewModel) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const UserCardsScreen()),
     );
 
     if (result != null && mounted) {
-      _loadUserCards();
+      viewModel.refreshCards();
     }
   }
 
-  Future<void> _processOrder() async {
-    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    if (authViewModel.user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to continue')),
-      );
-      return;
-    }
-
-    setState(() => _isProcessing = true);
-
+  Future<void> _processOrder(CheckoutViewModel viewModel) async {
     try {
-      final shippingAddress = _selectedAddress!.fullAddress;
-
-      Map<String, String>? cardInfo;
-      if (_selectedPaymentMethod == 'card' && _selectedCard != null) {
-        cardInfo = {
-          'cardId': _selectedCard!.id,
-          'cardType': _selectedCard!.cardType,
-          'lastFourDigits': _selectedCard!.lastFourDigits,
-          'cardholderName': _selectedCard!.cardHolderName,
-          'expiry':
-              '${_selectedCard!.expiryMonth}/${_selectedCard!.expiryYear}',
-        };
-      }
-
-      final results = await _checkoutService.processCartCheckout(
-        cart: widget.cart,
-        buyerId: authViewModel.user!.userId,
-        paymentMethod: _selectedPaymentMethod,
-        shippingAddress: shippingAddress,
-        customerInfo: {
-          'name':
-              '${authViewModel.user!.firstName} ${authViewModel.user!.lastName}',
-          'email': authViewModel.user!.email,
-          'phone': authViewModel.user!.phoneNumber,
-          'addressId': _selectedAddress!.id,
-          'selectedCardId': _selectedCard?.id ?? '',
-        },
-        cardInfo: cardInfo,
-      );
-
-      final cartService = context.read<CartService>();
-      await cartService.clearCart();
+      final results = await viewModel.processOrder(widget.cart);
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -1866,8 +1789,8 @@ class _CheckoutScreenState extends State<CheckoutScreen>
           MaterialPageRoute(
             builder:
                 (context) => CheckoutSuccessScreen(
-                  orderResults: results,
-                  paymentMethod: _selectedPaymentMethod,
+                  orderResults: results.cast<CheckoutResult>(),
+                  paymentMethod: viewModel.selectedPaymentMethod,
                   totalAmount: widget.cart.totalAmount,
                 ),
           ),
@@ -1881,10 +1804,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
       }
     }
   }
