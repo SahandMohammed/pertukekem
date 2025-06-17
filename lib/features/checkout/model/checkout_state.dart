@@ -62,7 +62,8 @@ class CheckoutState {
       userCards: userCards ?? this.userCards,
       selectedAddress: selectedAddress ?? this.selectedAddress,
       selectedCard: selectedCard ?? this.selectedCard,
-      selectedPaymentMethod: selectedPaymentMethod ?? this.selectedPaymentMethod,
+      selectedPaymentMethod:
+          selectedPaymentMethod ?? this.selectedPaymentMethod,
       error: error,
     );
   }
