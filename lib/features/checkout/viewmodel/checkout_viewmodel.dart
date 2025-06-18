@@ -169,7 +169,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
             (_state.selectedPaymentMethod == 'card' &&
                 _state.selectedCard != null));
   }
-
   // Order processing
   Future<List<dynamic>> processOrder(Cart cart) async {
     final user = _authViewModel.user;
@@ -214,6 +213,9 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
       // Clear cart after successful order
       await _cartService.clearCart();
 
+      // Reset checkout state for next checkout session
+      await clearState();
+
       return results;
     } catch (e) {
       _state = _state.copyWith(error: 'Order failed: ${e.toString()}');
@@ -233,10 +235,15 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
   Future<void> refreshCards() async {
     await loadUserCards();
   }
-
   // Clear errors
   void clearError() {
     _state = _state.copyWith(error: null);
+    notifyListeners();
+  }
+
+  // Reset checkout state to initial state
+  void resetToInitialState() {
+    _state = CheckoutState.initial();
     notifyListeners();
   }
 

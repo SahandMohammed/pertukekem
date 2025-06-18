@@ -24,7 +24,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen>
     with TickerProviderStateMixin {
-  final PageController _pageController = PageController();
+  final PageController _pageController = PageController(initialPage: 0);
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -64,11 +64,22 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 
     _fadeController.forward();
     _slideController.forward();
-  }
-
-  void _initializeViewModel() {
+  }  void _initializeViewModel() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final checkoutViewModel = context.read<CheckoutViewModel>();
+      
+      // Reset checkout state to ensure we start from step 0
+      checkoutViewModel.resetToInitialState();
+      
+      // Reset page controller to page 0
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+      
       checkoutViewModel.setDependencies(
         authViewModel: context.read<AuthViewModel>(),
         profileViewModel: context.read<ProfileViewModel>(),
