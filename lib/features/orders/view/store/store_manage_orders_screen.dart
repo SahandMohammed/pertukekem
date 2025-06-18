@@ -678,11 +678,15 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         return 'Unknown';
     }
   }
+
   void _navigateToOrderDetails(BuildContext context, order_model.Order order) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => OrderDetailsScreen(orderId: order.id)),
+      MaterialPageRoute(
+        builder: (context) => OrderDetailsScreen(orderId: order.id),
+      ),
     );
   }
+
   void _updateOrderStatus(
     BuildContext context,
     order_model.Order order,
@@ -697,11 +701,11 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       // Notify other parts of the app about the order status change
       final syncService = OrderSyncService();
       syncService.notifyOrderUpdated(
-        order.id, 
+        order.id,
         newStatus.name,
         customerId: order.buyerRef.id,
       );
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

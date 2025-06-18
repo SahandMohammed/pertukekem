@@ -22,7 +22,8 @@ class _CustomerOrdersContent extends StatefulWidget {
   State<_CustomerOrdersContent> createState() => _CustomerOrdersContentState();
 }
 
-class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {  @override
+class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
+  @override
   void initState() {
     super.initState();
     // Start listening to orders when this tab is accessed
@@ -106,7 +107,8 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {  @over
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
-          ),          const Spacer(),
+          ),
+          const Spacer(),
         ],
       ),
     );
@@ -365,7 +367,8 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {  @over
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder:
-                              (context) => OrderDetailsScreen(orderId: order.id),
+                              (context) =>
+                                  OrderDetailsScreen(orderId: order.id),
                         ),
                       );
                     },

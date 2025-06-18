@@ -57,6 +57,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -114,9 +115,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 const SizedBox(height: 20),
                 _buildStatusTimelineCard(context, order),
                 const SizedBox(height: 20),
-                if (order.shippingAddress != null) _buildShippingCard(context, order),
+                if (order.shippingAddress != null)
+                  _buildShippingCard(context, order),
                 if (order.shippingAddress != null) const SizedBox(height: 20),
-                if (order.trackingNumber != null) _buildTrackingCard(context, order),
+                if (order.trackingNumber != null)
+                  _buildTrackingCard(context, order),
                 if (order.trackingNumber != null) const SizedBox(height: 20),
                 _buildOrderDetailsCard(context, order),
                 const SizedBox(height: 20),
@@ -129,6 +132,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
+
   Widget _buildSliverAppBar(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -208,6 +212,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       // Removed flexibleSpace and FlexibleSpaceBar
     );
   }
+
   Widget _buildOrderSummaryCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -330,6 +335,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ],
     );
   }
+
   Widget _buildStatusTimelineCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -508,6 +514,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
+
   Widget _buildShippingCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -576,6 +583,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
+
   Widget _buildTrackingCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;

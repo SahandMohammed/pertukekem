@@ -221,18 +221,19 @@ class OrderService {
       final order = orderDoc.data()!;
       if (order.sellerRef.id != currentUser.uid) {
         throw Exception('Not authorized to update this order');
-      }      await _ordersRef.doc(orderId).update({
+      }
+      await _ordersRef.doc(orderId).update({
         'status': newStatus.name,
         'updatedAt': FieldValue.serverTimestamp(),
-      }); 
-      
+      });
+
       // Notify other parts of the app about the order status change
       _syncService.notifyOrderUpdated(
-        orderId, 
+        orderId,
         newStatus.name,
         customerId: order.buyerRef.id,
       );
-      
+
       // Create notification for order status update
       try {
         // Get buyer information for notification

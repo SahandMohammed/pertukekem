@@ -45,22 +45,27 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
 
   double get totalSpent => _orders
       .where((order) => order.status == OrderStatus.delivered)
-      .fold(0.0, (sum, order) => sum + order.totalAmount);  bool _disposed = false;
+      .fold(0.0, (sum, order) => sum + order.totalAmount);
+  bool _disposed = false;
   CustomerOrdersViewModel() {
     // Don't auto-load orders in constructor to avoid unnecessary calls
     // loadOrders() will be called when the UI is ready
-    
+
     // Listen for external order updates (e.g., from store management)
     _syncSubscription = _syncService.orderUpdates.listen(
       (event) {
         if (_disposed) return;
-        
+
         if (event is SingleOrderUpdateEvent) {
-          print('📢 Received order update notification: ${event.orderId} -> ${event.newStatus}');
+          print(
+            '📢 Received order update notification: ${event.orderId} -> ${event.newStatus}',
+          );
           // The real-time stream should automatically pick up this change,
           // but we can add additional logic here if needed
         } else if (event is BulkOrderUpdateEvent) {
-          print('📢 Received bulk order update notification: ${event.orderIds.length} orders');
+          print(
+            '📢 Received bulk order update notification: ${event.orderIds.length} orders',
+          );
         }
       },
       onError: (error) {
@@ -78,13 +83,14 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
       _errorMessage = null;
 
       print('📱 Starting real-time orders stream...');
-      
+
       // Cancel existing subscription if any
-      await _ordersSubscription?.cancel();      // Start listening to orders stream for real-time updates
+      await _ordersSubscription
+          ?.cancel(); // Start listening to orders stream for real-time updates
       _ordersSubscription = _orderService.getBuyerOrders().listen(
         (orders) {
           if (_disposed) return;
-          
+
           _orders = orders;
           print('📦 Received ${_orders.length} orders via real-time stream');
           if (_orders.isNotEmpty) {
@@ -96,20 +102,19 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
               '📊 Order statuses: ${_orders.map((o) => '${o.id.substring(0, 8)}:${o.status.name}').join(', ')}',
             );
           }
-          
+
           // Orders are already sorted by createdAt desc from the query
           _setLoading(false);
         },
         onError: (error) {
           if (_disposed) return;
-          
+
           _errorMessage = 'Failed to load orders: ${error.toString()}';
           print('❌ Error in orders stream: $error');
           debugPrint('Error in orders stream: $error');
           _setLoading(false);
         },
       );
-
     } catch (e) {
       if (!_disposed) {
         _errorMessage = 'Failed to load orders: ${e.toString()}';
@@ -119,6 +124,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
       }
     }
   }
+
   Future<void> refreshOrders() async {
     if (_disposed) return;
 
@@ -150,6 +156,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     _errorMessage = null;
     notifyListeners();
   }
+
   void _setLoading(bool loading) {
     if (_disposed) return;
     _isLoading = loading;
@@ -250,6 +257,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
       print('Debug error: $e');
     }
   }
+
   @override
   void dispose() {
     debugPrint('🧹 Disposing CustomerOrdersViewModel...');
@@ -258,6 +266,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     _syncSubscription?.cancel();
     super.dispose();
   }
+
   @override
   Future<void> clearState() async {
     debugPrint('🧹 Clearing CustomerOrdersViewModel state...');
@@ -285,7 +294,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
   /// Force reconnect the orders stream (for debugging/troubleshooting)
   Future<void> reconnectStream() async {
     if (_disposed) return;
-    
+
     print('🔄 Reconnecting orders stream...');
     await _ordersSubscription?.cancel();
     await loadOrders();

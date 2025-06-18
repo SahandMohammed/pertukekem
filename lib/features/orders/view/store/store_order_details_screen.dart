@@ -77,7 +77,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
               const SizedBox(height: 16),
               Text(_error!, style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 16),
@@ -114,7 +118,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: CustomScrollView(        slivers: [
+      body: CustomScrollView(
+        slivers: [
           _buildSliverAppBar(context, order),
           SliverPadding(
             padding: const EdgeInsets.all(20),
@@ -126,9 +131,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 const SizedBox(height: 20),
                 _buildCustomerInfoCard(context, order),
                 const SizedBox(height: 20),
-                if (order.shippingAddress != null) _buildShippingCard(context, order),
+                if (order.shippingAddress != null)
+                  _buildShippingCard(context, order),
                 if (order.shippingAddress != null) const SizedBox(height: 20),
-                if (order.trackingNumber != null) _buildTrackingCard(context, order),
+                if (order.trackingNumber != null)
+                  _buildTrackingCard(context, order),
                 if (order.trackingNumber != null) const SizedBox(height: 20),
                 _buildStatusTimelineCard(context, order),
                 const SizedBox(height: 20),
@@ -1154,7 +1161,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed:                          () => _updateOrderStatus(
+                      onPressed:
+                          () => _updateOrderStatus(
                             context,
                             OrderStatus.confirmed,
                             viewModel,
@@ -1173,7 +1181,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed:                          () => _updateOrderStatus(
+                      onPressed:
+                          () => _updateOrderStatus(
                             context,
                             OrderStatus.rejected,
                             viewModel,
@@ -1198,7 +1207,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () => _showShipOrderDialog(context, viewModel, order),
+                  onPressed:
+                      () => _showShipOrderDialog(context, viewModel, order),
                   icon: const Icon(Icons.local_shipping_outlined),
                   label: const Text('Mark as Shipped'),
                   style: FilledButton.styleFrom(
@@ -1214,7 +1224,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed:                      () => _updateOrderStatus(
+                  onPressed:
+                      () => _updateOrderStatus(
                         context,
                         OrderStatus.delivered,
                         viewModel,
@@ -1375,22 +1386,24 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       print('📚 Stack trace: $stackTrace');
       return null;
     }
-  }  void _updateOrderStatus(
+  }
+
+  void _updateOrderStatus(
     BuildContext context,
     OrderStatus newStatus,
     StoreOrderViewModel viewModel,
     Order order,
   ) {
     viewModel.updateOrderStatus(order.id, newStatus);
-    
+
     // Notify other parts of the app about the order status change
     final syncService = OrderSyncService();
     syncService.notifyOrderUpdated(
-      order.id, 
+      order.id,
       newStatus.name,
       customerId: order.buyerRef.id,
     );
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Order status updated to ${_getStatusText(newStatus)}'),
@@ -1399,6 +1412,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       ),
     );
   }
+
   void _showShipOrderDialog(
     BuildContext context,
     StoreOrderViewModel viewModel,
@@ -1438,7 +1452,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 onPressed: () {
                   Navigator.of(context).pop();
                   // TODO: Update order with tracking number if provided
-                  _updateOrderStatus(context, OrderStatus.shipped, viewModel, order);
+                  _updateOrderStatus(
+                    context,
+                    OrderStatus.shipped,
+                    viewModel,
+                    order,
+                  );
                 },
                 child: const Text('Ship Order'),
               ),

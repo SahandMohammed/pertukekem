@@ -13,10 +13,15 @@ class OrderSyncService {
       StreamController<OrderUpdateEventBase>.broadcast();
 
   /// Stream of order update events
-  Stream<OrderUpdateEventBase> get orderUpdates => _orderUpdateController.stream;
+  Stream<OrderUpdateEventBase> get orderUpdates =>
+      _orderUpdateController.stream;
 
   /// Notify that an order has been updated
-  void notifyOrderUpdated(String orderId, String newStatus, {String? customerId}) {
+  void notifyOrderUpdated(
+    String orderId,
+    String newStatus, {
+    String? customerId,
+  }) {
     if (!_orderUpdateController.isClosed) {
       final event = SingleOrderUpdateEvent(
         orderId: orderId,
@@ -24,9 +29,11 @@ class OrderSyncService {
         customerId: customerId,
         timestamp: DateTime.now(),
       );
-      
+
       _orderUpdateController.add(event);
-      debugPrint('📢 Order update notification sent: Order $orderId -> $newStatus');
+      debugPrint(
+        '📢 Order update notification sent: Order $orderId -> $newStatus',
+      );
     }
   }
 
@@ -37,9 +44,11 @@ class OrderSyncService {
         orderIds: orderIds,
         timestamp: DateTime.now(),
       );
-      
+
       _orderUpdateController.add(event);
-      debugPrint('📢 Bulk order update notification sent: ${orderIds.length} orders');
+      debugPrint(
+        '📢 Bulk order update notification sent: ${orderIds.length} orders',
+      );
     }
   }
 
@@ -52,7 +61,7 @@ class OrderSyncService {
 /// Base class for order update events
 abstract class OrderUpdateEventBase {
   final DateTime timestamp;
-  
+
   OrderUpdateEventBase({required this.timestamp});
 }
 
@@ -74,8 +83,6 @@ class SingleOrderUpdateEvent extends OrderUpdateEventBase {
 class BulkOrderUpdateEvent extends OrderUpdateEventBase {
   final List<String> orderIds;
 
-  BulkOrderUpdateEvent({
-    required this.orderIds,
-    required DateTime timestamp,
-  }) : super(timestamp: timestamp);
+  BulkOrderUpdateEvent({required this.orderIds, required DateTime timestamp})
+    : super(timestamp: timestamp);
 }
