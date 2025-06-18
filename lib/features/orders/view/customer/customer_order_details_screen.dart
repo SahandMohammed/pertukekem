@@ -1,40 +1,126 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import '../../model/order_model.dart';
 import '../../viewmodel/customer_orders_viewmodel.dart';
+import '../../service/order_service.dart';
 
-class OrderDetailsScreen extends StatelessWidget {
-  final Order order;
+class OrderDetailsScreen extends StatefulWidget {
+  final String orderId;
 
-  const OrderDetailsScreen({super.key, required this.order});
+  const OrderDetailsScreen({super.key, required this.orderId});
 
+  @override
+  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+}
+
+class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+  final OrderService _orderService = OrderService();
+  StreamSubscription<List<Order>>? _orderSubscription;
+  Order? _currentOrder;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _startListeningToOrder();
+  }
+
+  @override
+  void dispose() {
+    _orderSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _startListeningToOrder() {
+    // Listen to buyer orders stream and filter for our specific order
+    _orderSubscription = _orderService.getBuyerOrders().listen(
+      (orders) {
+        if (mounted) {
+          final order = orders.where((o) => o.id == widget.orderId).firstOrNull;
+          setState(() {
+            _currentOrder = order;
+            _isLoading = false;
+            _error = order == null ? 'Order not found' : null;
+          });
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.toString();
+            _isLoading = false;
+          });
+        }
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          title: const Text('Order Details'),
+          backgroundColor: colorScheme.surface,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null || _currentOrder == null) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          title: const Text('Order Details'),
+          backgroundColor: colorScheme.surface,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+              const SizedBox(height: 16),
+              Text(_error ?? 'Order not found'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final order = _currentOrder!;
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(context),
+          _buildSliverAppBar(context, order),
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildOrderSummaryCard(context),
+                _buildOrderSummaryCard(context, order),
                 const SizedBox(height: 20),
-                _buildStatusTimelineCard(context),
+                _buildStatusTimelineCard(context, order),
                 const SizedBox(height: 20),
-                if (order.shippingAddress != null) _buildShippingCard(context),
+                if (order.shippingAddress != null) _buildShippingCard(context, order),
                 if (order.shippingAddress != null) const SizedBox(height: 20),
-                if (order.trackingNumber != null) _buildTrackingCard(context),
+                if (order.trackingNumber != null) _buildTrackingCard(context, order),
                 if (order.trackingNumber != null) const SizedBox(height: 20),
-                _buildOrderDetailsCard(context),
+                _buildOrderDetailsCard(context, order),
                 const SizedBox(height: 20),
-                _buildActionButtons(context),
+                _buildActionButtons(context, order),
                 const SizedBox(height: 32),
               ]),
             ),
@@ -43,8 +129,7 @@ class OrderDetailsScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildSliverAppBar(BuildContext context) {
+  Widget _buildSliverAppBar(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -123,8 +208,7 @@ class OrderDetailsScreen extends StatelessWidget {
       // Removed flexibleSpace and FlexibleSpaceBar
     );
   }
-
-  Widget _buildOrderSummaryCard(BuildContext context) {
+  Widget _buildOrderSummaryCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -246,8 +330,7 @@ class OrderDetailsScreen extends StatelessWidget {
       ],
     );
   }
-
-  Widget _buildStatusTimelineCard(BuildContext context) {
+  Widget _buildStatusTimelineCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -425,8 +508,7 @@ class OrderDetailsScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildShippingCard(BuildContext context) {
+  Widget _buildShippingCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -494,8 +576,7 @@ class OrderDetailsScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildTrackingCard(BuildContext context) {
+  Widget _buildTrackingCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -578,7 +659,7 @@ class OrderDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () => _copyTrackingNumber(context),
+                    onPressed: () => _copyTrackingNumber(context, order),
                     icon: Icon(
                       Icons.copy_rounded,
                       color: Colors.blue.shade600,
@@ -600,7 +681,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderDetailsCard(BuildContext context) {
+  Widget _buildOrderDetailsCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -715,7 +796,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -808,7 +889,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  void _copyTrackingNumber(BuildContext context) {
+  void _copyTrackingNumber(BuildContext context, Order order) {
     Clipboard.setData(ClipboardData(text: order.trackingNumber!));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

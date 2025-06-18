@@ -2,44 +2,137 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'dart:async';
 import '../../../../core/services/order_sync_service.dart';
 import '../../model/order_model.dart';
 import '../../viewmodel/store_order_viewmodel.dart';
+import '../../service/order_service.dart';
 import '../../../listings/model/listing_model.dart';
 
-class OrderDetailsScreen extends StatelessWidget {
-  final Order order;
+class OrderDetailsScreen extends StatefulWidget {
+  final String orderId;
 
-  const OrderDetailsScreen({super.key, required this.order});
+  const OrderDetailsScreen({super.key, required this.orderId});
+
+  @override
+  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+}
+
+class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+  final OrderService _orderService = OrderService();
+  StreamSubscription<List<Order>>? _orderSubscription;
+  Order? _currentOrder;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _startListeningToOrder();
+  }
+
+  @override
+  void dispose() {
+    _orderSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _startListeningToOrder() {
+    // Listen to seller orders stream and filter for our specific order
+    _orderSubscription = _orderService.getSellerOrders().listen(
+      (orders) {
+        if (mounted) {
+          final order = orders.where((o) => o.id == widget.orderId).firstOrNull;
+          setState(() {
+            _currentOrder = order;
+            _isLoading = false;
+            _error = order == null ? 'Order not found' : null;
+          });
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.toString();
+            _isLoading = false;
+          });
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Order Details')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Order Details')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 16),
+              Text(_error!, style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _error = null;
+                  });
+                  _startListeningToOrder();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_currentOrder == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Order Details')),
+        body: const Center(child: Text('Order not found')),
+      );
+    }
+
+    return _buildOrderDetailsContent(context, _currentOrder!);
+  }
+
+  Widget _buildOrderDetailsContent(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(context),
+      body: CustomScrollView(        slivers: [
+          _buildSliverAppBar(context, order),
           SliverPadding(
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildOrderSummaryCard(context),
+                _buildOrderSummaryCard(context, order),
                 const SizedBox(height: 20),
-                _buildBookDetailsCard(context),
+                _buildBookDetailsCard(context, order),
                 const SizedBox(height: 20),
-                _buildCustomerInfoCard(context),
+                _buildCustomerInfoCard(context, order),
                 const SizedBox(height: 20),
-                if (order.shippingAddress != null) _buildShippingCard(context),
+                if (order.shippingAddress != null) _buildShippingCard(context, order),
                 if (order.shippingAddress != null) const SizedBox(height: 20),
-                if (order.trackingNumber != null) _buildTrackingCard(context),
+                if (order.trackingNumber != null) _buildTrackingCard(context, order),
                 if (order.trackingNumber != null) const SizedBox(height: 20),
-                _buildStatusTimelineCard(context),
+                _buildStatusTimelineCard(context, order),
                 const SizedBox(height: 20),
-                _buildActionButtons(context),
+                _buildActionButtons(context, order),
                 const SizedBox(height: 32),
               ]),
             ),
@@ -49,7 +142,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context) {
+  Widget _buildSliverAppBar(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -135,7 +228,7 @@ class OrderDetailsScreen extends StatelessWidget {
                 ),
               ),
               onSelected: (newStatus) {
-                _updateOrderStatus(context, newStatus, viewModel);
+                _updateOrderStatus(context, newStatus, viewModel, order);
               },
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -172,7 +265,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrderSummaryCard(BuildContext context) {
+  Widget _buildOrderSummaryCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -291,7 +384,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBookDetailsCard(BuildContext context) {
+  Widget _buildBookDetailsCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -599,7 +692,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCustomerInfoCard(BuildContext context) {
+  Widget _buildCustomerInfoCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -704,7 +797,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildShippingCard(BuildContext context) {
+  Widget _buildShippingCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -774,7 +867,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTrackingCard(BuildContext context) {
+  Widget _buildTrackingCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -878,7 +971,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusTimelineCard(BuildContext context) {
+  Widget _buildStatusTimelineCard(BuildContext context, Order order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
@@ -1051,7 +1144,7 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, Order order) {
     return Consumer<StoreOrderViewModel>(
       builder: (context, viewModel, child) {
         return Column(
@@ -1061,11 +1154,11 @@ class OrderDetailsScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed:
-                          () => _updateOrderStatus(
+                      onPressed:                          () => _updateOrderStatus(
                             context,
                             OrderStatus.confirmed,
                             viewModel,
+                            order,
                           ),
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Confirm Order'),
@@ -1080,11 +1173,11 @@ class OrderDetailsScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed:
-                          () => _updateOrderStatus(
+                      onPressed:                          () => _updateOrderStatus(
                             context,
                             OrderStatus.rejected,
                             viewModel,
+                            order,
                           ),
                       icon: const Icon(Icons.cancel_outlined),
                       label: const Text('Reject Order'),
@@ -1105,7 +1198,7 @@ class OrderDetailsScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () => _showShipOrderDialog(context, viewModel),
+                  onPressed: () => _showShipOrderDialog(context, viewModel, order),
                   icon: const Icon(Icons.local_shipping_outlined),
                   label: const Text('Mark as Shipped'),
                   style: FilledButton.styleFrom(
@@ -1121,11 +1214,11 @@ class OrderDetailsScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed:
-                      () => _updateOrderStatus(
+                  onPressed:                      () => _updateOrderStatus(
                         context,
                         OrderStatus.delivered,
                         viewModel,
+                        order,
                       ),
                   icon: const Icon(Icons.done_all),
                   label: const Text('Mark as Delivered'),
@@ -1282,11 +1375,11 @@ class OrderDetailsScreen extends StatelessWidget {
       print('📚 Stack trace: $stackTrace');
       return null;
     }
-  }
-  void _updateOrderStatus(
+  }  void _updateOrderStatus(
     BuildContext context,
     OrderStatus newStatus,
     StoreOrderViewModel viewModel,
+    Order order,
   ) {
     viewModel.updateOrderStatus(order.id, newStatus);
     
@@ -1306,10 +1399,10 @@ class OrderDetailsScreen extends StatelessWidget {
       ),
     );
   }
-
   void _showShipOrderDialog(
     BuildContext context,
     StoreOrderViewModel viewModel,
+    Order order,
   ) {
     final trackingController = TextEditingController();
 
@@ -1345,7 +1438,7 @@ class OrderDetailsScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                   // TODO: Update order with tracking number if provided
-                  _updateOrderStatus(context, OrderStatus.shipped, viewModel);
+                  _updateOrderStatus(context, OrderStatus.shipped, viewModel, order);
                 },
                 child: const Text('Ship Order'),
               ),

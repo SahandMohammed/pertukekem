@@ -365,7 +365,7 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {  @over
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder:
-                              (context) => OrderDetailsScreen(order: order),
+                              (context) => OrderDetailsScreen(orderId: order.id),
                         ),
                       );
                     },

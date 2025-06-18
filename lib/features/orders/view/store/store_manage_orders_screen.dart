@@ -678,10 +678,9 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         return 'Unknown';
     }
   }
-
   void _navigateToOrderDetails(BuildContext context, order_model.Order order) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => OrderDetailsScreen(order: order)),
+      MaterialPageRoute(builder: (context) => OrderDetailsScreen(orderId: order.id)),
     );
   }
   void _updateOrderStatus(
