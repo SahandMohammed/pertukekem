@@ -6,6 +6,7 @@ import '../../admin/view/admin_dashboard_screen.dart';
 import '../../dashboards/view/store/store_dashboard.dart';
 import '../../profile/view/store/store_setup_screen.dart';
 import 'login_screen.dart';
+import 'blocked_user_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -23,13 +24,18 @@ class AuthWrapper extends StatelessWidget {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
-        }
-
-        // If user exists but phone isn't verified, clean up and show login
+        } // If user exists but phone isn't verified, clean up and show login
         if (!authViewModel.isPhoneVerified) {
           // Note: cleanup is handled in AuthViewModel.handleUnverifiedUser
           return const LoginScreen();
-        } // Only show dashboard if user is fully verified        // Check user role and redirect accordingly
+        }
+
+        // Check if user is blocked
+        if (authViewModel.user!.isBlocked) {
+          return const BlockedUserScreen();
+        }
+
+        // Only show dashboard if user is fully verified// Check user role and redirect accordingly
         if (authViewModel.user!.roles.contains('admin')) {
           return const AdminDashboardScreen();
         } else if (authViewModel.user!.roles.contains('store')) {
