@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../cart/model/cart_item_model.dart';
 import '../../viewmodel/checkout_viewmodel.dart';
+import '../../model/checkout_result_model.dart';
+import '../checkout_success_screen.dart';
 
 class CheckoutBottomBar extends StatelessWidget {
   final Cart cart;
@@ -69,21 +71,71 @@ class CheckoutBottomBar extends StatelessWidget {
                                 'continue-${viewModel.currentStep}',
                               ),
                               viewModel: viewModel,
-                              pageController: pageController,
-                            )
+                              pageController: pageController,                            )
                             : _PlaceOrderButton(
                               key: const ValueKey('place-order'),
                               viewModel: viewModel,
                               cart: cart,
+                              onPlaceOrder: () => _processOrder(context, viewModel),
                             ),
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
+        );      },
     );
+  }
+
+  Future<void> _processOrder(BuildContext context, CheckoutViewModel viewModel) async {
+    try {
+      final results = await viewModel.processOrder(cart);
+
+      if (context.mounted) {
+        // Convert dynamic results to CheckoutResult objects
+        final checkoutResults = results.map((result) {
+          if (result is CheckoutResult) {
+            return result;
+          } else if (result is Map<String, dynamic>) {
+            return CheckoutResult.fromJson(result);
+          } else {
+            // Fallback for any unexpected result format
+            return CheckoutResult(
+              success: false,
+              listingId: '',
+              listingTitle: 'Unknown Item',
+              sellerId: '',
+              quantity: 0,
+              amount: 0.0,
+              errorMessage: 'Unexpected result format',
+            );
+          }
+        }).toList();
+
+        // Calculate total amount
+        final totalAmount = cart.totalAmount;
+
+        // Navigate to success screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => CheckoutSuccessScreen(
+              orderResults: checkoutResults,
+              paymentMethod: viewModel.selectedPaymentMethod,
+              totalAmount: totalAmount,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to process order: $error'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -146,11 +198,13 @@ class _ContinueButton extends StatelessWidget {
 class _PlaceOrderButton extends StatelessWidget {
   final CheckoutViewModel viewModel;
   final Cart cart;
+  final VoidCallback onPlaceOrder;
 
   const _PlaceOrderButton({
     super.key,
     required this.viewModel,
     required this.cart,
+    required this.onPlaceOrder,
   });
 
   @override
@@ -158,10 +212,9 @@ class _PlaceOrderButton extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return FilledButton(
-      onPressed:
+    return FilledButton(      onPressed:
           viewModel.canPlaceOrder() && !viewModel.isProcessing
-              ? () => _processOrder(context)
+              ? onPlaceOrder
               : null,
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -205,30 +258,8 @@ class _PlaceOrderButton extends StatelessWidget {
                       color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w600,
                     ),
-                  ),
-                ],
+                  ),                ],
               ),
     );
-  }
-
-  Future<void> _processOrder(BuildContext context) async {
-    try {
-      final results = await viewModel.processOrder(cart);
-
-      if (context.mounted) {
-        // TODO: Navigate to checkout success screen
-        // This navigation will be implemented when the navigation is refactored
-        debugPrint('Order processed successfully: $results');
-      }
-    } catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to process order: $error'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
   }
 }
