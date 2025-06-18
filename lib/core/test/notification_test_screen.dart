@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pertukekem/core/services/fcm_service.dart';
-import 'package:pertukekem/features/dashboards/service/notification_service.dart';
+import 'package:pertukekem/features/notifications/service/unified_notification_service.dart';
 
 class NotificationTestScreen extends StatefulWidget {
   const NotificationTestScreen({super.key});
@@ -13,7 +13,7 @@ class NotificationTestScreen extends StatefulWidget {
 
 class _NotificationTestScreenState extends State<NotificationTestScreen> {
   final _fcmService = FCMService();
-  final _notificationService = NotificationService();
+  final _notificationService = UnifiedNotificationService();
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 

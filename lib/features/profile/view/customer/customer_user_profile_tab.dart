@@ -13,7 +13,6 @@ import '../../viewmodel/store_profile_viewmodel.dart';
 import '../../services/user_profile_service.dart';
 import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
 import '../../../notifications/view/customer_notification_list_screen.dart';
-import '../../../notifications/view/notification_debug_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -360,22 +359,6 @@ class _ProfileTabState extends State<ProfileTab> {
                           subtitle: 'Learn more about PertuKeKem',
                           onTap: () => _showComingSoon(context, 'About'),
                         ),
-                        // Debug option - only show in debug mode
-                        if (kDebugMode)
-                          _MenuOption(
-                            icon: Icons.bug_report,
-                            title: 'Notification Testing',
-                            subtitle: 'Test notification system (Debug)',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) =>
-                                          const NotificationDebugScreen(),
-                                ),
-                              );
-                            },
-                          ),
                         _MenuOption(
                           icon: Icons.logout,
                           title: 'Sign Out',

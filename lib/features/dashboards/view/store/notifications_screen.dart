@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../service/notification_service.dart';
-import '../../model/notification_model.dart';
+import '../../../notifications/service/unified_notification_service.dart';
+import '../../../notifications/model/unified_notification_model.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -11,7 +11,8 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final NotificationService _notificationService = NotificationService();
+  final UnifiedNotificationService _notificationService =
+      UnifiedNotificationService();
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +29,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<StoreNotification>>(
+      body: StreamBuilder<List<UnifiedNotification>>(
         stream: _notificationService.getStoreNotifications(limit: 50),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -115,7 +116,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationCard(StoreNotification notification) {
+  Widget _buildNotificationCard(UnifiedNotification notification) {
     return Card(
       elevation: notification.isRead ? 1 : 3,
       child: Container(
@@ -197,6 +198,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Colors.red;
       case NotificationType.orderUpdate:
         return Colors.blue;
+      case NotificationType.orderConfirmed:
+        return Colors.green;
+      case NotificationType.orderShipped:
+        return Colors.blue;
+      case NotificationType.orderDelivered:
+        return Colors.green;
+      case NotificationType.orderRefunded:
+        return Colors.orange;
+      case NotificationType.newBookAvailable:
+        return Colors.purple;
+      case NotificationType.promotionalOffer:
+        return Colors.amber;
+      case NotificationType.systemUpdate:
+        return Colors.grey;
+      case NotificationType.libraryUpdate:
+        return Colors.indigo;
+      case NotificationType.paymentReminder:
+        return Colors.red;
       case NotificationType.lowStock:
         return Colors.orange;
       case NotificationType.review:
@@ -214,6 +233,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.cancel;
       case NotificationType.orderUpdate:
         return Icons.update;
+      case NotificationType.orderConfirmed:
+        return Icons.check_circle;
+      case NotificationType.orderShipped:
+        return Icons.local_shipping;
+      case NotificationType.orderDelivered:
+        return Icons.done_all;
+      case NotificationType.orderRefunded:
+        return Icons.money_off;
+      case NotificationType.newBookAvailable:
+        return Icons.library_books;
+      case NotificationType.promotionalOffer:
+        return Icons.local_offer;
+      case NotificationType.systemUpdate:
+        return Icons.system_update;
+      case NotificationType.libraryUpdate:
+        return Icons.library_add;
+      case NotificationType.paymentReminder:
+        return Icons.payment;
       case NotificationType.lowStock:
         return Icons.inventory;
       case NotificationType.review:
@@ -246,7 +283,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _markAllAsRead() async {
     try {
-      await _notificationService.markAllAsRead();
+      await _notificationService.markAllAsRead(
+        target: NotificationTarget.store,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('All notifications marked as read')),
@@ -264,12 +303,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  void _handleNotificationTap(StoreNotification notification) {
+  void _handleNotificationTap(UnifiedNotification notification) {
     // Handle different notification types
     switch (notification.type) {
       case NotificationType.newOrder:
       case NotificationType.orderUpdate:
       case NotificationType.orderCancelled:
+      case NotificationType.orderConfirmed:
+      case NotificationType.orderShipped:
+      case NotificationType.orderDelivered:
+      case NotificationType.orderRefunded:
         // Navigate to orders tab - you can implement navigation logic here
         Navigator.of(context).pop(); // Close notifications screen
         // You could use a callback or navigator to switch to orders tab
@@ -282,7 +325,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         // Handle review notification
         break;
       case NotificationType.system:
+      case NotificationType.systemUpdate:
         // Handle system notification
+        break;
+      case NotificationType.newBookAvailable:
+      case NotificationType.libraryUpdate:
+        // Handle book/library notifications
+        break;
+      case NotificationType.promotionalOffer:
+        // Handle promotional offers
+        break;
+      case NotificationType.paymentReminder:
+        // Handle payment reminders
         break;
     }
   }

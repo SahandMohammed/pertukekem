@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import '../service/customer_notification_service.dart';
+import '../service/unified_notification_service.dart';
 
 class NotificationTestHelper {
-  static final CustomerNotificationService _notificationService =
-      CustomerNotificationService();
+  static final UnifiedNotificationService _notificationService =
+      UnifiedNotificationService();
 
   /// Create sample notifications for testing
   static Future<void> createSampleNotifications() async {
