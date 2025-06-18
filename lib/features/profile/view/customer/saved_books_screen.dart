@@ -208,17 +208,6 @@ class _SavedBooksScreenState extends State<SavedBooksScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        // Navigate back to the main dashboard to browse books
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
-                      },
-                      icon: const Icon(Icons.explore),
-                      label: const Text('Browse Books'),
-                    ),
                   ],
                 ),
               )
