@@ -411,41 +411,53 @@ class UnifiedNotificationService {
   }
 
   /// Get unread count stream for store - real-time updates
-  Stream<int> getStoreUnreadCountStream() {
+  Stream<int> getStoreUnreadCountStream() async* {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
-      return Stream.value(0);
+      print('⚠️ No current user for store unread count stream');
+      yield 0;
+      return;
     }
 
-    return _firestore
-        .collection('users')
-        .doc(currentUser.uid)
-        .snapshots()
-        .asyncMap((userDoc) async {
-          if (!userDoc.exists) {
-            return 0;
-          }
+    print('🔍 Starting store unread count stream for user: ${currentUser.uid}');
 
-          final storeId = userDoc.data()?['storeId'];
-          if (storeId == null || storeId.isEmpty) {
-            return 0;
-          }
+    try {
+      // First get the storeId
+      final userDoc =
+          await _firestore.collection('users').doc(currentUser.uid).get();
 
-          try {
-            final snapshot =
-                await _notificationsRef
-                    .where('target', isEqualTo: NotificationTarget.store.name)
-                    .where('storeId', isEqualTo: storeId)
-                    .where('isRead', isEqualTo: false)
-                    .count()
-                    .get();
+      if (!userDoc.exists) {
+        print('⚠️ User document does not exist');
+        yield 0;
+        return;
+      }
 
-            return snapshot.count ?? 0;
-          } catch (e) {
-            print('Error getting store unread count stream: $e');
-            return 0;
-          }
-        });
+      final storeId = userDoc.data()?['storeId'];
+      if (storeId == null || storeId.isEmpty) {
+        print('⚠️ No storeId found for user');
+        yield 0;
+        return;
+      }
+
+      print('📍 Setting up real-time stream for store: $storeId');
+
+      // Now listen to the notifications collection for real-time updates
+      await for (final snapshot
+          in _notificationsRef
+              .where('target', isEqualTo: NotificationTarget.store.name)
+              .where('storeId', isEqualTo: storeId)
+              .where('isRead', isEqualTo: false)
+              .snapshots()) {
+        final count = snapshot.docs.length;
+        print(
+          '📱 Store unread count stream update: $count unread notifications',
+        );
+        yield count;
+      }
+    } catch (error) {
+      print('❌ Error in store unread count stream: $error');
+      yield 0;
+    }
   }
 
   // SHARED METHODS

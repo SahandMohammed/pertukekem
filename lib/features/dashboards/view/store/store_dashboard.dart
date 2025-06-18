@@ -47,6 +47,10 @@ class _StoreDashboardState extends State<StoreDashboard> {
                 StreamBuilder<int>(
                   stream: _notificationService.getStoreUnreadCountStream(),
                   builder: (context, snapshot) {
+                    print(
+                      '🔔 Dashboard notification badge rebuild - State: ${snapshot.connectionState}, Data: ${snapshot.data}, Error: ${snapshot.error}',
+                    );
+
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return IconButton(
                         icon: const Icon(Icons.notifications_outlined),
@@ -60,7 +64,17 @@ class _StoreDashboardState extends State<StoreDashboard> {
                       );
                     }
 
+                    if (snapshot.hasError) {
+                      print(
+                        '❌ Dashboard notification error: ${snapshot.error}',
+                      );
+                    }
+
                     final unreadCount = snapshot.data ?? 0;
+                    print(
+                      '📊 Dashboard showing badge with count: $unreadCount',
+                    );
+
                     return Badge(
                       isLabelVisible: unreadCount > 0,
                       label: Text(unreadCount.toString()),
