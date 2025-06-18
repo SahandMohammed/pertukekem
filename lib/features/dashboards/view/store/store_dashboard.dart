@@ -43,7 +43,8 @@ class _StoreDashboardState extends State<StoreDashboard> {
                   onPressed: () {
                     Navigator.of(context).pushNamed('/notification-test');
                   },
-                ),                StreamBuilder<int>(
+                ),
+                StreamBuilder<int>(
                   stream: _notificationService.getStoreUnreadCountStream(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -58,7 +59,7 @@ class _StoreDashboardState extends State<StoreDashboard> {
                         },
                       );
                     }
-                    
+
                     final unreadCount = snapshot.data ?? 0;
                     return Badge(
                       isLabelVisible: unreadCount > 0,

@@ -362,6 +362,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
       ),
     );
   }
+
   Widget _buildRecentOrdersSection() {
     return StreamBuilder<List<order_model.Order>>(
       stream: _orderService.getSellerOrders(),
@@ -375,16 +376,22 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                 children: [
                   Text(
                     'Recent Orders',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   TextButton(
-                    onPressed: widget.onNavigateToOrders ?? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Navigate to Orders tab to see all orders'),
-                        ),
-                      );
-                    },
+                    onPressed:
+                        widget.onNavigateToOrders ??
+                        () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Navigate to Orders tab to see all orders',
+                              ),
+                            ),
+                          );
+                        },
                     child: const Text('View All'),
                   ),
                 ],
@@ -409,16 +416,22 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                 children: [
                   Text(
                     'Recent Orders',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   TextButton(
-                    onPressed: widget.onNavigateToOrders ?? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Navigate to Orders tab to see all orders'),
-                        ),
-                      );
-                    },
+                    onPressed:
+                        widget.onNavigateToOrders ??
+                        () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Navigate to Orders tab to see all orders',
+                              ),
+                            ),
+                          );
+                        },
                     child: const Text('View All'),
                   ),
                 ],
