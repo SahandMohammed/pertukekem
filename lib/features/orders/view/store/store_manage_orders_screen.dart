@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/services/order_sync_service.dart';
 import '../../model/order_model.dart' as order_model;
 import '../../viewmodel/store_order_viewmodel.dart';
 import 'store_order_details_screen.dart';
@@ -683,7 +684,6 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
       MaterialPageRoute(builder: (context) => OrderDetailsScreen(order: order)),
     );
   }
-
   void _updateOrderStatus(
     BuildContext context,
     order_model.Order order,
@@ -695,6 +695,14 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     final success = await viewModel.updateOrderStatus(order.id, newStatus);
 
     if (success && mounted) {
+      // Notify other parts of the app about the order status change
+      final syncService = OrderSyncService();
+      syncService.notifyOrderUpdated(
+        order.id, 
+        newStatus.name,
+        customerId: order.buyerRef.id,
+      );
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

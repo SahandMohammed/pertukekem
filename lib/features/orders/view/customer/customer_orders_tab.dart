@@ -22,16 +22,14 @@ class _CustomerOrdersContent extends StatefulWidget {
   State<_CustomerOrdersContent> createState() => _CustomerOrdersContentState();
 }
 
-class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
-  @override
+class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {  @override
   void initState() {
     super.initState();
-    // Ensure orders are loaded when this tab is accessed
+    // Start listening to orders when this tab is accessed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<CustomerOrdersViewModel>();
-      if (viewModel.orders.isEmpty && !viewModel.isLoading) {
-        viewModel.loadOrders();
-      }
+      // Always start the real-time stream when the tab is opened
+      viewModel.loadOrders();
     });
   }
 
@@ -108,23 +106,7 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
-          ),
-          const Spacer(),
-          Consumer<CustomerOrdersViewModel>(
-            builder: (context, viewModel, child) {
-              return IconButton(
-                onPressed: () async {
-                  // Debug and force refresh
-                  print('🔄 Force refreshing orders from server...');
-                  await viewModel.debugOrderSource();
-                  await viewModel.refreshOrders();
-                  print('✅ Refresh completed');
-                },
-                icon: Icon(Icons.refresh_rounded, color: Colors.grey.shade600),
-                tooltip: 'Force Refresh Orders',
-              );
-            },
-          ),
+          ),          const Spacer(),
         ],
       ),
     );

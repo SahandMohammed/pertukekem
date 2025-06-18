@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import '../../../core/services/order_sync_service.dart';
 import '../model/order_model.dart' as order_model;
 import '../../notifications/service/unified_notification_service.dart';
 
@@ -10,6 +11,7 @@ class OrderService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final UnifiedNotificationService _notificationService =
       UnifiedNotificationService();
+  final OrderSyncService _syncService = OrderSyncService();
   late final CollectionReference<order_model.Order> _ordersRef;
 
   OrderService() {
@@ -219,11 +221,19 @@ class OrderService {
       final order = orderDoc.data()!;
       if (order.sellerRef.id != currentUser.uid) {
         throw Exception('Not authorized to update this order');
-      }
-      await _ordersRef.doc(orderId).update({
+      }      await _ordersRef.doc(orderId).update({
         'status': newStatus.name,
         'updatedAt': FieldValue.serverTimestamp(),
-      }); // Create notification for order status update
+      }); 
+      
+      // Notify other parts of the app about the order status change
+      _syncService.notifyOrderUpdated(
+        orderId, 
+        newStatus.name,
+        customerId: order.buyerRef.id,
+      );
+      
+      // Create notification for order status update
       try {
         // Get buyer information for notification
         final buyerDoc = await order.buyerRef.get();

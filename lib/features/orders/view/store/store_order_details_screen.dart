@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import '../../../../core/services/order_sync_service.dart';
 import '../../model/order_model.dart';
 import '../../viewmodel/store_order_viewmodel.dart';
 import '../../../listings/model/listing_model.dart';
@@ -1282,13 +1283,21 @@ class OrderDetailsScreen extends StatelessWidget {
       return null;
     }
   }
-
   void _updateOrderStatus(
     BuildContext context,
     OrderStatus newStatus,
     StoreOrderViewModel viewModel,
   ) {
     viewModel.updateOrderStatus(order.id, newStatus);
+    
+    // Notify other parts of the app about the order status change
+    final syncService = OrderSyncService();
+    syncService.notifyOrderUpdated(
+      order.id, 
+      newStatus.name,
+      customerId: order.buyerRef.id,
+    );
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Order status updated to ${_getStatusText(newStatus)}'),
