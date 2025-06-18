@@ -477,24 +477,36 @@ class AdminService {
       throw Exception('Failed to search listings: $e');
     }
   }
-
   // Statistics
   Future<Map<String, int>> getStatistics() async {
     try {
       final futures = await Future.wait([
         _firestore.collection('users').count().get(), // All users
         _firestore.collection('stores').count().get(), // Store count
-        _firestore
-            .collection('listings')
-            .where('status', isEqualTo: 'active')
-            .count()
-            .get(), // Active listings
+        _firestore.collection('listings').count().get(), // All listings count
         _firestore
             .collection('users')
             .where('isBlocked', isEqualTo: true)
             .count()
             .get(), // Blocked users
-      ]); // Get all users to count customers vs store owners
+      ]);
+
+      // Count active listings manually (includes listings without status field)
+      final allListingsSnapshot = await _firestore.collection('listings').get();
+      int activeListingsCount = 0;
+      
+      for (final doc in allListingsSnapshot.docs) {
+        final data = doc.data();
+        final status = data['status'] as String?;
+        
+        // Count as active if status is null, empty, 'active', or not 'removed'/'inactive'/'sold'
+        if (status == null || 
+            status.isEmpty || 
+            status == 'active' || 
+            (status != 'removed' && status != 'inactive' && status != 'sold')) {
+          activeListingsCount++;
+        }
+      }// Get all users to count customers vs store owners
       final allUsersSnapshot = await _firestore.collection('users').get();
       int customerCount = 0;
       int storeOwnerCount = 0;
@@ -509,13 +521,12 @@ class AdminService {
           storeOwnerCount++;
         }
         // Note: Admin users are not counted in either category
-      }
-      return {
+      }      return {
         'totalUsers': allUsersSnapshot.size, // Total users
         'totalCustomers': customerCount,
         'totalStoreOwners': storeOwnerCount,
         'totalStores': futures[1].count ?? 0,
-        'totalListings': futures[2].count ?? 0,
+        'totalListings': activeListingsCount, // Use our manually counted active listings
         'blockedUsers': futures[3].count ?? 0,
       };
     } catch (e) {
