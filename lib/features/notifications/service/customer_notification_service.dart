@@ -281,4 +281,79 @@ class CustomerNotificationService {
       print('Error creating system notification: $e');
     }
   }
+
+  /// Create order cancellation notification
+  Future<void> createOrderCancellationNotification({
+    required String customerId,
+    required String orderId,
+    required String orderNumber,
+    required String storeName,
+    String? reason,
+  }) async {
+    try {
+      String message = 'Your order #$orderNumber from $storeName has been cancelled.';
+      if (reason != null && reason.isNotEmpty) {
+        message += ' Reason: $reason';
+      }
+
+      final notification = CustomerNotification(
+        id: '',
+        customerId: customerId,
+        title: 'Order Cancelled',
+        message: message,
+        type: CustomerNotificationType.orderCancelled,
+        isRead: false,
+        createdAt: Timestamp.now(),
+        metadata: {
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+          'storeName': storeName,
+          'reason': reason,
+        },
+        actionUrl: '/orders/$orderId',
+      );
+
+      await _notificationsRef.add(notification);
+    } catch (e) {
+      print('Error creating order cancellation notification: $e');
+    }
+  }
+
+  /// Create order rejection notification  
+  Future<void> createOrderRejectionNotification({
+    required String customerId,
+    required String orderId,
+    required String orderNumber,
+    required String storeName,
+    String? reason,
+  }) async {
+    try {
+      String message = 'Your order #$orderNumber from $storeName has been rejected.';
+      if (reason != null && reason.isNotEmpty) {
+        message += ' Reason: $reason';
+      }
+
+      final notification = CustomerNotification(
+        id: '',
+        customerId: customerId,
+        title: 'Order Rejected',
+        message: message,
+        type: CustomerNotificationType.orderCancelled, // Using orderCancelled type for now
+        isRead: false,
+        createdAt: Timestamp.now(),
+        metadata: {
+          'orderId': orderId,
+          'orderNumber': orderNumber,
+          'storeName': storeName,
+          'reason': reason,
+          'type': 'rejected',
+        },
+        actionUrl: '/orders/$orderId',
+      );
+
+      await _notificationsRef.add(notification);
+    } catch (e) {
+      print('Error creating order rejection notification: $e');
+    }
+  }
 }
