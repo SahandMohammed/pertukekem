@@ -69,7 +69,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               padding: const EdgeInsets.all(16.0),
               child: AdminSearchBar(
                 controller: _searchController,
-                hintText: 'Search users by name or email...',
+                hintText: 'Search customers by name or email...',
                 onSearch: _onSearch,
                 onClear: () {
                   _searchController.clear();
@@ -126,8 +126,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 adminViewModel.isSearchMode
-                                    ? 'No users found for "${adminViewModel.currentSearchTerm}"'
-                                    : 'No users found',
+                                    ? 'No customers found for "${adminViewModel.currentSearchTerm}"'
+                                    : 'No customers found',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 16,
@@ -196,7 +196,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('${isBlocking ? 'Block' : 'Unblock'} User'),
+            title: Text('${isBlocking ? 'Block' : 'Unblock'} Customer'),
             content: Text(
               'Are you sure you want to ${isBlocking ? 'block' : 'unblock'} $userName? '
               '${isBlocking ? 'This will prevent them from accessing the application.' : 'This will restore their access to the application.'}',

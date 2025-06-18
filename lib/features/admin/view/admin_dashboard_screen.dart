@@ -101,7 +101,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             ).colorScheme.onPrimary.withOpacity(0.7),
             indicatorColor: Theme.of(context).colorScheme.onPrimary,
             tabs: const [
-              Tab(text: 'Users', icon: Icon(Icons.people)),
+              Tab(text: 'Customers', icon: Icon(Icons.person)),
               Tab(text: 'Stores', icon: Icon(Icons.store)),
               Tab(text: 'Listings', icon: Icon(Icons.book)),
             ],
@@ -130,9 +130,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                       children: [
                         Expanded(
                           child: AdminStatsCard(
-                            title: 'Total Users',
-                            value: stats['totalUsers']?.toString() ?? '0',
-                            icon: Icons.people,
+                            title: 'Total Customers',
+                            value: stats['totalCustomers']?.toString() ?? '0',
+                            icon: Icons.person,
                             color: Colors.blue,
                           ),
                         ),

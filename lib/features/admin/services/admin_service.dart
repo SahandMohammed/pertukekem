@@ -5,8 +5,33 @@ import '../model/admin_listing_model.dart';
 
 class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Users Management - Customers only (no store owners)
+  Future<List<AdminUserModel>> getAllCustomers({
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    try {
+      Query query = _firestore
+          .collection('users')
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
 
-  // Users Management
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+      final querySnapshot = await query.get();
+      return querySnapshot.docs
+          .map(
+            (doc) => AdminUserModel.fromMap(doc.data() as Map<String, dynamic>),
+          )
+          .where((user) => user.isCustomer) // Only include customers
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch customers: $e');
+    }
+  }
+
+  // Get all users (for backwards compatibility)
   Future<List<AdminUserModel>> getAllUsers({
     int limit = 20,
     DocumentSnapshot? startAfter,
@@ -83,6 +108,52 @@ class AdminService {
       return users;
     } catch (e) {
       throw Exception('Failed to search users: $e');
+    }
+  }
+
+  Future<List<AdminUserModel>> searchCustomers(String searchTerm) async {
+    try {
+      // Search by name
+      final nameQuery =
+          await _firestore
+              .collection('users')
+              .where('firstName', isGreaterThanOrEqualTo: searchTerm)
+              .where('firstName', isLessThan: searchTerm + '\uf8ff')
+              .limit(10)
+              .get();
+
+      // Search by email
+      final emailQuery =
+          await _firestore
+              .collection('users')
+              .where(
+                'email_lowercase',
+                isGreaterThanOrEqualTo: searchTerm.toLowerCase(),
+              )
+              .where(
+                'email_lowercase',
+                isLessThan: searchTerm.toLowerCase() + '\uf8ff',
+              )
+              .limit(10)
+              .get();
+
+      final Set<String> userIds = {};
+      final List<AdminUserModel> customers =
+          []; // Combine results and remove duplicates, only include customers
+      for (final doc in [...nameQuery.docs, ...emailQuery.docs]) {
+        if (!userIds.contains(doc.id)) {
+          userIds.add(doc.id);
+          final user = AdminUserModel.fromMap(doc.data());
+          if (user.isCustomer) {
+            // Only include customers
+            customers.add(user);
+          }
+        }
+      }
+
+      return customers;
+    } catch (e) {
+      throw Exception('Failed to search customers: $e');
     }
   }
 
@@ -411,21 +482,38 @@ class AdminService {
   Future<Map<String, int>> getStatistics() async {
     try {
       final futures = await Future.wait([
-        _firestore.collection('users').count().get(),
-        _firestore.collection('stores').count().get(),
+        _firestore.collection('users').count().get(), // All users
+        _firestore.collection('stores').count().get(), // Store count
         _firestore
             .collection('listings')
             .where('status', isEqualTo: 'active')
             .count()
-            .get(),
+            .get(), // Active listings
         _firestore
             .collection('users')
             .where('isBlocked', isEqualTo: true)
             .count()
-            .get(),
-      ]);
+            .get(), // Blocked users
+      ]); // Get all users to count customers vs store owners
+      final allUsersSnapshot = await _firestore.collection('users').get();
+      int customerCount = 0;
+      int storeOwnerCount = 0;
+
+      for (final doc in allUsersSnapshot.docs) {
+        final userData = doc.data();
+        final user = AdminUserModel.fromMap(userData);
+
+        if (user.isCustomer) {
+          customerCount++;
+        } else if (user.isStoreOwner) {
+          storeOwnerCount++;
+        }
+        // Note: Admin users are not counted in either category
+      }
       return {
-        'totalUsers': futures[0].count ?? 0,
+        'totalUsers': allUsersSnapshot.size, // Total users
+        'totalCustomers': customerCount,
+        'totalStoreOwners': storeOwnerCount,
         'totalStores': futures[1].count ?? 0,
         'totalListings': futures[2].count ?? 0,
         'blockedUsers': futures[3].count ?? 0,

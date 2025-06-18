@@ -54,9 +54,11 @@ class AdminUserModel {
   }
 
   String get fullName => '$firstName $lastName';
+  String get userType => isStoreOwner ? 'Store Owner' : 'Customer';
 
-  String get userType =>
-      roles.contains('store_owner') ? 'Store Owner' : 'Customer';
+  bool get isStoreOwner =>
+      roles.contains('store_owner') || roles.contains('store');
 
-  bool get isStoreOwner => roles.contains('store_owner');
+  bool get isCustomer =>
+      roles.contains('customer') || (!roles.contains('admin') && !isStoreOwner);
 }

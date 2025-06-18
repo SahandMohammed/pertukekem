@@ -119,7 +119,7 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Users Management
+  // Customers Management (users without stores)
   Future<void> loadUsers({bool refresh = false}) async {
     if (_isLoadingUsers) return;
 
@@ -135,7 +135,9 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
 
     try {
-      final users = await _adminService.getAllUsers(startAfter: _lastUserDoc);
+      final users = await _adminService.getAllCustomers(
+        startAfter: _lastUserDoc,
+      );
 
       if (users.isNotEmpty) {
         _users.addAll(users);
@@ -227,7 +229,7 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
 
     try {
-      _searchedUsers = await _adminService.searchUsers(searchTerm);
+      _searchedUsers = await _adminService.searchCustomers(searchTerm);
       _errorMessage = null;
     } catch (e) {
       _setError('Failed to search users: ${e.toString()}');
