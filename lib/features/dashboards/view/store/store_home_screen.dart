@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../service/dashboard_service.dart';
-import '../../service/notification_service.dart';
-import '../../model/notification_model.dart';
+import '../../../notifications/service/unified_notification_service.dart';
+import '../../../notifications/model/unified_notification_model.dart';
 import 'notifications_screen.dart';
 import '../../../orders/model/order_model.dart' as order_model;
-import '../../../orders/viewmodel/store_order_viewmodel.dart';
 import '../../../payments/view/store_transactions_screen.dart';
 
 class DashboardHomeScreen extends StatefulWidget {
@@ -19,7 +18,8 @@ class DashboardHomeScreen extends StatefulWidget {
 
 class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   final DashboardService _dashboardService = DashboardService();
-  final NotificationService _notificationService = NotificationService();
+  final UnifiedNotificationService _notificationService =
+      UnifiedNotificationService();
   final NumberFormat _currencyFormat = NumberFormat.currency(symbol: '\$');
 
   @override
@@ -506,7 +506,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        StreamBuilder<List<StoreNotification>>(
+        StreamBuilder<List<UnifiedNotification>>(
           stream: _notificationService.getStoreNotifications(limit: 5),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -568,7 +568,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     );
   }
 
-  Widget _buildNotificationCard(StoreNotification notification) {
+  Widget _buildNotificationCard(UnifiedNotification notification) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -676,6 +676,8 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
         return Colors.purple;
       case NotificationType.system:
         return Colors.grey;
+      default:
+        return Colors.blue; // Default color for other notification types
     }
   }
 
@@ -693,6 +695,8 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
         return Icons.star;
       case NotificationType.system:
         return Icons.info;
+      default:
+        return Icons.notifications; // Default icon for other notification types
     }
   }
 

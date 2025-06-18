@@ -71,46 +71,53 @@ class CheckoutBottomBar extends StatelessWidget {
                                 'continue-${viewModel.currentStep}',
                               ),
                               viewModel: viewModel,
-                              pageController: pageController,                            )
+                              pageController: pageController,
+                            )
                             : _PlaceOrderButton(
                               key: const ValueKey('place-order'),
                               viewModel: viewModel,
                               cart: cart,
-                              onPlaceOrder: () => _processOrder(context, viewModel),
+                              onPlaceOrder:
+                                  () => _processOrder(context, viewModel),
                             ),
                   ),
                 ),
               ],
             ),
           ),
-        );      },
+        );
+      },
     );
   }
 
-  Future<void> _processOrder(BuildContext context, CheckoutViewModel viewModel) async {
+  Future<void> _processOrder(
+    BuildContext context,
+    CheckoutViewModel viewModel,
+  ) async {
     try {
       final results = await viewModel.processOrder(cart);
 
       if (context.mounted) {
         // Convert dynamic results to CheckoutResult objects
-        final checkoutResults = results.map((result) {
-          if (result is CheckoutResult) {
-            return result;
-          } else if (result is Map<String, dynamic>) {
-            return CheckoutResult.fromJson(result);
-          } else {
-            // Fallback for any unexpected result format
-            return CheckoutResult(
-              success: false,
-              listingId: '',
-              listingTitle: 'Unknown Item',
-              sellerId: '',
-              quantity: 0,
-              amount: 0.0,
-              errorMessage: 'Unexpected result format',
-            );
-          }
-        }).toList();
+        final checkoutResults =
+            results.map((result) {
+              if (result is CheckoutResult) {
+                return result;
+              } else if (result is Map<String, dynamic>) {
+                return CheckoutResult.fromJson(result);
+              } else {
+                // Fallback for any unexpected result format
+                return CheckoutResult(
+                  success: false,
+                  listingId: '',
+                  listingTitle: 'Unknown Item',
+                  sellerId: '',
+                  quantity: 0,
+                  amount: 0.0,
+                  errorMessage: 'Unexpected result format',
+                );
+              }
+            }).toList();
 
         // Calculate total amount
         final totalAmount = cart.totalAmount;
@@ -118,11 +125,12 @@ class CheckoutBottomBar extends StatelessWidget {
         // Navigate to success screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => CheckoutSuccessScreen(
-              orderResults: checkoutResults,
-              paymentMethod: viewModel.selectedPaymentMethod,
-              totalAmount: totalAmount,
-            ),
+            builder:
+                (context) => CheckoutSuccessScreen(
+                  orderResults: checkoutResults,
+                  paymentMethod: viewModel.selectedPaymentMethod,
+                  totalAmount: totalAmount,
+                ),
           ),
         );
       }
@@ -212,7 +220,8 @@ class _PlaceOrderButton extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return FilledButton(      onPressed:
+    return FilledButton(
+      onPressed:
           viewModel.canPlaceOrder() && !viewModel.isProcessing
               ? onPlaceOrder
               : null,
@@ -258,7 +267,8 @@ class _PlaceOrderButton extends StatelessWidget {
                       color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w600,
                     ),
-                  ),                ],
+                  ),
+                ],
               ),
     );
   }

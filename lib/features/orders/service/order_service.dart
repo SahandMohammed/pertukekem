@@ -3,14 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../model/order_model.dart' as order_model;
-import '../../dashboards/service/notification_service.dart';
-import '../../notifications/service/customer_notification_service.dart';
+import '../../notifications/service/unified_notification_service.dart';
 
 class OrderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final NotificationService _notificationService = NotificationService();
-  final CustomerNotificationService _customerNotificationService = CustomerNotificationService();
+  final UnifiedNotificationService _notificationService =
+      UnifiedNotificationService();
   late final CollectionReference<order_model.Order> _ordersRef;
 
   OrderService() {
@@ -263,7 +262,8 @@ class OrderService {
         } else {
           print('Unknown seller reference format: ${order.sellerRef.path}');
           return;
-        }        await _notificationService.createOrderUpdateNotification(
+        }
+        await _notificationService.createOrderUpdateNotification(
           storeId: storeId,
           orderId: orderId,
           orderNumber: orderId.substring(0, 8).toUpperCase(),
@@ -575,7 +575,8 @@ class OrderService {
         print('✅ Fixed order $orderId seller reference');
       }
 
-      print('🎉 Order reference fix completed!');    } catch (e) {
+      print('🎉 Order reference fix completed!');
+    } catch (e) {
       print('❌ Error fixing order references: $e');
       rethrow;
     }
@@ -671,7 +672,8 @@ class OrderService {
               .where('sellerRef', isEqualTo: storeRef)
               .count()
               .get();
-      counts['all'] = totalSnapshot.count ?? 0;      return counts;
+      counts['all'] = totalSnapshot.count ?? 0;
+      return counts;
     } catch (e) {
       print('Error getting seller orders count: $e');
       return {};
@@ -685,15 +687,20 @@ class OrderService {
     required String orderId,
   }) async {
     try {
+      print(
+        '🔔 Creating customer notification for order $orderId, status: ${newStatus.name}',
+      );
+
       // Get store information for notification
       String storeName = 'Store';
-      
+
       if (order.sellerRef.path.startsWith('stores/')) {
         // Get store name from stores collection
         final storeDoc = await order.sellerRef.get();
         if (storeDoc.exists) {
           final storeData = storeDoc.data();
-          if (storeData is Map<String, dynamic> && storeData.containsKey('name')) {
+          if (storeData is Map<String, dynamic> &&
+              storeData.containsKey('name')) {
             storeName = storeData['name'] ?? 'Store';
           }
         }
@@ -702,9 +709,11 @@ class OrderService {
         final sellerDoc = await order.sellerRef.get();
         if (sellerDoc.exists) {
           final sellerData = sellerDoc.data();
-          if (sellerData is Map<String, dynamic> && sellerData.containsKey('storeId')) {
+          if (sellerData is Map<String, dynamic> &&
+              sellerData.containsKey('storeId')) {
             final storeId = sellerData['storeId'];
-            final storeDoc = await _firestore.collection('stores').doc(storeId).get();
+            final storeDoc =
+                await _firestore.collection('stores').doc(storeId).get();
             if (storeDoc.exists) {
               final storeData = storeDoc.data();
               if (storeData != null && storeData.containsKey('name')) {
@@ -716,12 +725,13 @@ class OrderService {
       }
 
       final customerId = order.buyerRef.id;
-      final orderNumber = orderId.substring(0, 8).toUpperCase();
-
-      // Create appropriate notification based on status
+      final orderNumber =
+          orderId
+              .substring(0, 8)
+              .toUpperCase(); // Create appropriate notification based on status
       switch (newStatus) {
         case order_model.OrderStatus.confirmed:
-          await _customerNotificationService.createOrderConfirmationNotification(
+          await _notificationService.createOrderConfirmationNotification(
             customerId: customerId,
             orderId: orderId,
             orderNumber: orderNumber,
@@ -730,7 +740,7 @@ class OrderService {
           );
           break;
         case order_model.OrderStatus.shipped:
-          await _customerNotificationService.createOrderShippedNotification(
+          await _notificationService.createOrderShippedNotification(
             customerId: customerId,
             orderId: orderId,
             orderNumber: orderNumber,
@@ -739,14 +749,15 @@ class OrderService {
           );
           break;
         case order_model.OrderStatus.delivered:
-          await _customerNotificationService.createOrderDeliveredNotification(
+          await _notificationService.createOrderDeliveredNotification(
             customerId: customerId,
             orderId: orderId,
             orderNumber: orderNumber,
             storeName: storeName,
           );
-          break;        case order_model.OrderStatus.cancelled:
-          await _customerNotificationService.createOrderCancellationNotification(
+          break;
+        case order_model.OrderStatus.cancelled:
+          await _notificationService.createOrderCancellationNotification(
             customerId: customerId,
             orderId: orderId,
             orderNumber: orderNumber,
@@ -754,19 +765,27 @@ class OrderService {
           );
           break;
         case order_model.OrderStatus.rejected:
-          await _customerNotificationService.createOrderRejectionNotification(
+          await _notificationService.createCustomerSystemNotification(
             customerId: customerId,
-            orderId: orderId,
-            orderNumber: orderNumber,
-            storeName: storeName,
+            title: 'Order Rejected',
+            message:
+                'Your order #$orderNumber from $storeName has been rejected.',
+            actionUrl: '/orders/$orderId',
+            metadata: {
+              'orderId': orderId,
+              'orderNumber': orderNumber,
+              'storeName': storeName,
+              'type': 'rejected',
+            },
           );
           break;
         default:
           // For any other status, create a generic update notification
-          await _customerNotificationService.createSystemNotification(
+          await _notificationService.createCustomerSystemNotification(
             customerId: customerId,
             title: 'Order Update',
-            message: 'Your order #$orderNumber from $storeName status has been updated to ${newStatus.name}.',
+            message:
+                'Your order #$orderNumber from $storeName status has been updated to ${newStatus.name}.',
             actionUrl: '/orders/$orderId',
             metadata: {
               'orderId': orderId,
@@ -776,8 +795,11 @@ class OrderService {
             },
           );
       }
+
+      print('✅ Successfully created customer notification for order $orderId');
     } catch (e) {
-      print('Error creating customer notification for order update: $e');
+      print('❌ Error creating customer notification for order update: $e');
+      print('Stack trace: ${StackTrace.current}');
     }
   }
 }

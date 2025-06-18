@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../model/customer_notification_model.dart';
+import '../model/unified_notification_model.dart';
 
 class NotificationDetailScreen extends StatelessWidget {
-  final CustomerNotification notification;
+  final UnifiedNotification notification;
 
   const NotificationDetailScreen({super.key, required this.notification});
 
@@ -276,72 +276,88 @@ class NotificationDetailScreen extends StatelessWidget {
     return value.toString();
   }
 
-  IconData _getNotificationIcon(CustomerNotificationType type) {
+  IconData _getNotificationIcon(NotificationType type) {
     switch (type) {
-      case CustomerNotificationType.orderConfirmed:
+      case NotificationType.orderConfirmed:
         return Icons.check_circle;
-      case CustomerNotificationType.orderShipped:
+      case NotificationType.orderShipped:
         return Icons.local_shipping;
-      case CustomerNotificationType.orderDelivered:
+      case NotificationType.orderDelivered:
         return Icons.home;
-      case CustomerNotificationType.orderCancelled:
-      case CustomerNotificationType.orderRefunded:
+      case NotificationType.orderCancelled:
+      case NotificationType.orderRefunded:
         return Icons.cancel;
-      case CustomerNotificationType.newBookAvailable:
-      case CustomerNotificationType.libraryUpdate:
+      case NotificationType.newBookAvailable:
+      case NotificationType.libraryUpdate:
         return Icons.book;
-      case CustomerNotificationType.promotionalOffer:
+      case NotificationType.promotionalOffer:
         return Icons.local_offer;
-      case CustomerNotificationType.paymentReminder:
+      case NotificationType.paymentReminder:
         return Icons.payment;
-      case CustomerNotificationType.systemUpdate:
+      case NotificationType.systemUpdate:
+      case NotificationType.system:
         return Icons.info;
+      default:
+        return Icons.notifications;
     }
   }
 
-  String _getNotificationTypeLabel(CustomerNotificationType type) {
+  String _getNotificationTypeLabel(NotificationType type) {
     switch (type) {
-      case CustomerNotificationType.orderConfirmed:
+      case NotificationType.orderConfirmed:
         return 'ORDER CONFIRMED';
-      case CustomerNotificationType.orderShipped:
+      case NotificationType.orderShipped:
         return 'ORDER SHIPPED';
-      case CustomerNotificationType.orderDelivered:
+      case NotificationType.orderDelivered:
         return 'ORDER DELIVERED';
-      case CustomerNotificationType.orderCancelled:
+      case NotificationType.orderCancelled:
         return 'ORDER CANCELLED';
-      case CustomerNotificationType.orderRefunded:
+      case NotificationType.orderRefunded:
         return 'ORDER REFUNDED';
-      case CustomerNotificationType.newBookAvailable:
+      case NotificationType.newBookAvailable:
         return 'NEW BOOK';
-      case CustomerNotificationType.libraryUpdate:
+      case NotificationType.libraryUpdate:
         return 'LIBRARY UPDATE';
-      case CustomerNotificationType.promotionalOffer:
+      case NotificationType.promotionalOffer:
         return 'SPECIAL OFFER';
-      case CustomerNotificationType.paymentReminder:
+      case NotificationType.paymentReminder:
         return 'PAYMENT REMINDER';
-      case CustomerNotificationType.systemUpdate:
+      case NotificationType.systemUpdate:
         return 'SYSTEM UPDATE';
+      case NotificationType.newOrder:
+        return 'NEW ORDER';
+      case NotificationType.orderUpdate:
+        return 'ORDER UPDATE';
+      case NotificationType.lowStock:
+        return 'LOW STOCK';
+      case NotificationType.review:
+        return 'REVIEW';
+      case NotificationType.system:
+        return 'SYSTEM';
     }
   }
 
-  String _getActionButtonText(CustomerNotificationType type) {
+  String _getActionButtonText(NotificationType type) {
     switch (type) {
-      case CustomerNotificationType.orderConfirmed:
-      case CustomerNotificationType.orderShipped:
-      case CustomerNotificationType.orderDelivered:
-      case CustomerNotificationType.orderCancelled:
-      case CustomerNotificationType.orderRefunded:
+      case NotificationType.orderConfirmed:
+      case NotificationType.orderShipped:
+      case NotificationType.orderDelivered:
+      case NotificationType.orderCancelled:
+      case NotificationType.orderRefunded:
         return 'View Order';
-      case CustomerNotificationType.newBookAvailable:
+      case NotificationType.newBookAvailable:
         return 'View Book';
-      case CustomerNotificationType.libraryUpdate:
+      case NotificationType.libraryUpdate:
         return 'Open Library';
-      case CustomerNotificationType.promotionalOffer:
+      case NotificationType.promotionalOffer:
         return 'View Offer';
-      case CustomerNotificationType.paymentReminder:
+      case NotificationType.paymentReminder:
         return 'Make Payment';
-      case CustomerNotificationType.systemUpdate:
+      case NotificationType.systemUpdate:
+      case NotificationType.system:
         return 'Learn More';
+      default:
+        return 'View Details';
     }
   }
 

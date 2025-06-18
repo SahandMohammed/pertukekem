@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewmodel/customer_notification_viewmodel.dart';
-import '../model/customer_notification_model.dart';
+import '../model/unified_notification_model.dart';
 import 'notification_detail_screen.dart';
 
 class CustomerNotificationListScreen extends StatefulWidget {
@@ -170,10 +170,10 @@ class _CustomerNotificationListScreenState
   }
 
   Widget _buildNotificationList(
-    List<CustomerNotification> notifications,
+    List<UnifiedNotification> notifications,
     CustomerNotificationViewModel viewModel,
   ) {
-    List<CustomerNotification> filteredNotifications =
+    List<UnifiedNotification> filteredNotifications =
         _showOnlyUnread
             ? notifications.where((n) => !n.isRead).toList()
             : notifications;
@@ -227,7 +227,7 @@ class _CustomerNotificationListScreenState
   }
 
   Widget _buildNotificationCard(
-    CustomerNotification notification,
+    UnifiedNotification notification,
     CustomerNotificationViewModel viewModel,
   ) {
     final isUnread = !notification.isRead;
@@ -364,26 +364,29 @@ class _CustomerNotificationListScreenState
     );
   }
 
-  IconData _getNotificationIcon(CustomerNotificationType type) {
+  IconData _getNotificationIcon(NotificationType type) {
     switch (type) {
-      case CustomerNotificationType.orderConfirmed:
+      case NotificationType.orderConfirmed:
         return Icons.check_circle_outline;
-      case CustomerNotificationType.orderShipped:
+      case NotificationType.orderShipped:
         return Icons.local_shipping_outlined;
-      case CustomerNotificationType.orderDelivered:
+      case NotificationType.orderDelivered:
         return Icons.home_outlined;
-      case CustomerNotificationType.orderCancelled:
-      case CustomerNotificationType.orderRefunded:
+      case NotificationType.orderCancelled:
+      case NotificationType.orderRefunded:
         return Icons.cancel_outlined;
-      case CustomerNotificationType.newBookAvailable:
-      case CustomerNotificationType.libraryUpdate:
+      case NotificationType.newBookAvailable:
+      case NotificationType.libraryUpdate:
         return Icons.book_outlined;
-      case CustomerNotificationType.promotionalOffer:
+      case NotificationType.promotionalOffer:
         return Icons.local_offer_outlined;
-      case CustomerNotificationType.paymentReminder:
+      case NotificationType.paymentReminder:
         return Icons.payment_outlined;
-      case CustomerNotificationType.systemUpdate:
+      case NotificationType.systemUpdate:
+      case NotificationType.system:
         return Icons.info_outline;
+      default:
+        return Icons.notifications_outlined;
     }
   }
 
@@ -402,7 +405,7 @@ class _CustomerNotificationListScreenState
     }
   }
 
-  void _navigateToNotificationDetail(CustomerNotification notification) {
+  void _navigateToNotificationDetail(UnifiedNotification notification) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -413,7 +416,7 @@ class _CustomerNotificationListScreenState
   }
 
   void _showDeleteConfirmation(
-    CustomerNotification notification,
+    UnifiedNotification notification,
     CustomerNotificationViewModel viewModel,
   ) {
     showDialog(

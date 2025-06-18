@@ -4,7 +4,7 @@ import 'package:pertukekem/features/authentication/viewmodel/auth_viewmodel.dart
 import 'package:pertukekem/features/listings/view/manage_listings_screen.dart';
 import 'package:pertukekem/features/orders/view/store/store_manage_orders_screen.dart';
 import 'store_home_screen.dart';
-import '../../service/notification_service.dart';
+import '../../../notifications/service/unified_notification_service.dart';
 import 'notifications_screen.dart';
 import '../../../profile/view/store/store_user_tab.dart';
 
@@ -17,7 +17,8 @@ class StoreDashboard extends StatefulWidget {
 
 class _StoreDashboardState extends State<StoreDashboard> {
   int _selectedIndex = 0;
-  final NotificationService _notificationService = NotificationService();
+  final UnifiedNotificationService _notificationService =
+      UnifiedNotificationService();
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +45,7 @@ class _StoreDashboardState extends State<StoreDashboard> {
                   },
                 ),
                 FutureBuilder<int>(
-                  future: _notificationService.getUnreadCount(),
+                  future: _notificationService.getStoreUnreadCount(),
                   builder: (context, snapshot) {
                     final unreadCount = snapshot.data ?? 0;
                     return Badge(

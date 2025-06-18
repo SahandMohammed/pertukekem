@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
-import '../model/customer_notification_model.dart';
-import '../service/customer_notification_service.dart';
+import 'dart:async';
+import '../model/unified_notification_model.dart';
+import '../service/unified_notification_service.dart';
 
 class CustomerNotificationViewModel extends ChangeNotifier {
-  final CustomerNotificationService _notificationService =
-      CustomerNotificationService();
-
-  List<CustomerNotification> _notifications = [];
+  final UnifiedNotificationService _notificationService =
+      UnifiedNotificationService();
+  List<UnifiedNotification> _notifications = [];
   int _unreadCount = 0;
   bool _isLoading = false;
   String? _error;
+  bool _isInitialized = false;
 
-  List<CustomerNotification> get notifications => _notifications;
+  // Stream subscriptions for proper disposal
+  StreamSubscription<List<UnifiedNotification>>? _notificationsSubscription;
+  StreamSubscription<int>? _unreadCountSubscription;
+
+  List<UnifiedNotification> get notifications => _notifications;
   int get unreadCount => _unreadCount;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -19,38 +24,56 @@ class CustomerNotificationViewModel extends ChangeNotifier {
   bool get hasUnreadNotifications => _unreadCount > 0;
 
   /// Initialize the viewmodel and start listening to notifications
-  void initialize() {
+  Future<void> initialize() async {
+    if (_isInitialized) {
+      return; // Prevent multiple initializations
+    }
+
+    _isInitialized = true;
+
+    // Cancel existing subscriptions to prevent duplicates
+    await _notificationsSubscription?.cancel();
+    await _unreadCountSubscription?.cancel();
+
     _listenToNotifications();
     _listenToUnreadCount();
   }
 
   /// Listen to notifications stream
   void _listenToNotifications() {
-    _notificationService.getNotificationsStream().listen(
-      (notifications) {
-        _notifications = notifications;
-        _error = null;
-        notifyListeners();
-      },
-      onError: (error) {
-        _error = error.toString();
-        print('Error listening to notifications: $error');
-        notifyListeners();
-      },
-    );
+    print('🔔 Starting to listen to customer notifications');
+    _notificationsSubscription = _notificationService
+        .getCustomerNotificationsStream()
+        .listen(
+          (notifications) {
+            print('🔔 Received ${notifications.length} notifications');
+            _notifications = notifications;
+            _error = null;
+            notifyListeners();
+          },
+          onError: (error) {
+            _error = error.toString();
+            print('❌ Error listening to notifications: $error');
+            notifyListeners();
+          },
+        );
   }
 
   /// Listen to unread count stream
   void _listenToUnreadCount() {
-    _notificationService.getUnreadNotificationsCount().listen(
-      (count) {
-        _unreadCount = count;
-        notifyListeners();
-      },
-      onError: (error) {
-        print('Error listening to unread count: $error');
-      },
-    );
+    print('🔔 Starting to listen to unread count');
+    _unreadCountSubscription = _notificationService
+        .getCustomerUnreadNotificationsCount()
+        .listen(
+          (count) {
+            print('🔔 Unread count updated: $count');
+            _unreadCount = count;
+            notifyListeners();
+          },
+          onError: (error) {
+            print('❌ Error listening to unread count: $error');
+          },
+        );
   }
 
   /// Mark a notification as read
@@ -70,7 +93,9 @@ class CustomerNotificationViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _notificationService.markAllAsRead();
+      await _notificationService.markAllAsRead(
+        target: NotificationTarget.customer,
+      );
     } catch (e) {
       _error = 'Failed to mark all notifications as read';
     }
@@ -96,24 +121,22 @@ class CustomerNotificationViewModel extends ChangeNotifier {
   }
 
   /// Get notifications by type
-  List<CustomerNotification> getNotificationsByType(
-    CustomerNotificationType type,
-  ) {
+  List<UnifiedNotification> getNotificationsByType(NotificationType type) {
     return _notifications.where((n) => n.type == type).toList();
   }
 
   /// Get unread notifications
-  List<CustomerNotification> get unreadNotifications {
+  List<UnifiedNotification> get unreadNotifications {
     return _notifications.where((n) => !n.isRead).toList();
   }
 
   /// Get read notifications
-  List<CustomerNotification> get readNotifications {
+  List<UnifiedNotification> get readNotifications {
     return _notifications.where((n) => n.isRead).toList();
   }
 
   /// Get today's notifications
-  List<CustomerNotification> get todayNotifications {
+  List<UnifiedNotification> get todayNotifications {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -129,7 +152,7 @@ class CustomerNotificationViewModel extends ChangeNotifier {
   }
 
   /// Get this week's notifications
-  List<CustomerNotification> get thisWeekNotifications {
+  List<UnifiedNotification> get thisWeekNotifications {
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
     final weekStartDay = DateTime(
@@ -145,36 +168,43 @@ class CustomerNotificationViewModel extends ChangeNotifier {
   }
 
   /// Get order-related notifications
-  List<CustomerNotification> get orderNotifications {
+  List<UnifiedNotification> get orderNotifications {
     return _notifications
         .where(
           (n) => [
-            CustomerNotificationType.orderConfirmed,
-            CustomerNotificationType.orderShipped,
-            CustomerNotificationType.orderDelivered,
-            CustomerNotificationType.orderCancelled,
-            CustomerNotificationType.orderRefunded,
+            NotificationType.orderConfirmed,
+            NotificationType.orderShipped,
+            NotificationType.orderDelivered,
+            NotificationType.orderCancelled,
+            NotificationType.orderRefunded,
           ].contains(n.type),
         )
         .toList();
   }
 
   /// Get book-related notifications
-  List<CustomerNotification> get bookNotifications {
+  List<UnifiedNotification> get bookNotifications {
     return _notifications
         .where(
           (n) => [
-            CustomerNotificationType.newBookAvailable,
-            CustomerNotificationType.libraryUpdate,
+            NotificationType.newBookAvailable,
+            NotificationType.libraryUpdate,
           ].contains(n.type),
         )
         .toList();
   }
 
   /// Get promotional notifications
-  List<CustomerNotification> get promotionalNotifications {
+  List<UnifiedNotification> get promotionalNotifications {
     return _notifications
-        .where((n) => n.type == CustomerNotificationType.promotionalOffer)
+        .where((n) => n.type == NotificationType.promotionalOffer)
         .toList();
+  }
+
+  @override
+  void dispose() {
+    _notificationsSubscription?.cancel();
+    _unreadCountSubscription?.cancel();
+    super.dispose();
   }
 }

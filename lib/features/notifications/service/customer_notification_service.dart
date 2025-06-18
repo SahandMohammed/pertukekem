@@ -291,7 +291,8 @@ class CustomerNotificationService {
     String? reason,
   }) async {
     try {
-      String message = 'Your order #$orderNumber from $storeName has been cancelled.';
+      String message =
+          'Your order #$orderNumber from $storeName has been cancelled.';
       if (reason != null && reason.isNotEmpty) {
         message += ' Reason: $reason';
       }
@@ -319,7 +320,7 @@ class CustomerNotificationService {
     }
   }
 
-  /// Create order rejection notification  
+  /// Create order rejection notification
   Future<void> createOrderRejectionNotification({
     required String customerId,
     required String orderId,
@@ -328,7 +329,8 @@ class CustomerNotificationService {
     String? reason,
   }) async {
     try {
-      String message = 'Your order #$orderNumber from $storeName has been rejected.';
+      String message =
+          'Your order #$orderNumber from $storeName has been rejected.';
       if (reason != null && reason.isNotEmpty) {
         message += ' Reason: $reason';
       }
@@ -338,7 +340,9 @@ class CustomerNotificationService {
         customerId: customerId,
         title: 'Order Rejected',
         message: message,
-        type: CustomerNotificationType.orderCancelled, // Using orderCancelled type for now
+        type:
+            CustomerNotificationType
+                .orderCancelled, // Using orderCancelled type for now
         isRead: false,
         createdAt: Timestamp.now(),
         metadata: {
