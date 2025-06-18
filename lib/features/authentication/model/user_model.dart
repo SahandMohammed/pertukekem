@@ -134,4 +134,17 @@ class UserModel {
       profilePicture: profilePicture ?? this.profilePicture,
     );
   }
+
+  // Helper methods for role checking
+  bool get isAdmin => roles.contains('admin');
+  bool get isStoreOwner =>
+      roles.contains('store_owner') || roles.contains('store');
+  bool get isCustomer =>
+      roles.contains('customer') || (!isAdmin && !isStoreOwner);
+
+  String get primaryRole {
+    if (isAdmin) return 'admin';
+    if (isStoreOwner) return 'store_owner';
+    return 'customer';
+  }
 }

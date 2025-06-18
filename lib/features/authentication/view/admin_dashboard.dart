@@ -59,7 +59,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildHomeTab() {
     return Scaffold(
-      appBar: const CommonAppBar(title: 'Admin Dashboard'),
+      appBar: const CommonAppBar(title: 'Admin shashboard'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

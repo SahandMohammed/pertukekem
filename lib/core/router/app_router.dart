@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pertukekem/features/cart/view/cart_screen.dart';
+import 'package:pertukekem/features/admin/view/admin_dashboard_screen.dart';
 import '../../features/authentication/view/verify_phone_screen.dart';
 import '../../features/authentication/view/auth_wrapper.dart';
 import '../../features/profile/view/store/store_setup_screen.dart';
@@ -18,6 +19,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const StoreSetupScreen());
       case '/cart':
         return MaterialPageRoute(builder: (_) => const CartScreen());
+      case '/admin':
+        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
       default:
         return MaterialPageRoute(
           builder:
