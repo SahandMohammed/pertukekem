@@ -5,6 +5,7 @@ import '../../../notifications/service/unified_notification_service.dart';
 import '../../../notifications/model/unified_notification_model.dart';
 import 'notifications_screen.dart';
 import '../../../orders/model/order_model.dart' as order_model;
+import '../../../orders/service/order_service.dart';
 import '../../../payments/view/store_transactions_screen.dart';
 
 class DashboardHomeScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
   final DashboardService _dashboardService = DashboardService();
   final UnifiedNotificationService _notificationService =
       UnifiedNotificationService();
+  final OrderService _orderService = OrderService();
   final NumberFormat _currencyFormat = NumberFormat.currency(symbol: '\$');
 
   @override
@@ -360,20 +362,81 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
       ),
     );
   }
-
   Widget _buildRecentOrdersSection() {
-    return FutureBuilder<DashboardSummary>(
-      future: _dashboardService.getDashboardSummary(),
+    return StreamBuilder<List<order_model.Order>>(
+      stream: _orderService.getSellerOrders(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Orders',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(
+                    onPressed: widget.onNavigateToOrders ?? () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Navigate to Orders tab to see all orders'),
+                        ),
+                      );
+                    },
+                    child: const Text('View All'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            ],
+          );
         }
 
-        if (snapshot.hasError || !snapshot.hasData) {
-          return const SizedBox.shrink();
+        if (snapshot.hasError) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Orders',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  TextButton(
+                    onPressed: widget.onNavigateToOrders ?? () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Navigate to Orders tab to see all orders'),
+                        ),
+                      );
+                    },
+                    child: const Text('View All'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Error loading orders: ${snapshot.error}'),
+                ),
+              ),
+            ],
+          );
         }
 
-        final recentOrders = snapshot.data!.recentOrders;
+        final allOrders = snapshot.data ?? [];
+        // Get only the 5 most recent orders for the dashboard
+        final recentOrders = allOrders.take(5).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

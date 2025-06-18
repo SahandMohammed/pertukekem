@@ -375,7 +375,6 @@ class UnifiedNotificationService {
       print('Error creating push notification trigger: $e');
     }
   }
-
   /// Get unread count for store
   Future<int> getStoreUnreadCount() async {
     final currentUser = _auth.currentUser;
@@ -408,6 +407,43 @@ class UnifiedNotificationService {
     } catch (e) {
       return 0;
     }
+  }
+
+  /// Get unread count stream for store - real-time updates
+  Stream<int> getStoreUnreadCountStream() {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      return Stream.value(0);
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(currentUser.uid)
+        .snapshots()
+        .asyncMap((userDoc) async {
+      if (!userDoc.exists) {
+        return 0;
+      }
+
+      final storeId = userDoc.data()?['storeId'];
+      if (storeId == null || storeId.isEmpty) {
+        return 0;
+      }
+
+      try {
+        final snapshot = await _notificationsRef
+            .where('target', isEqualTo: NotificationTarget.store.name)
+            .where('storeId', isEqualTo: storeId)
+            .where('isRead', isEqualTo: false)
+            .count()
+            .get();
+
+        return snapshot.count ?? 0;
+      } catch (e) {
+        print('Error getting store unread count stream: $e');
+        return 0;
+      }
+    });
   }
 
   // SHARED METHODS

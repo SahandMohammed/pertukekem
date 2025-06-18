@@ -43,10 +43,22 @@ class _StoreDashboardState extends State<StoreDashboard> {
                   onPressed: () {
                     Navigator.of(context).pushNamed('/notification-test');
                   },
-                ),
-                FutureBuilder<int>(
-                  future: _notificationService.getStoreUnreadCount(),
+                ),                StreamBuilder<int>(
+                  stream: _notificationService.getStoreUnreadCountStream(),
                   builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    
                     final unreadCount = snapshot.data ?? 0;
                     return Badge(
                       isLabelVisible: unreadCount > 0,
