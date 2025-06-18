@@ -6,6 +6,7 @@ import 'admin_users_screen.dart';
 import 'admin_stores_screen.dart';
 import 'admin_listings_screen.dart';
 import '../widgets/admin_stats_card.dart';
+import '../widgets/admin_shimmer_widgets.dart';
 import '../../authentication/viewmodel/auth_viewmodel.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -115,12 +116,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               child: Consumer<AdminViewModel>(
                 builder: (context, adminViewModel, child) {
                   if (adminViewModel.isLoadingStats) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      ),
-                    );
+                    return AdminShimmerWidgets.statisticsShimmer();
                   }
 
                   final stats = adminViewModel.statistics;

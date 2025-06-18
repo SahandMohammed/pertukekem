@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodel/admin_viewmodel.dart';
 import '../widgets/admin_user_card.dart';
 import '../widgets/admin_search_bar.dart';
+import '../widgets/admin_shimmer_widgets.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -105,14 +106,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                     ),
                   ],
                 ),
-              ),
-
-            // Users List
+              ), // Users List
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async => _onRefresh(),
                 child:
-                    adminViewModel.users.isEmpty &&
+                    adminViewModel.isLoadingUsers &&
+                            adminViewModel.users.isEmpty
+                        ? AdminShimmerWidgets.shimmerList(
+                          shimmerItem: AdminShimmerWidgets.userCardShimmer(),
+                        )
+                        : adminViewModel.users.isEmpty &&
                             !adminViewModel.isLoadingUsers
                         ? Center(
                           child: Column(
@@ -151,12 +155,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               (adminViewModel.isLoadingUsers ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == adminViewModel.users.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
+                              return AdminShimmerWidgets.userCardShimmer();
                             }
 
                             final user = adminViewModel.users[index];

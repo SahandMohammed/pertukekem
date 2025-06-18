@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodel/admin_viewmodel.dart';
 import '../widgets/admin_store_card.dart';
 import '../widgets/admin_search_bar.dart';
+import '../widgets/admin_shimmer_widgets.dart';
 
 class AdminStoresScreen extends StatefulWidget {
   const AdminStoresScreen({super.key});
@@ -105,14 +106,17 @@ class _AdminStoresScreenState extends State<AdminStoresScreen> {
                     ),
                   ],
                 ),
-              ),
-
-            // Stores List
+              ), // Stores List
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async => _onRefresh(),
                 child:
-                    adminViewModel.stores.isEmpty &&
+                    adminViewModel.isLoadingStores &&
+                            adminViewModel.stores.isEmpty
+                        ? AdminShimmerWidgets.shimmerList(
+                          shimmerItem: AdminShimmerWidgets.storeCardShimmer(),
+                        )
+                        : adminViewModel.stores.isEmpty &&
                             !adminViewModel.isLoadingStores
                         ? Center(
                           child: Column(
@@ -151,12 +155,7 @@ class _AdminStoresScreenState extends State<AdminStoresScreen> {
                               (adminViewModel.isLoadingStores ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == adminViewModel.stores.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
+                              return AdminShimmerWidgets.storeCardShimmer();
                             }
 
                             final store = adminViewModel.stores[index];

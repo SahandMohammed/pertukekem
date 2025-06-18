@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../viewmodel/admin_viewmodel.dart';
 import '../widgets/admin_listing_card.dart';
 import '../widgets/admin_search_bar.dart';
+import '../widgets/admin_shimmer_widgets.dart';
 
 class AdminListingsScreen extends StatefulWidget {
   const AdminListingsScreen({super.key});
@@ -105,14 +106,17 @@ class _AdminListingsScreenState extends State<AdminListingsScreen> {
                     ),
                   ],
                 ),
-              ),
-
-            // Listings List
+              ), // Listings List
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async => _onRefresh(),
                 child:
-                    adminViewModel.listings.isEmpty &&
+                    adminViewModel.isLoadingListings &&
+                            adminViewModel.listings.isEmpty
+                        ? AdminShimmerWidgets.shimmerList(
+                          shimmerItem: AdminShimmerWidgets.listingCardShimmer(),
+                        )
+                        : adminViewModel.listings.isEmpty &&
                             !adminViewModel.isLoadingListings
                         ? Center(
                           child: Column(
@@ -151,12 +155,7 @@ class _AdminListingsScreenState extends State<AdminListingsScreen> {
                               (adminViewModel.isLoadingListings ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == adminViewModel.listings.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
+                              return AdminShimmerWidgets.listingCardShimmer();
                             }
 
                             final listing = adminViewModel.listings[index];
