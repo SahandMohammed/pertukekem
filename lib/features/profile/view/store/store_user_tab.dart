@@ -4,19 +4,21 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pertukekem/features/authentication/viewmodel/auth_viewmodel.dart';
 import '../../../payments/view/store_transactions_screen.dart';
 import '../../viewmodel/store_profile_viewmodel.dart';
+import 'edit_store_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final authViewModel = Provider.of<AuthViewModel>(context);
     final user = authViewModel.user;
 
     if (user == null) {
       return const Center(child: CircularProgressIndicator());
     }
+
     return ChangeNotifierProvider(
       create: (context) {
         final profileViewModel = ProfileViewModel();
@@ -28,282 +30,240 @@ class ProfileScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Profile'),
-          elevation: 0,
           centerTitle: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Settings (Coming Soon)'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+              // Profile Header with User Card
+              _buildUserProfileCard(context, user, textTheme, colorScheme),
+              const SizedBox(height: 24),
+
+              // Quick Stats
+              Text(
+                'Business Stats',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Column(
-                  children: [
-                    // Profile picture with upload functionality
-                    Consumer<ProfileViewModel>(
-                      builder: (context, profileViewModel, child) {
-                        return _buildProfilePictureSection(
-                          context,
-                          user,
-                          profileViewModel,
-                          colorScheme,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Products',
+                      '0', // TODO: Get actual product count
+                      Icons.inventory_outlined,
+                      colorScheme.primaryContainer,
+                      colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Sales',
+                      '0', // TODO: Get actual sales count
+                      Icons.trending_up_outlined,
+                      colorScheme.tertiaryContainer,
+                      colorScheme.onTertiaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Menu Options - Account
+              Text(
+                'Account',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildMenuCard(context, [                _MenuOption(
+                  icon: Icons.person_outline,
+                  title: 'Edit Profile',
+                  subtitle: 'Update your personal information',
+                  onTap: () async {
+                    // Show loading indicator
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+
+                    try {
+                      // Fetch store data from the ProfileViewModel
+                      final profileViewModel = Provider.of<ProfileViewModel>(context, listen: false);
+                      final storeData = await profileViewModel.fetchStoreData();
+                      
+                      if (context.mounted) {
+                        Navigator.of(context).pop(); // Remove loading dialog
+                        
+                        final result = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder: (context) => EditStoreProfileScreen(
+                              userProfile: user,
+                              storeProfile: storeData,
+                            ),
+                          ),
                         );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Name
-                    Text(
-                      '${user.firstName} ${user.lastName}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+
+                        // Refresh profile data if edit was successful
+                        if (result == true && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.white),
+                                  SizedBox(width: 12),
+                                  Text('Profile updated successfully'),
+                                ],
+                              ),
+                              backgroundColor: colorScheme.primary,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.of(context).pop(); // Remove loading dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error loading store data: ${e.toString()}'),
+                            backgroundColor: colorScheme.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+                _MenuOption(
+                  icon: Icons.store_outlined,
+                  title: 'Store Settings',
+                  subtitle: 'Manage your store configuration',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Store Settings (Coming Soon)'),
                       ),
-                    ),
-                    if (user.storeName != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        user.storeName!,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    // Email and phone
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.email_outlined,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          user.email,
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.phone_outlined,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          user.phoneNumber,
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ],
+                    );
+                  },
+                ),
+                _MenuOption(
+                  icon: Icons.security_outlined,
+                  title: 'Security',
+                  subtitle: 'Password and security settings',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Security (Coming Soon)')),
+                    );
+                  },
+                ),
+              ]),
+              const SizedBox(height: 16),
+
+              // Business section
+              Text(
+                'Business',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Account settings
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Account',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.primary,
+              const SizedBox(height: 12),
+              _buildMenuCard(context, [
+                _MenuOption(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Sales Transactions',
+                  subtitle: 'View your transaction history',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const StoreTransactionsScreen(),
                       ),
-                    ),
-                    const SizedBox(height: 8),
+                    );
+                  },
+                ),
+                _MenuOption(
+                  icon: Icons.analytics_outlined,
+                  title: 'Performance Analytics',
+                  subtitle: 'Track your business performance',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Analytics coming soon!')),
+                    );
+                  },
+                ),
+              ]),
+              const SizedBox(height: 16),
 
-                    // Settings list
-                    Card(
-                      margin: EdgeInsets.zero,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: colorScheme.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildProfileListItem(
-                            context,
-                            Icons.person_outline,
-                            'Edit Profile',
-                            () {
-                              // TODO: Navigate to edit profile screen
-                            },
-                          ),
-                          _buildDivider(),
-                          _buildProfileListItem(
-                            context,
-                            Icons.store_outlined,
-                            'Store Settings',
-                            () {
-                              // TODO: Navigate to store settings
-                            },
-                          ),
-                          _buildDivider(),
-                          _buildProfileListItem(
-                            context,
-                            Icons.security_outlined,
-                            'Security',
-                            () {
-                              // TODO: Navigate to security settings
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Business section
-                    Text(
-                      'Business',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    Card(
-                      margin: EdgeInsets.zero,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: colorScheme.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildProfileListItem(
-                            context,
-                            Icons.receipt_long_outlined,
-                            'Sales Transactions',
-                            () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) =>
-                                          const StoreTransactionsScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildDivider(),
-                          _buildProfileListItem(
-                            context,
-                            Icons.analytics_outlined,
-                            'Performance Analytics',
-                            () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Analytics coming soon!'),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Support section
-                    Text(
-                      'Support',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    Card(
-                      margin: EdgeInsets.zero,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: colorScheme.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildProfileListItem(
-                            context,
-                            Icons.help_outline,
-                            'Help Center',
-                            () {
-                              // TODO: Navigate to help center
-                            },
-                          ),
-                          _buildDivider(),
-                          _buildProfileListItem(
-                            context,
-                            Icons.info_outline,
-                            'About',
-                            () {
-                              // TODO: Navigate to about page
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Sign out button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showSignOutDialog(context),
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Sign Out'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.errorContainer,
-                          foregroundColor: colorScheme.onErrorContainer,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
+              // Support & Info
+              Text(
+                'Support & Information',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+              const SizedBox(height: 12),
+              _buildMenuCard(context, [
+                _MenuOption(
+                  icon: Icons.help_outline,
+                  title: 'Help Center',
+                  subtitle: 'Get help with your store',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Help Center (Coming Soon)'),
+                      ),
+                    );
+                  },
+                ),
+                _MenuOption(
+                  icon: Icons.info_outline,
+                  title: 'About',
+                  subtitle: 'Learn more about PertuKeKem',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('About (Coming Soon)')),
+                    );
+                  },
+                ),
+                _MenuOption(
+                  icon: Icons.logout,
+                  title: 'Sign Out',
+                  subtitle: 'Sign out of your account',
+                  onTap: () => _showSignOutDialog(context),
+                  isDestructive: true,
+                ),
+              ]),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -311,166 +271,428 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfilePictureSection(
+  Widget _buildUserProfileCard(
     BuildContext context,
     user,
-    ProfileViewModel profileViewModel,
+    TextTheme textTheme,
     ColorScheme colorScheme,
   ) {
-    return Stack(
-      children: [
-        // Profile picture
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.primary.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
-          child: CircleAvatar(
-            radius: 60,
-            backgroundColor: colorScheme.primaryContainer,
-            foregroundColor: colorScheme.onPrimaryContainer,
-            child:
-                profileViewModel.isUploadingImage
-                    ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          strokeWidth: 3,
-                          value: profileViewModel.uploadProgress,
-                          backgroundColor: colorScheme.onPrimaryContainer
-                              .withOpacity(0.3),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            colorScheme.primary,
+        ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.surface,
+            colorScheme.surfaceVariant.withOpacity(0.3),
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Profile Picture
+                Hero(
+                  tag: 'store_profile_picture',
+                  child: Consumer<ProfileViewModel>(
+                    builder: (context, profileViewModel, child) {
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              colorScheme.primary.withOpacity(0.1),
+                              colorScheme.secondary.withOpacity(0.1),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Uploading ${(profileViewModel.uploadProgress * 100).toInt()}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w500,
+                          border: Border.all(
+                            color: colorScheme.primary.withOpacity(0.3),
+                            width: 3,
                           ),
-                        ),
-                      ],
-                    )
-                    : profileViewModel.isRemovingImage
-                    ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            colorScheme.error,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Removing...',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    )
-                    : profileViewModel.storeProfilePicture != null
-                    ? ClipOval(
-                      child: Image.network(
-                        profileViewModel.storeProfilePicture!,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withOpacity(0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                              spreadRadius: 2,
                             ),
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
-                          );
-                        },
-                        errorBuilder:
-                            (_, __, ___) => Text(
-                              '${user.firstName[0]}${user.lastName[0]}',
-                              style: const TextStyle(
-                                fontSize: 42,
+                          ],
+                        ),
+                        child: ClipOval(
+                          child:
+                              profileViewModel.isUploadingImage
+                                  ? Container(
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primaryContainer,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        CircularProgressIndicator(
+                                          strokeWidth: 3,
+                                          value:
+                                              profileViewModel.uploadProgress,
+                                          backgroundColor: colorScheme
+                                              .onPrimaryContainer
+                                              .withOpacity(0.3),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                colorScheme.primary,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${(profileViewModel.uploadProgress * 100).toInt()}%',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color:
+                                                colorScheme.onPrimaryContainer,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  : profileViewModel.storeProfilePicture !=
+                                          null &&
+                                      profileViewModel
+                                          .storeProfilePicture!
+                                          .isNotEmpty
+                                  ? Image.network(
+                                    profileViewModel.storeProfilePicture!,
+                                    fit: BoxFit.cover,
+                                    width: 80,
+                                    height: 80,
+                                    loadingBuilder: (
+                                      context,
+                                      child,
+                                      loadingProgress,
+                                    ) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.primaryContainer,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.primaryContainer,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.store,
+                                          size: 40,
+                                          color: colorScheme.onPrimaryContainer,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                  : Container(
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primaryContainer,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.store,
+                                      size: 40,
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${user.firstName} ${user.lastName}',
+                              style: textTheme.titleLarge?.copyWith(
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                          ),
+                        ],
                       ),
-                    )
-                    : Text(
-                      '${user.firstName[0]}${user.lastName[0]}',
-                      style: const TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
+                      if (user.storeName != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          user.storeName!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Text(
+                        user.email,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        user.phoneNumber,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Consumer<ProfileViewModel>(
+                  builder: (context, profileViewModel, child) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        onPressed:
+                            (profileViewModel.isUploadingImage ||
+                                    profileViewModel.isRemovingImage)
+                                ? null
+                                : () => _showImageSourceDialog(
+                                  context,
+                                  profileViewModel,
+                                ),
+                        icon: Icon(
+                          Icons.camera_alt_rounded,
+                          color:
+                              (profileViewModel.isUploadingImage ||
+                                      profileViewModel.isRemovingImage)
+                                  ? colorScheme.outline
+                                  : Colors.black,
+                          size: 20,
+                        ),
+                        tooltip: 'Update Profile Picture',
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Additional Info Row
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  user.createdAt != null
+                      ? 'Store since ${_formatDate(user.createdAt!)}'
+                      : 'New store',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'STORE',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Widget _buildStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color backgroundColor,
+    Color foregroundColor,
+  ) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: foregroundColor, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCard(BuildContext context, List<_MenuOption> options) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.1), width: 1),
+      ),
+      child: Column(
+        children:
+            options.asMap().entries.map((entry) {
+              final index = entry.key;
+              final option = entry.value;
+              return Column(
+                children: [
+                  ListTile(
+                    leading: Icon(
+                      option.icon,
+                      color:
+                          option.isDestructive
+                              ? colorScheme.error
+                              : colorScheme.onSurface,
+                    ),
+                    title: Text(
+                      option.title,
+                      style: TextStyle(
+                        color:
+                            option.isDestructive
+                                ? colorScheme.error
+                                : colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-          ),
-        ),
-        // Upload/Edit button
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: GestureDetector(
-            onTap:
-                (profileViewModel.isUploadingImage ||
-                        profileViewModel.isRemovingImage)
-                    ? null
-                    : () => _showImageSourceDialog(context, profileViewModel),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color:
-                    (profileViewModel.isUploadingImage ||
-                            profileViewModel.isRemovingImage)
-                        ? colorScheme.outline
-                        : colorScheme.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: colorScheme.surface, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child:
-                  (profileViewModel.isUploadingImage ||
-                          profileViewModel.isRemovingImage)
-                      ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                      : Icon(
-                        Icons.camera_alt_rounded,
-                        color: colorScheme.onPrimary,
-                        size: 20,
+                    subtitle: Text(option.subtitle),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    onTap: option.onTap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top:
+                            index == 0
+                                ? const Radius.circular(16)
+                                : Radius.zero,
+                        bottom:
+                            index == options.length - 1
+                                ? const Radius.circular(16)
+                                : Radius.zero,
                       ),
-            ),
-          ),
-        ),
-      ],
+                    ),
+                  ),
+                  if (index < options.length - 1)
+                    Divider(
+                      height: 1,
+                      indent: 56,
+                      color: colorScheme.outline.withOpacity(0.1),
+                    ),
+                ],
+              );
+            }).toList(),
+      ),
     );
   }
 
@@ -816,36 +1038,6 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildProfileListItem(
-    BuildContext context,
-    IconData icon,
-    String title,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            const SizedBox(width: 16),
-            Expanded(child: Text(title, style: const TextStyle(fontSize: 16))),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return const Divider(height: 1, thickness: 1, indent: 56, endIndent: 16);
-  }
-
   Future<void> _showSignOutDialog(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
@@ -885,4 +1077,20 @@ class ProfileScreen extends StatelessWidget {
       }
     }
   }
+}
+
+class _MenuOption {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  _MenuOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.isDestructive = false,
+  });
 }

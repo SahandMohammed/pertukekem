@@ -8,6 +8,7 @@ import '../../../core/interfaces/state_clearable.dart';
 import '../../authentication/model/user_model.dart';
 import '../../authentication/viewmodel/auth_viewmodel.dart';
 import '../model/address_model.dart';
+import '../../dashboards/model/store_model.dart';
 
 class ProfileViewModel extends ChangeNotifier implements StateClearable {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -18,23 +19,28 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
   bool _isLoading = false;
   bool _isUploadingImage = false;
   bool _isRemovingImage = false;
+  bool _isUpdatingStore = false;
   double _uploadProgress = 0.0;
   String? _error;
   String? _storeProfilePicture;
   List<AddressModel> _addresses = [];
+  StoreModel? _storeData;
 
   bool get isLoading => _isLoading;
   bool get isUploadingImage => _isUploadingImage;
   bool get isRemovingImage => _isRemovingImage;
+  bool get isUpdatingStore => _isUpdatingStore;
   double get uploadProgress => _uploadProgress;
   String? get error => _error;
   String? get storeProfilePicture => _storeProfilePicture;
   List<AddressModel> get addresses => _addresses;
+  StoreModel? get storeData => _storeData;
 
   // Set the AuthViewModel reference
   void setAuthViewModel(AuthViewModel authViewModel) {
     _authViewModel = authViewModel;
   }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -57,6 +63,12 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     _isRemovingImage = removing;
     notifyListeners();
   }
+
+  void _setUpdatingStore(bool updating) {
+    _isUpdatingStore = updating;
+    notifyListeners();
+  }
+
   void _setError(String? error) {
     _error = error;
     notifyListeners();
@@ -536,19 +548,144 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
+  // Fetch store data for the current user
+  Future<StoreModel?> fetchStoreData() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        debugPrint('User not authenticated');
+        return null;
+      }
+
+      _setLoading(true);
+      _setError(null);
+
+      final doc = await _firestore.collection('stores').doc(userId).get();
+      if (doc.exists) {
+        _storeData = StoreModel.fromMap(doc.data()!);
+        notifyListeners();
+        debugPrint('Store data fetched: ${_storeData?.storeName}');
+        return _storeData;
+      } else {
+        debugPrint('No store found for user: $userId');
+        return null;
+      }
+    } catch (e) {
+      _setError('Failed to fetch store data: $e');
+      debugPrint('Error fetching store data: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Update store profile information
+  Future<bool> updateStoreProfile({
+    required String storeName,
+    required String description,
+    required Map<String, dynamic> storeAddress,
+    List<String>? categories,
+  }) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        _setError('User not authenticated');
+        return false;
+      }
+
+      _setUpdatingStore(true);
+      _setError(null);
+
+      // Update store document
+      await _firestore.collection('stores').doc(userId).update({
+        'storeName': storeName,
+        'description': description,
+        'storeAddress': storeAddress,
+        'categories': categories ?? [],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update user document with store name
+      await _firestore.collection('users').doc(userId).update({
+        'storeName': storeName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update auth viewmodel if available
+      if (_authViewModel != null) {
+        await _authViewModel!.refreshUserData();
+      }
+
+      // Refresh store data
+      await fetchStoreData();
+
+      debugPrint('Store profile updated successfully');
+      return true;
+    } catch (e) {
+      _setError('Failed to update store profile: $e');
+      debugPrint('Error updating store profile: $e');
+      return false;
+    } finally {
+      _setUpdatingStore(false);
+    }
+  }
+
+  // Update user profile information (for store owners)
+  Future<bool> updateUserProfile({
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+  }) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        _setError('User not authenticated');
+        return false;
+      }
+
+      _setUpdatingStore(true);
+      _setError(null);
+
+      // Update user document
+      await _firestore.collection('users').doc(userId).update({
+        'firstName': firstName,
+        'lastName': lastName,
+        'phoneNumber': phoneNumber,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update auth viewmodel if available
+      if (_authViewModel != null) {
+        await _authViewModel!.refreshUserData();
+      }
+
+      debugPrint('User profile updated successfully');
+      return true;
+    } catch (e) {
+      _setError('Failed to update user profile: $e');
+      debugPrint('Error updating user profile: $e');
+      return false;
+    } finally {
+      _setUpdatingStore(false);
+    }
+  }
   @override
   Future<void> clearState() async {
     debugPrint('🧹 Clearing ProfileViewModel state...');
 
     // Clear auth reference
-    _authViewModel = null; // Clear all state
+    _authViewModel = null; 
+    
+    // Clear all state
     _addresses.clear();
     _error = null;
     _isLoading = false;
     _isUploadingImage = false;
     _isRemovingImage = false;
+    _isUpdatingStore = false;
     _uploadProgress = 0.0;
     _storeProfilePicture = null;
+    _storeData = null;
 
     // Notify listeners
     notifyListeners();
