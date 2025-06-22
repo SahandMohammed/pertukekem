@@ -15,7 +15,8 @@ import '../../../cart/services/cart_service.dart';
 import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
 import '../../../notifications/view/customer_notification_list_screen.dart';
 import '../../../community/view/community_tab.dart';
-import '../../../AI/view/ai_chat_tab.dart';
+import '../../../AI/view/ai_chat_screen.dart';
+import '../../../AI/viewmodel/ai_chat_viewmodel.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -59,11 +60,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             // Orders Tab - Customer Orders (previously index 2, now index 1)
             const CustomerOrdersTab(),
             // Library Tab - User's Library (previously index 3, now index 2)
-            const LibraryTab(),
-            // Community Tab - Community Features (new at index 3)
-            const CommunityTab(), // AI Chat Tab - AI Reading Assistant (new at index 4)
-            const AIChatTab(),
-            // Profile Tab (previously index 4, now index 5)
+            const LibraryTab(), // Community Tab - Community Features (new at index 3)
+            const CommunityTab(),
+            // Profile Tab (now at index 4)
             const ProfileTab(),
           ],
         ),
@@ -95,11 +94,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               icon: Icon(Icons.people_outlined),
               selectedIcon: Icon(Icons.people),
               label: 'Community',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.smart_toy_outlined),
-              selectedIcon: Icon(Icons.smart_toy),
-              label: 'AI Chat',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),
@@ -394,6 +388,37 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                         },
                       ),
                     ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // AI Chat Icon
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ChangeNotifierProvider(
+                            create: (context) => AIChatViewModel(),
+                            child: const AIChatScreen(),
+                          ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.smart_toy_outlined,
+                      color: Colors.blue,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
