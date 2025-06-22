@@ -26,7 +26,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
-
   // Store Information Controllers
   final _storeNameController = TextEditingController();
   final _storeDescriptionController = TextEditingController();
@@ -35,6 +34,18 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   final _stateController = TextEditingController();
   final _postalCodeController = TextEditingController();
   final _countryController = TextEditingController();
+  final _additionalInfoController = TextEditingController();
+
+  // Social Media Controllers
+  final _facebookController = TextEditingController();
+  final _instagramController = TextEditingController();
+  final _twitterController = TextEditingController();
+  final _websiteController = TextEditingController();
+
+  // Contact Info Controllers
+  final _contactPhoneController = TextEditingController();
+  final _contactEmailController = TextEditingController();
+
   bool _hasChanges = false;
   List<String> _selectedCategories = [];
 
@@ -48,10 +59,9 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
     // Initialize personal information
     _firstNameController.text = widget.userProfile.firstName;
     _lastNameController.text = widget.userProfile.lastName;
-    _phoneController.text = widget.userProfile.phoneNumber;
-
-    // Initialize store information
-    _storeNameController.text = widget.userProfile.storeName ?? '';
+    _phoneController.text =
+        widget.userProfile.phoneNumber; // Initialize store information
+    _storeNameController.text = widget.storeProfile?.storeName ?? '';
     _storeDescriptionController.text = widget.storeProfile?.description ?? '';
     _selectedCategories = List.from(widget.storeProfile?.categories ?? []);
 
@@ -63,6 +73,27 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       _stateController.text = address['state'] ?? '';
       _postalCodeController.text = address['postalCode'] ?? '';
       _countryController.text = address['country'] ?? '';
+      _additionalInfoController.text = address['additionalInfo'] ?? '';
+    }
+
+    // Initialize social media if available
+    if (widget.storeProfile?.socialMedia != null) {
+      final socialMedia = widget.storeProfile!.socialMedia!;
+      _facebookController.text = socialMedia['facebook'] ?? '';
+      _instagramController.text = socialMedia['instagram'] ?? '';
+      _twitterController.text = socialMedia['twitter'] ?? '';
+      _websiteController.text = socialMedia['website'] ?? '';
+    } // Initialize contact info if available
+    if (widget.storeProfile?.contactInfo != null &&
+        widget.storeProfile!.contactInfo.isNotEmpty) {
+      // Find phone and email from contact info maps
+      for (var contact in widget.storeProfile!.contactInfo) {
+        if (contact['type'] == 'phone') {
+          _contactPhoneController.text = contact['value'] ?? '';
+        } else if (contact['type'] == 'email') {
+          _contactEmailController.text = contact['value'] ?? '';
+        }
+      }
     }
 
     // Add listeners to detect changes
@@ -76,6 +107,13 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
     _stateController.addListener(_onFieldChanged);
     _postalCodeController.addListener(_onFieldChanged);
     _countryController.addListener(_onFieldChanged);
+    _additionalInfoController.addListener(_onFieldChanged);
+    _facebookController.addListener(_onFieldChanged);
+    _instagramController.addListener(_onFieldChanged);
+    _twitterController.addListener(_onFieldChanged);
+    _websiteController.addListener(_onFieldChanged);
+    _contactPhoneController.addListener(_onFieldChanged);
+    _contactEmailController.addListener(_onFieldChanged);
   }
 
   void _onFieldChanged() {
@@ -84,7 +122,7 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
         _lastNameController.text.trim() != widget.userProfile.lastName ||
         _phoneController.text.trim() != widget.userProfile.phoneNumber ||
         _storeNameController.text.trim() !=
-            (widget.userProfile.storeName ?? '') ||
+            (widget.storeProfile?.storeName ?? '') ||
         _storeDescriptionController.text.trim() !=
             (widget.storeProfile?.description ?? '') ||
         _streetController.text.trim() !=
@@ -96,7 +134,19 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
         _postalCodeController.text.trim() !=
             (widget.storeProfile?.storeAddress?['postalCode'] ?? '') ||
         _countryController.text.trim() !=
-            (widget.storeProfile?.storeAddress?['country'] ?? '');
+            (widget.storeProfile?.storeAddress?['country'] ?? '') ||
+        _additionalInfoController.text.trim() !=
+            (widget.storeProfile?.storeAddress?['additionalInfo'] ?? '') ||
+        _facebookController.text.trim() !=
+            (widget.storeProfile?.socialMedia?['facebook'] ?? '') ||
+        _instagramController.text.trim() !=
+            (widget.storeProfile?.socialMedia?['instagram'] ?? '') ||
+        _twitterController.text.trim() !=
+            (widget.storeProfile?.socialMedia?['twitter'] ?? '') ||
+        _websiteController.text.trim() !=
+            (widget.storeProfile?.socialMedia?['website'] ?? '') ||
+        _contactPhoneController.text.trim() != _getContactValue('phone') ||
+        _contactEmailController.text.trim() != _getContactValue('email');
 
     if (hasChanges != _hasChanges) {
       setState(() {
@@ -117,6 +167,13 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
     _stateController.dispose();
     _postalCodeController.dispose();
     _countryController.dispose();
+    _additionalInfoController.dispose();
+    _facebookController.dispose();
+    _instagramController.dispose();
+    _twitterController.dispose();
+    _websiteController.dispose();
+    _contactPhoneController.dispose();
+    _contactEmailController.dispose();
     super.dispose();
   }
 
@@ -144,16 +201,45 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
           profileViewModel.error ?? 'Failed to update user profile',
         );
         return;
-      }
-
-      // Update store profile
+      } // Update store profile
       final storeAddress = {
         'street': _streetController.text.trim(),
         'city': _cityController.text.trim(),
         'state': _stateController.text.trim(),
         'postalCode': _postalCodeController.text.trim(),
         'country': _countryController.text.trim(),
+        'additionalInfo': _additionalInfoController.text.trim(),
       };
+
+      // Create contact info as list of maps
+      final contactInfo = <Map<String, String>>[];
+      if (_contactPhoneController.text.trim().isNotEmpty) {
+        contactInfo.add({
+          'type': 'phone',
+          'value': _contactPhoneController.text.trim(),
+        });
+      }
+      if (_contactEmailController.text.trim().isNotEmpty) {
+        contactInfo.add({
+          'type': 'email',
+          'value': _contactEmailController.text.trim(),
+        });
+      }
+
+      // Create social media map
+      final socialMedia = <String, String>{};
+      if (_facebookController.text.trim().isNotEmpty) {
+        socialMedia['facebook'] = _facebookController.text.trim();
+      }
+      if (_instagramController.text.trim().isNotEmpty) {
+        socialMedia['instagram'] = _instagramController.text.trim();
+      }
+      if (_twitterController.text.trim().isNotEmpty) {
+        socialMedia['twitter'] = _twitterController.text.trim();
+      }
+      if (_websiteController.text.trim().isNotEmpty) {
+        socialMedia['website'] = _websiteController.text.trim();
+      }
 
       final storeSuccess = await profileViewModel.updateStoreProfile(
         storeName: _storeNameController.text.trim(),
@@ -455,6 +541,17 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
     );
   }
 
+  String _getContactValue(String type) {
+    if (widget.storeProfile?.contactInfo != null) {
+      for (var contact in widget.storeProfile!.contactInfo) {
+        if (contact['type'] == type) {
+          return contact['value'] ?? '';
+        }
+      }
+    }
+    return '';
+  }
+
   Future<bool> _onWillPop() async {
     if (!_hasChanges) return true;
 
@@ -740,7 +837,8 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                                 colorScheme: colorScheme,
                                 maxLines: 3,
                                 textCapitalization:
-                                    TextCapitalization.sentences,                                validator: (value) {
+                                    TextCapitalization.sentences,
+                                validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return 'Store description is required';
                                   }
@@ -761,15 +859,21 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children: _selectedCategories
-                                      .map((category) => Chip(
-                                            label: Text(category),
-                                            backgroundColor: colorScheme.primaryContainer,
-                                            labelStyle: TextStyle(
-                                              color: colorScheme.onPrimaryContainer,
+                                  children:
+                                      _selectedCategories
+                                          .map(
+                                            (category) => Chip(
+                                              label: Text(category),
+                                              backgroundColor:
+                                                  colorScheme.primaryContainer,
+                                              labelStyle: TextStyle(
+                                                color:
+                                                    colorScheme
+                                                        .onPrimaryContainer,
+                                              ),
                                             ),
-                                          ))
-                                      .toList(),
+                                          )
+                                          .toList(),
                                 ),
                               ],
                             ],
@@ -843,6 +947,95 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                                       colorScheme: colorScheme,
                                       textCapitalization:
                                           TextCapitalization.words,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModernTextField(
+                                controller: _additionalInfoController,
+                                label: 'Additional Info',
+                                hint: 'Building number, floor, etc.',
+                                icon: Icons.info_outline,
+                                colorScheme: colorScheme,
+                                textCapitalization: TextCapitalization.words,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Social Media Section
+                          _buildSectionCard(
+                            context,
+                            title: 'Social Media & Contact',
+                            subtitle:
+                                'Your online presence and contact information',
+                            icon: Icons.link_outlined,
+                            children: [
+                              const SizedBox(height: 24),
+                              _buildModernTextField(
+                                controller: _facebookController,
+                                label: 'Facebook URL',
+                                hint: 'https://facebook.com/yourstore',
+                                icon: Icons.facebook_outlined,
+                                colorScheme: colorScheme,
+                                keyboardType: TextInputType.url,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildModernTextField(
+                                      controller: _instagramController,
+                                      label: 'Instagram',
+                                      hint: '@yourstorename',
+                                      icon: Icons.camera_alt_outlined,
+                                      colorScheme: colorScheme,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildModernTextField(
+                                      controller: _twitterController,
+                                      label: 'Twitter',
+                                      hint: '@yourstorename',
+                                      icon: Icons.alternate_email,
+                                      colorScheme: colorScheme,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModernTextField(
+                                controller: _websiteController,
+                                label: 'Website URL',
+                                hint: 'https://yourstore.com',
+                                icon: Icons.language_outlined,
+                                colorScheme: colorScheme,
+                                keyboardType: TextInputType.url,
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildModernTextField(
+                                      controller: _contactPhoneController,
+                                      label: 'Contact Phone',
+                                      hint: 'Store contact number',
+                                      icon: Icons.phone_outlined,
+                                      colorScheme: colorScheme,
+                                      keyboardType: TextInputType.phone,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildModernTextField(
+                                      controller: _contactEmailController,
+                                      label: 'Contact Email',
+                                      hint: 'Store contact email',
+                                      icon: Icons.email_outlined,
+                                      colorScheme: colorScheme,
+                                      keyboardType: TextInputType.emailAddress,
                                     ),
                                   ),
                                 ],
