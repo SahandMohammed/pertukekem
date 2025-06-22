@@ -15,6 +15,7 @@ import '../../../cart/services/cart_service.dart';
 import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
 import '../../../notifications/view/customer_notification_list_screen.dart';
 import '../../../community/view/community_tab.dart';
+import '../../../AI/view/ai_chat_tab.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -60,8 +61,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             // Library Tab - User's Library (previously index 3, now index 2)
             const LibraryTab(),
             // Community Tab - Community Features (new at index 3)
-            const CommunityTab(),
-            // Profile Tab (previously index 4, now index 4)
+            const CommunityTab(), // AI Chat Tab - AI Reading Assistant (new at index 4)
+            const AIChatTab(),
+            // Profile Tab (previously index 4, now index 5)
             const ProfileTab(),
           ],
         ),
@@ -93,6 +95,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               icon: Icon(Icons.people_outlined),
               selectedIcon: Icon(Icons.people),
               label: 'Community',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.smart_toy_outlined),
+              selectedIcon: Icon(Icons.smart_toy),
+              label: 'AI Chat',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),

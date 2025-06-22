@@ -4,6 +4,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pertukekem/core/services/firebase_options.dart';
 import 'package:pertukekem/core/services/fcm_service.dart';
 import 'package:pertukekem/core/theme/app_theme.dart';
+import 'package:pertukekem/features/AI/service/ai_service.dart';
+import 'package:pertukekem/features/AI/viewmodel/ai_chat_viewmodel.dart';
 import 'package:pertukekem/features/checkout/viewmodel/checkout_viewmodel.dart';
 import 'package:pertukekem/features/dashboards/viewmodel/customer_home_viewmodel.dart';
 import 'package:pertukekem/features/orders/viewmodel/customer_orders_viewmodel.dart';
@@ -32,6 +34,8 @@ void main() async {
   // Initialize FCM Service
   await FCMService().initialize();
 
+  await AIService.instance.initialize(useVertexBackend: false);
+
   runApp(
     MultiProvider(
       providers: [
@@ -49,6 +53,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StoreOrderViewModel()),
         ChangeNotifierProvider(create: (_) => CheckoutViewModel()),
         ChangeNotifierProvider(create: (_) => AdminViewModel()),
+        ChangeNotifierProvider(create: (_) => AIChatViewModel()),
       ],
       child: Consumer<AuthViewModel>(
         builder: (context, authViewModel, child) {
@@ -80,6 +85,7 @@ void _registerStateClearables(
   final storeOrderViewModel = context.read<StoreOrderViewModel>();
   final checkoutViewModel = context.read<CheckoutViewModel>();
   final adminViewModel = context.read<AdminViewModel>();
+  final aiChatViewModel = context.read<AIChatViewModel>();
 
   // Register clearState methods with AuthViewModel
   authViewModel.registerStateClearable(storeViewModel.clearState);
@@ -93,6 +99,7 @@ void _registerStateClearables(
   authViewModel.registerStateClearable(storeOrderViewModel.clearState);
   authViewModel.registerStateClearable(checkoutViewModel.clearState);
   authViewModel.registerStateClearable(adminViewModel.clearState);
+  authViewModel.registerStateClearable(aiChatViewModel.clearState);
 }
 
 class MyApp extends StatelessWidget {
