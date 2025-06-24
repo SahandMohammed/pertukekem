@@ -233,7 +233,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       _showErrorSnackBar('User not authenticated');
       return;
     }
-
     try {
       // Update user profile first
       final userSuccess = await profileViewModel.updateUserProfile(
@@ -297,8 +296,27 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       );
 
       if (!mounted) return;
-
       if (storeSuccess) {
+        // Optimistic UI updates - update local data immediately for instant feedback
+        // Apply optimistic updates to local models
+        authViewModel.updateLocalUserData(
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          phoneNumber: _phoneController.text.trim(),
+          storeName: _storeNameController.text.trim(),
+        );
+
+        profileViewModel.updateLocalStoreData(
+          storeName: _storeNameController.text.trim(),
+          description: _storeDescriptionController.text.trim(),
+          storeAddress: storeAddress,
+          categories: _selectedCategories,
+          businessHours: _businessHours,
+          socialMedia: socialMedia.isNotEmpty ? socialMedia : null,
+          contactInfo: contactInfo,
+        );
+
+        // Show success message immediately (before server refresh)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -315,7 +333,18 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
             ),
           ),
         );
-        Navigator.of(context).pop(true); // Return true to indicate success
+
+        // Return success immediately with optimistic updates
+        Navigator.of(context).pop(true);
+
+        // Do server refresh in background (optional for data consistency)
+        debugPrint(
+          '🔄 EditStoreProfile - Doing background refresh for consistency...',
+        );
+        await Future.delayed(const Duration(milliseconds: 200));
+        await profileViewModel.fetchStoreData();
+        await authViewModel.refreshUserData();
+        debugPrint('✅ EditStoreProfile - Background refresh completed');
       } else {
         _showErrorSnackBar(
           profileViewModel.error ?? 'Failed to update store profile',

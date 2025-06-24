@@ -73,6 +73,28 @@ class AuthViewModel extends ChangeNotifier {
     await _fetchUserData();
   }
 
+  // Update local user data immediately (for optimistic UI updates)
+  void updateLocalUserData({
+    String? firstName,
+    String? lastName,
+    String? phoneNumber,
+    String? storeName,
+  }) {
+    if (_user != null) {
+      _user = _user!.copyWith(
+        firstName: firstName,
+        lastName: lastName,
+        phoneNumber: phoneNumber,
+        storeName: storeName,
+        updatedAt: DateTime.now(),
+      );
+      notifyListeners();
+      debugPrint(
+        'Local user data updated: ${_user?.firstName} ${_user?.lastName}',
+      );
+    }
+  }
+
   Future<void> signUp({
     required String firstName,
     required String lastName,

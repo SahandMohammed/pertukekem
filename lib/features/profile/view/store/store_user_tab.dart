@@ -8,8 +8,13 @@ import '../../viewmodel/user_profile_viewmodel.dart';
 import 'edit_store_profile_screen.dart';
 import '../customer/edit_profile_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -19,22 +24,10 @@ class ProfileScreen extends StatelessWidget {
 
     if (user == null) {
       return const Center(child: CircularProgressIndicator());
-    }    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (context) {
-            final profileViewModel = ProfileViewModel();
-            profileViewModel.setAuthViewModel(authViewModel);
-            // Fetch store profile picture and store data when view model is created
-            profileViewModel.fetchStoreProfilePicture();
-            profileViewModel.fetchStoreData();
-            return profileViewModel;
-          },
-        ),
-        ChangeNotifierProvider(
-          create: (context) => UserProfileViewModel(),
-        ),
-      ],
+    }
+    // ProfileViewModel is provided by the parent dashboard; only provide UserProfileViewModel here
+    return ChangeNotifierProvider(
+      create: (_) => UserProfileViewModel(),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Profile'),
@@ -104,7 +97,8 @@ class ProfileScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 12),              _buildMenuCard(context, [
+              const SizedBox(height: 12),
+              _buildMenuCard(context, [
                 _MenuOption(
                   icon: Icons.store_outlined,
                   title: 'Edit Store Profile',
@@ -140,10 +134,12 @@ class ProfileScreen extends StatelessWidget {
                                   ),
                                 ),
                           ),
-                        ); // Refresh profile data if edit was successful
+                        );
+                        // Refresh profile data if edit was successful
                         if (result == true && context.mounted) {
-                          // The ProfileViewModel is shared, so it should already be updated
-                          // Just show a success message
+                          setState(() {}); // Force rebuild after edit
+
+                          // Show success message (data should already be updated via optimistic updates)
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Row(
@@ -160,6 +156,17 @@ class ProfileScreen extends StatelessWidget {
                               ),
                             ),
                           );
+
+                          // Optional: Light refresh in background to ensure server consistency
+                          // (Remove the aggressive immediate refresh that might override optimistic updates)
+                          Future.delayed(const Duration(seconds: 2), () async {
+                            if (context.mounted) {
+                              // Background server sync for consistency
+                              await authViewModel.refreshUserData();
+                              await profileViewModel.fetchStoreData();
+                              // Completed background refresh
+                            }
+                          });
                         }
                       }
                     } catch (e) {
@@ -168,7 +175,7 @@ class ProfileScreen extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Error loading store data: ${e.toString()}',
+                              'Error loading store data: \\${e.toString()}',
                             ),
                             backgroundColor: colorScheme.error,
                             behavior: SnackBarBehavior.floating,
@@ -187,32 +194,40 @@ class ProfileScreen extends StatelessWidget {
                   subtitle: 'Update your personal information',
                   onTap: () async {
                     try {
-                      final userProfileViewModel = Provider.of<UserProfileViewModel>(
-                        context,
-                        listen: false,
-                      );
-                      
+                      final userProfileViewModel =
+                          Provider.of<UserProfileViewModel>(
+                            context,
+                            listen: false,
+                          );
+
                       final result = await Navigator.of(context).push<bool>(
                         MaterialPageRoute(
-                          builder: (context) => MultiProvider(
-                            providers: [
-                              ChangeNotifierProvider.value(
-                                value: userProfileViewModel,
+                          builder:
+                              (context) => MultiProvider(
+                                providers: [
+                                  ChangeNotifierProvider.value(
+                                    value: userProfileViewModel,
+                                  ),
+                                  ChangeNotifierProvider.value(
+                                    value: Provider.of<AuthViewModel>(
+                                      context,
+                                      listen: false,
+                                    ),
+                                  ),
+                                ],
+                                child: EditProfileScreen(userProfile: user),
                               ),
-                              ChangeNotifierProvider.value(
-                                value: Provider.of<AuthViewModel>(context, listen: false),
-                              ),
-                            ],
-                            child: EditProfileScreen(userProfile: user),
-                          ),
                         ),
                       );
 
                       if (result == true && context.mounted) {
                         // Refresh the AuthViewModel to get updated user data
-                        final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                        final authViewModel = Provider.of<AuthViewModel>(
+                          context,
+                          listen: false,
+                        );
                         await authViewModel.refreshUserData();
-                        
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: const Row(
@@ -385,208 +400,247 @@ class ProfileScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                // Profile Picture
-                Hero(
-                  tag: 'store_profile_picture',
-                  child: Consumer<ProfileViewModel>(
-                    builder: (context, profileViewModel, child) {
-                      return Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              colorScheme.primary.withOpacity(0.1),
-                              colorScheme.secondary.withOpacity(0.1),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: colorScheme.primary.withOpacity(0.3),
-                            width: 3,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colorScheme.primary.withOpacity(0.2),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                              spreadRadius: 2,
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child:
-                              profileViewModel.isUploadingImage
-                                  ? Container(
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primaryContainer,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        CircularProgressIndicator(
-                                          strokeWidth: 3,
-                                          value:
-                                              profileViewModel.uploadProgress,
-                                          backgroundColor: colorScheme
-                                              .onPrimaryContainer
-                                              .withOpacity(0.3),
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                colorScheme.primary,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${(profileViewModel.uploadProgress * 100).toInt()}%',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color:
-                                                colorScheme.onPrimaryContainer,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  : profileViewModel.storeProfilePicture !=
-                                          null &&
-                                      profileViewModel
-                                          .storeProfilePicture!
-                                          .isNotEmpty
-                                  ? Image.network(
-                                    profileViewModel.storeProfilePicture!,
-                                    fit: BoxFit.cover,
-                                    width: 80,
-                                    height: 80,
-                                    loadingBuilder: (
-                                      context,
-                                      child,
-                                      loadingProgress,
-                                    ) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        width: 80,
-                                        height: 80,
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.primaryContainer,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.primaryContainer,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.store,
-                                          size: 40,
-                                          color: colorScheme.onPrimaryContainer,
-                                        ),
-                                      );
-                                    },
-                                  )
-                                  : Container(
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primaryContainer,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.store,
-                                      size: 40,
-                                      color: colorScheme.onPrimaryContainer,
-                                    ),
-                                  ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),                Expanded(
+                // Profile Picture and User Info - wrapped in a single Consumer2
+                Expanded(
                   child: Consumer2<ProfileViewModel, AuthViewModel>(
                     builder: (context, profileViewModel, authViewModel, child) {
-                      // Use the latest user data from AuthViewModel
+                      // Always prefer storeData from ProfileViewModel if available
                       final currentUser = authViewModel.user ?? user;
-                      // Use store data if available, otherwise fall back to user data
+                      final storeData = profileViewModel.storeData;
                       final storeName =
-                          profileViewModel.storeData?.storeName ??
-                          currentUser.storeName;
-                      final storeDescription =
-                          profileViewModel.storeData?.description;
+                          storeData != null && storeData.storeName.isNotEmpty
+                              ? storeData.storeName
+                              : currentUser.storeName;
+                      final storeDescription = storeData?.description ?? '';
+                      final phoneNumber =
+                          storeData?.contactInfo != null &&
+                                  storeData!.contactInfo.isNotEmpty
+                              ? (storeData.contactInfo.firstWhere(
+                                    (info) => info['type'] == 'phone',
+                                    orElse:
+                                        () => {
+                                          'value': currentUser.phoneNumber,
+                                        },
+                                  )['value'] ??
+                                  currentUser.phoneNumber)
+                              : currentUser.phoneNumber;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      return Row(
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '${currentUser.firstName} ${currentUser.lastName}',
-                                  style: textTheme.titleLarge?.copyWith(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                          // Profile Picture
+                          Hero(
+                            tag: 'store_profile_picture',
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    colorScheme.primary.withOpacity(0.1),
+                                    colorScheme.secondary.withOpacity(0.1),
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: colorScheme.primary.withOpacity(0.3),
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colorScheme.primary.withOpacity(0.2),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                    spreadRadius: 2,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ClipOval(
+                                child:
+                                    profileViewModel.isUploadingImage
+                                        ? Container(
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primaryContainer,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              CircularProgressIndicator(
+                                                strokeWidth: 3,
+                                                value:
+                                                    profileViewModel
+                                                        .uploadProgress,
+                                                backgroundColor: colorScheme
+                                                    .onPrimaryContainer
+                                                    .withOpacity(0.3),
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(colorScheme.primary),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${(profileViewModel.uploadProgress * 100).toInt()}%',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color:
+                                                      colorScheme
+                                                          .onPrimaryContainer,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                        : profileViewModel
+                                                    .storeProfilePicture !=
+                                                null &&
+                                            profileViewModel
+                                                .storeProfilePicture!
+                                                .isNotEmpty
+                                        ? Image.network(
+                                          profileViewModel.storeProfilePicture!,
+                                          fit: BoxFit.cover,
+                                          width: 80,
+                                          height: 80,
+                                          loadingBuilder: (
+                                            context,
+                                            child,
+                                            loadingProgress,
+                                          ) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Container(
+                                              width: 80,
+                                              height: 80,
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    colorScheme
+                                                        .primaryContainer,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return Container(
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    colorScheme
+                                                        .primaryContainer,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                Icons.store,
+                                                size: 40,
+                                                color:
+                                                    colorScheme
+                                                        .onPrimaryContainer,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                        : Container(
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.primaryContainer,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.store,
+                                            size: 40,
+                                            color:
+                                                colorScheme.onPrimaryContainer,
+                                          ),
+                                        ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // User Information
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '${currentUser.firstName} ${currentUser.lastName}',
+                                        style: textTheme.titleLarge?.copyWith(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (storeName != null &&
+                                    storeName.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    storeName,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                if (storeDescription.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    storeDescription,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurface.withOpacity(
+                                        0.6,
+                                      ),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  currentUser.email,
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.7,
+                                    ),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
-                          ),
-                          if (storeName != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              storeName,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          if (storeDescription != null &&
-                              storeDescription.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              storeDescription,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.6),
-                                fontStyle: FontStyle.italic,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          const SizedBox(height: 4),
-                          Text(
-                            currentUser.email,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            currentUser.phoneNumber,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.6),
+                                Text(
+                                  phoneNumber,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.6,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -594,6 +648,7 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
                 ),
+                // Camera button
                 Consumer<ProfileViewModel>(
                   builder: (context, profileViewModel, child) {
                     return Container(
@@ -636,7 +691,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),            // Additional Info Row
+            const SizedBox(height: 16), // Additional Info Row
             Consumer<AuthViewModel>(
               builder: (context, authViewModel, child) {
                 final currentUser = authViewModel.user ?? user;
@@ -908,9 +963,6 @@ class ProfileScreen extends StatelessWidget {
                                   profileViewModel.isRemovingImage
                                       ? null
                                       : () {
-                                        debugPrint(
-                                          '🗑️ Remove Photo button clicked',
-                                        );
                                         Navigator.pop(context);
                                         _handleRemoveProfilePicture(
                                           context,
@@ -1072,8 +1124,6 @@ class ProfileScreen extends StatelessWidget {
     BuildContext context,
     ProfileViewModel profileViewModel,
   ) async {
-    debugPrint('🗑️ Starting profile picture removal process...');
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -1098,18 +1148,11 @@ class ProfileScreen extends StatelessWidget {
           ),
     );
 
-    debugPrint('🗑️ User confirmed removal: $confirmed');
-
     if (confirmed == true && context.mounted) {
-      debugPrint('🗑️ Calling removeProfilePicture method...');
       final errorMessage = await profileViewModel.removeProfilePicture();
-      debugPrint(
-        '🗑️ removeProfilePicture completed with error: $errorMessage',
-      );
 
       if (context.mounted) {
         if (errorMessage == null) {
-          debugPrint('🗑️ Showing success message...');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Row(

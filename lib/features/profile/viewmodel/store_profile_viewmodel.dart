@@ -628,13 +628,13 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update auth viewmodel if available
+      // Refresh local store data first
+      await fetchStoreData();
+
+      // Update auth viewmodel if available (this will trigger user data refresh)
       if (_authViewModel != null) {
         await _authViewModel!.refreshUserData();
       }
-
-      // Refresh store data
-      await fetchStoreData();
 
       debugPrint('Store profile updated successfully');
       return true;
@@ -661,20 +661,13 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       }
 
       _setUpdatingStore(true);
-      _setError(null);
-
-      // Update user document
+      _setError(null); // Update user document
       await _firestore.collection('users').doc(userId).update({
         'firstName': firstName,
         'lastName': lastName,
         'phoneNumber': phoneNumber,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-
-      // Update auth viewmodel if available
-      if (_authViewModel != null) {
-        await _authViewModel!.refreshUserData();
-      }
 
       debugPrint('User profile updated successfully');
       return true;
@@ -685,6 +678,50 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     } finally {
       _setUpdatingStore(false);
     }
+  }
+
+  // Update local store data immediately (for optimistic UI updates)
+  void updateLocalStoreData({
+    String? storeName,
+    String? description,
+    Map<String, dynamic>? storeAddress,
+    List<String>? categories,
+    List<Map<String, String>>? contactInfo,
+    Map<String, dynamic>? businessHours,
+    Map<String, dynamic>? socialMedia,
+  }) {
+    // Create or update the local store data for immediate UI reflection
+    if (_storeData != null) {
+      // Update existing data
+      _storeData = _storeData!.copyWith(
+        storeName: storeName ?? _storeData!.storeName,
+        description: description ?? _storeData!.description,
+        storeAddress: storeAddress ?? _storeData!.storeAddress,
+        categories: categories ?? _storeData!.categories,
+        businessHours: businessHours ?? _storeData!.businessHours,
+        socialMedia: socialMedia ?? _storeData!.socialMedia,
+        contactInfo: contactInfo ?? _storeData!.contactInfo,
+        updatedAt: DateTime.now(),
+      );
+    } else {
+      // Create new StoreModel with minimal required fields
+      final userId = _auth.currentUser?.uid ?? '';
+      _storeData = StoreModel(
+        storeId: '',
+        ownerId: userId,
+        storeName: storeName ?? '',
+        description: description,
+        storeAddress: storeAddress,
+        contactInfo: contactInfo ?? [],
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        categories: categories ?? [],
+        businessHours: businessHours,
+        socialMedia: socialMedia,
+      );
+    }
+    notifyListeners();
+    debugPrint('Local store data updated: \\${_storeData?.storeName}');
   }
 
   @override
