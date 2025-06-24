@@ -460,13 +460,23 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(message, style: const TextStyle(color: Colors.white)),
           backgroundColor: Colors.red.shade800,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
           margin: const EdgeInsets.all(10),
+          duration: const Duration(
+            seconds: 4,
+          ), // Longer duration for multiple errors
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -489,23 +499,21 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   }
 
   void _nextStep() {
-    // Validate current step before proceeding
-    if (_currentStep == 1) {
-      // Book cover step
-      if (_imageFile == null &&
-          (_networkImageUrl == null || _networkImageUrl!.isEmpty)) {
-        _showErrorSnackBar('Please add a book cover image');
-        return;
-      }
-      if (_selectedBookType == 'ebook' &&
-          _ebookFile == null &&
-          (widget.listing?.ebookUrl == null ||
-              widget.listing!.ebookUrl!.isEmpty)) {
-        _showErrorSnackBar('Please select an eBook file');
-        return;
-      }
+    // Get all validation errors for current step
+    final errors = _getValidationErrors(_currentStep);
+
+    if (errors.isNotEmpty) {
+      // Show all errors in a single snackbar
+      final errorMessage =
+          errors.length == 1
+              ? errors.first
+              : errors.map((e) => '• $e').join('\n');
+
+      _showErrorSnackBar(errorMessage);
+      return;
     }
 
+    // If validation passes, proceed to next step
     if (_currentStep < _totalSteps - 1) {
       _tabController.animateTo(_currentStep + 1);
     }
@@ -515,6 +523,126 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     if (_currentStep > 0) {
       _tabController.animateTo(_currentStep - 1);
     }
+  }
+
+  // Validation methods for each step
+  bool _isStepValid(int stepIndex) {
+    switch (stepIndex) {
+      case 0:
+        // Book type step - always valid since we have default selection
+        return true;
+      case 1:
+        // Book cover step
+        bool hasImage =
+            _imageFile != null ||
+            (_networkImageUrl != null && _networkImageUrl!.isNotEmpty);
+        bool hasEbookFile =
+            _selectedBookType != 'ebook' ||
+            _ebookFile != null ||
+            (widget.listing?.ebookUrl != null &&
+                widget.listing!.ebookUrl!.isNotEmpty);
+        return hasImage && hasEbookFile;
+      case 2:
+        // Book details step
+        return _titleController.text.trim().isNotEmpty &&
+            _authorController.text.trim().isNotEmpty &&
+            _isbnController.text.trim().isNotEmpty &&
+            _selectedLanguage != null &&
+            _selectedLanguage!.isNotEmpty &&
+            _selectedFormat != null &&
+            _selectedFormat!.isNotEmpty &&
+            (_pageCountController.text.trim().isEmpty ||
+                (int.tryParse(_pageCountController.text.trim()) != null &&
+                    int.parse(_pageCountController.text.trim()) > 0));
+      case 3:
+        // Pricing & category step
+        bool hasValidPrice =
+            _priceController.text.trim().isNotEmpty &&
+            double.tryParse(_priceController.text.trim()) != null &&
+            double.parse(_priceController.text.trim()) > 0;
+        bool hasValidCategories =
+            _categoriesController.text.trim().isNotEmpty &&
+            _categoriesController.text
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .isNotEmpty;
+        return hasValidPrice && hasValidCategories;
+      default:
+        return false;
+    }
+  }
+
+  // Get all validation errors for a specific step
+  List<String> _getValidationErrors(int stepIndex) {
+    List<String> errors = [];
+
+    switch (stepIndex) {
+      case 1:
+        // Book cover step
+        if (_imageFile == null &&
+            (_networkImageUrl == null || _networkImageUrl!.isEmpty)) {
+          errors.add('Please add a book cover image');
+        }
+        if (_selectedBookType == 'ebook' &&
+            _ebookFile == null &&
+            (widget.listing?.ebookUrl == null ||
+                widget.listing!.ebookUrl!.isNotEmpty)) {
+          errors.add('Please select an eBook file for eBook listings');
+        }
+        break;
+      case 2:
+        // Book details step
+        if (_titleController.text.trim().isEmpty) {
+          errors.add('Book title is required');
+        }
+        if (_authorController.text.trim().isEmpty) {
+          errors.add('Author name is required');
+        }
+        if (_isbnController.text.trim().isEmpty) {
+          errors.add('ISBN number is required');
+        }
+        if (_selectedLanguage == null || _selectedLanguage!.isEmpty) {
+          errors.add('Language selection is required');
+        }
+        if (_selectedFormat == null || _selectedFormat!.isEmpty) {
+          errors.add('Format selection is required');
+        }
+        if (_pageCountController.text.trim().isNotEmpty) {
+          final pageCount = int.tryParse(_pageCountController.text.trim());
+          if (pageCount == null || pageCount <= 0) {
+            errors.add('Page count must be a valid number greater than 0');
+          }
+        }
+        break;
+      case 3:
+        // Pricing & Category step
+        if (_priceController.text.trim().isEmpty) {
+          errors.add('Price is required');
+        } else {
+          final price = double.tryParse(_priceController.text.trim());
+          if (price == null || price <= 0) {
+            errors.add('Price must be a valid number greater than 0');
+          }
+        }
+
+        if (_categoriesController.text.trim().isEmpty) {
+          errors.add('At least one category is required');
+        } else {
+          final categories =
+              _categoriesController.text
+                  .split(',')
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList();
+          if (categories.isEmpty) {
+            errors.add('Please enter at least one valid category');
+          }
+        }
+        break;
+    }
+
+    return errors;
   }
 
   @override
@@ -555,6 +683,8 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                   children: List<Widget>.generate(_totalSteps, (index) {
                     bool isActive = index == _currentStep;
                     bool isPast = index < _currentStep;
+                    bool isValid = _isStepValid(index);
+
                     return Expanded(
                       child: Row(
                         children: [
@@ -563,7 +693,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                               child: Container(
                                 height: 2,
                                 color:
-                                    isPast || isActive
+                                    isPast && isValid
                                         ? theme.colorScheme.primary
                                         : Colors.grey.shade300,
                               ),
@@ -576,16 +706,14 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                               color:
                                   isActive
                                       ? theme.colorScheme.primary
-                                      : isPast
-                                      ? theme.colorScheme.primary.withOpacity(
-                                        0.2,
-                                      )
+                                      : isPast && isValid
+                                      ? theme.colorScheme.primary
                                       : Colors.grey.shade200,
                               border: Border.all(
                                 color:
                                     isActive
                                         ? theme.colorScheme.primary
-                                        : isPast
+                                        : isPast && isValid
                                         ? theme.colorScheme.primary
                                         : Colors.grey.shade300,
                                 width: 2,
@@ -593,11 +721,11 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                             ),
                             child: Center(
                               child:
-                                  isPast
+                                  isPast && isValid
                                       ? Icon(
                                         Icons.check,
                                         size: 16,
-                                        color: theme.colorScheme.primary,
+                                        color: Colors.white,
                                       )
                                       : Text(
                                         '${index + 1}',
@@ -616,7 +744,7 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                               child: Container(
                                 height: 2,
                                 color:
-                                    isPast
+                                    isPast && isValid
                                         ? theme.colorScheme.primary
                                         : Colors.grey.shade300,
                               ),

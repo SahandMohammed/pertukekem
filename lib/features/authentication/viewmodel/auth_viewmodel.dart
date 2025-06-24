@@ -398,7 +398,7 @@ class AuthViewModel extends ChangeNotifier {
 
         // Get the updated user after phone update
         _firebaseUser = _auth.currentUser;
-        
+
         // Update user document in Firestore with new phone number
         await _firestore.collection('users').doc(_firebaseUser!.uid).update({
           'phoneNumber': _firebaseUser!.phoneNumber ?? '',
@@ -409,7 +409,9 @@ class AuthViewModel extends ChangeNotifier {
         // Fetch updated user data
         await _fetchUserData();
 
-        debugPrint('Phone number updated successfully: ${_firebaseUser!.phoneNumber}');
+        debugPrint(
+          'Phone number updated successfully: ${_firebaseUser!.phoneNumber}',
+        );
       } else {
         throw FirebaseAuthException(
           code: 'user-not-found',

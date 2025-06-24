@@ -392,20 +392,6 @@ class _LibraryTabState extends State<LibraryTab> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () {
-                // Navigate back to store
-                Navigator.of(context).pop();
-              },
-              icon: const Icon(Icons.store),
-              label: const Text('Browse E-Books'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-            ),
           ],
         ),
       ),

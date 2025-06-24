@@ -728,16 +728,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                               const SizedBox(height: 20),
                               _buildPhoneNumberField(colorScheme),
-                              if (_phoneController.text.trim() != _originalPhoneNumber && !_isOtpSent)
+                              if (_phoneController.text.trim() !=
+                                      _originalPhoneNumber &&
+                                  !_isOtpSent)
                                 const SizedBox(height: 12),
-                              if (_phoneController.text.trim() != _originalPhoneNumber && !_isOtpSent)
+                              if (_phoneController.text.trim() !=
+                                      _originalPhoneNumber &&
+                                  !_isOtpSent)
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: colorScheme.primary.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: colorScheme.primary.withOpacity(0.3),
+                                      color: colorScheme.primary.withOpacity(
+                                        0.3,
+                                      ),
                                     ),
                                   ),
                                   child: Row(
@@ -751,7 +757,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       Expanded(
                                         child: Text(
                                           'Phone number changed. Click the send button to verify via OTP.',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall?.copyWith(
                                             color: colorScheme.primary,
                                             height: 1.3,
                                           ),
@@ -760,9 +768,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     ],
                                   ),
                                 ),
-                              if (_phoneController.text.trim() == _originalPhoneNumber && widget.userProfile.isPhoneVerified)
+                              if (_phoneController.text.trim() ==
+                                      _originalPhoneNumber &&
+                                  widget.userProfile.isPhoneVerified)
                                 const SizedBox(height: 12),
-                              if (_phoneController.text.trim() == _originalPhoneNumber && widget.userProfile.isPhoneVerified)
+                              if (_phoneController.text.trim() ==
+                                      _originalPhoneNumber &&
+                                  widget.userProfile.isPhoneVerified)
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
@@ -783,7 +795,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       Expanded(
                                         child: Text(
                                           'Phone number is verified',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall?.copyWith(
                                             color: Colors.green.shade700,
                                             height: 1.3,
                                           ),
@@ -1186,6 +1200,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
     );
   }
+
   Future<void> _initiatePhoneVerification() async {
     final newPhoneNumber = _phoneController.text.trim();
     if (newPhoneNumber == _originalPhoneNumber) {
@@ -1206,7 +1221,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     final authViewModel = context.read<AuthViewModel>();
-    
+
     setState(() {
       _isPhoneVerificationInProgress = true;
     });
@@ -1227,17 +1242,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _isPhoneVerificationInProgress = false;
             _isOtpSent = false;
           });
-          
+
           // Handle specific errors for phone verification
           String errorMessage = error;
           if (error.contains('invalid-phone-number')) {
-            errorMessage = 'Invalid phone number format. Please include country code.';
+            errorMessage =
+                'Invalid phone number format. Please include country code.';
           } else if (error.contains('too-many-requests')) {
             errorMessage = 'Too many SMS requests. Please try again later.';
           } else if (error.contains('quota-exceeded')) {
             errorMessage = 'SMS quota exceeded. Please try again tomorrow.';
           }
-          
+
           _showErrorSnackBar(errorMessage);
         },
       );
@@ -1288,7 +1304,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _isPhoneVerificationInProgress = false;
       });
-      
+
       // Handle specific Firebase Auth errors
       String errorMessage = 'Failed to verify OTP';
       if (e.toString().contains('invalid-verification-code')) {
@@ -1300,7 +1316,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       } else {
         errorMessage = 'Failed to verify OTP: ${e.toString()}';
       }
-      
+
       _showErrorSnackBar(errorMessage);
     }
   }
@@ -1502,10 +1518,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(width: 4),
                     TextButton(
-                      onPressed: _isPhoneVerificationInProgress ? null : _initiatePhoneVerification,
+                      onPressed:
+                          _isPhoneVerificationInProgress
+                              ? null
+                              : _initiatePhoneVerification,
                       style: TextButton.styleFrom(
                         foregroundColor: colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text('Resend'),
                     ),
@@ -1528,9 +1550,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             decoration: BoxDecoration(
               color: colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: colorScheme.primary.withOpacity(0.3),
-              ),
+              border: Border.all(color: colorScheme.primary.withOpacity(0.3)),
             ),
             child: Row(
               children: [
