@@ -20,7 +20,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _storeNameController = TextEditingController();
   Country _selectedCountry = Country(
     phoneCode: "964",
     countryCode: "IQ",
@@ -70,7 +69,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
-    _storeNameController.dispose();
     super.dispose();
   }
 
@@ -86,10 +84,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           phoneNumber:
               "+${_selectedCountry.phoneCode}${_phoneController.text.trim()}",
           selectedRole: widget.initialRole,
-          storeName:
-              widget.initialRole == 'store'
-                  ? _storeNameController.text.trim()
-                  : null,
         );
       } catch (e) {
         if (mounted) {
@@ -159,34 +153,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                       const SizedBox(height: 48),
-                      if (widget.initialRole == 'store') ...[
-                        TextFormField(
-                          controller: _storeNameController,
-                          decoration: InputDecoration(
-                            hintText: 'Store Name',
-                            prefixIcon: const Icon(
-                              Icons.store_outlined,
-                              color: Color(0xFF666666),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF5F5F5),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF666666),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your store name';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                      ],
                       TextFormField(
                         controller: _firstNameController,
                         decoration: InputDecoration(
