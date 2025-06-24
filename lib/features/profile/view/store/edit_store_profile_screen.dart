@@ -22,10 +22,6 @@ class EditStoreProfileScreen extends StatefulWidget {
 class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Personal Information Controllers
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _phoneController = TextEditingController();
   // Store Information Controllers
   final _storeNameController = TextEditingController();
   final _storeDescriptionController = TextEditingController();
@@ -66,11 +62,7 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   }
 
   void _initializeControllers() {
-    // Initialize personal information
-    _firstNameController.text = widget.userProfile.firstName;
-    _lastNameController.text = widget.userProfile.lastName;
-    _phoneController.text =
-        widget.userProfile.phoneNumber; // Initialize store information
+    // Initialize store information
     _storeNameController.text = widget.storeProfile?.storeName ?? '';
     _storeDescriptionController.text = widget.storeProfile?.description ?? '';
     _selectedCategories = List.from(widget.storeProfile?.categories ?? []);
@@ -113,12 +105,7 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
           (key, value) => MapEntry(key, Map<String, dynamic>.from(value)),
         ),
       );
-    }
-
-    // Add listeners to detect changes
-    _firstNameController.addListener(_onFieldChanged);
-    _lastNameController.addListener(_onFieldChanged);
-    _phoneController.addListener(_onFieldChanged);
+    } // Add listeners to detect changes
     _storeNameController.addListener(_onFieldChanged);
     _storeDescriptionController.addListener(_onFieldChanged);
     _streetController.addListener(_onFieldChanged);
@@ -137,9 +124,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
 
   void _onFieldChanged() {
     final hasChanges =
-        _firstNameController.text.trim() != widget.userProfile.firstName ||
-        _lastNameController.text.trim() != widget.userProfile.lastName ||
-        _phoneController.text.trim() != widget.userProfile.phoneNumber ||
         _storeNameController.text.trim() !=
             (widget.storeProfile?.storeName ?? '') ||
         _storeDescriptionController.text.trim() !=
@@ -203,9 +187,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _phoneController.dispose();
     _storeNameController.dispose();
     _storeDescriptionController.dispose();
     _streetController.dispose();
@@ -234,19 +215,7 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       return;
     }
     try {
-      // Update user profile first
-      final userSuccess = await profileViewModel.updateUserProfile(
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-      );
-
-      if (!userSuccess) {
-        _showErrorSnackBar(
-          profileViewModel.error ?? 'Failed to update user profile',
-        );
-        return;
-      } // Update store profile
+      // Update store profile
       final storeAddress = {
         'street': _streetController.text.trim(),
         'city': _cityController.text.trim(),
@@ -297,12 +266,8 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
 
       if (!mounted) return;
       if (storeSuccess) {
-        // Optimistic UI updates - update local data immediately for instant feedback
-        // Apply optimistic updates to local models
+        // Optimistic UI updates - update local data immediately for instant feedback        // Apply optimistic updates to local models
         authViewModel.updateLocalUserData(
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          phoneNumber: _phoneController.text.trim(),
           storeName: _storeNameController.text.trim(),
         );
 
@@ -1015,74 +980,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                           ),
                           const SizedBox(height: 48),
 
-                          // Personal Information Section
-                          _buildSectionCard(
-                            context,
-                            title: 'Personal Information',
-                            subtitle: 'Your basic profile details',
-                            icon: Icons.person_outline_rounded,
-                            children: [
-                              const SizedBox(height: 24),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildModernTextField(
-                                      controller: _firstNameController,
-                                      label: 'First Name',
-                                      hint: 'Enter your first name',
-                                      icon: Icons.person_outline,
-                                      colorScheme: colorScheme,
-                                      textCapitalization:
-                                          TextCapitalization.words,
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
-                                          return 'First name is required';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: _buildModernTextField(
-                                      controller: _lastNameController,
-                                      label: 'Last Name',
-                                      hint: 'Enter your last name',
-                                      icon: Icons.person_outline,
-                                      colorScheme: colorScheme,
-                                      textCapitalization:
-                                          TextCapitalization.words,
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
-                                          return 'Last name is required';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              _buildModernTextField(
-                                controller: _phoneController,
-                                label: 'Phone Number',
-                                hint: 'Enter your phone number',
-                                icon: Icons.phone_outlined,
-                                colorScheme: colorScheme,
-                                keyboardType: TextInputType.phone,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Phone number is required';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-
                           // Store Information Section
                           _buildSectionCard(
                             context,
@@ -1305,30 +1202,22 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                                 keyboardType: TextInputType.url,
                               ),
                               const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildModernTextField(
-                                      controller: _contactPhoneController,
-                                      label: 'Contact Phone',
-                                      hint: 'Store contact number',
-                                      icon: Icons.phone_outlined,
-                                      colorScheme: colorScheme,
-                                      keyboardType: TextInputType.phone,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: _buildModernTextField(
-                                      controller: _contactEmailController,
-                                      label: 'Contact Email',
-                                      hint: 'Store contact email',
-                                      icon: Icons.email_outlined,
-                                      colorScheme: colorScheme,
-                                      keyboardType: TextInputType.emailAddress,
-                                    ),
-                                  ),
-                                ],
+                              _buildModernTextField(
+                                controller: _contactPhoneController,
+                                label: 'Contact Phone',
+                                hint: 'Store contact number',
+                                icon: Icons.phone_outlined,
+                                colorScheme: colorScheme,
+                                keyboardType: TextInputType.phone,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildModernTextField(
+                                controller: _contactEmailController,
+                                label: 'Contact Email',
+                                hint: 'Store contact email',
+                                icon: Icons.email_outlined,
+                                colorScheme: colorScheme,
+                                keyboardType: TextInputType.emailAddress,
                               ),
                             ],
                           ),

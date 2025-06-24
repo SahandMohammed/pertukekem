@@ -262,18 +262,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
                 _MenuOption(
-                  icon: Icons.store_outlined,
-                  title: 'Store Settings',
-                  subtitle: 'Manage your store configuration',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Store Settings (Coming Soon)'),
-                      ),
-                    );
-                  },
-                ),
-                _MenuOption(
                   icon: Icons.security_outlined,
                   title: 'Security',
                   subtitle: 'Password and security settings',
