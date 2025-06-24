@@ -679,80 +679,82 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                   horizontal: 24,
                   vertical: 8,
                 ),
-                child: Row(
-                  children: List<Widget>.generate(_totalSteps, (index) {
-                    bool isActive = index == _currentStep;
-                    bool isPast = index < _currentStep;
-                    bool isValid = _isStepValid(index);
+                child: Stack(
+                  children: [
+                    // Progress line background
+                    Positioned(
+                      top: 15, // Half the height of the circle (32/2 - 1)
+                      left: 16, // Start from first circle center
+                      right: 16, // End at last circle center
+                      child: Container(height: 2, color: Colors.grey.shade300),
+                    ),
+                    // Active progress line
+                    if (_currentStep > 0)
+                      Positioned(
+                        top: 15,
+                        left: 16,
+                        width:
+                            (MediaQuery.of(context).size.width - 80) *
+                            (_currentStep /
+                                (_totalSteps -
+                                    1)), // 80 = 24*2 padding + 16*2 for circle centers
+                        child: Container(
+                          height: 2,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    // Step nodes
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List<Widget>.generate(_totalSteps, (index) {
+                        bool isActive = index == _currentStep;
+                        bool isPast = index < _currentStep;
+                        bool isValid = _isStepValid(index);
 
-                    return Expanded(
-                      child: Row(
-                        children: [
-                          if (index > 0)
-                            Expanded(
-                              child: Container(
-                                height: 2,
-                                color:
-                                    isPast && isValid
-                                        ? theme.colorScheme.primary
-                                        : Colors.grey.shade300,
-                              ),
-                            ),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                        return Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                isActive
+                                    ? theme.colorScheme.primary
+                                    : isPast && isValid
+                                    ? theme.colorScheme.primary
+                                    : Colors.grey.shade200,
+                            border: Border.all(
                               color:
                                   isActive
                                       ? theme.colorScheme.primary
                                       : isPast && isValid
                                       ? theme.colorScheme.primary
-                                      : Colors.grey.shade200,
-                              border: Border.all(
-                                color:
-                                    isActive
-                                        ? theme.colorScheme.primary
-                                        : isPast && isValid
-                                        ? theme.colorScheme.primary
-                                        : Colors.grey.shade300,
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child:
-                                  isPast && isValid
-                                      ? Icon(
-                                        Icons.check,
-                                        size: 16,
-                                        color: Colors.white,
-                                      )
-                                      : Text(
-                                        '${index + 1}',
-                                        style: TextStyle(
-                                          color:
-                                              isActive
-                                                  ? Colors.white
-                                                  : Colors.grey.shade600,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      : Colors.grey.shade300,
+                              width: 2,
                             ),
                           ),
-                          if (index < _totalSteps - 1)
-                            Expanded(
-                              child: Container(
-                                height: 2,
-                                color:
-                                    isPast && isValid
-                                        ? theme.colorScheme.primary
-                                        : Colors.grey.shade300,
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  }),
+                          child: Center(
+                            child:
+                                isPast && isValid
+                                    ? Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
+                                    : Text(
+                                      '${index + 1}',
+                                      style: TextStyle(
+                                        color:
+                                            isActive
+                                                ? Colors.white
+                                                : Colors.grey.shade600,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 ),
               ),
 
