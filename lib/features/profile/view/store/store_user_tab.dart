@@ -4,7 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pertukekem/features/authentication/viewmodel/auth_viewmodel.dart';
 import '../../../payments/view/store_transactions_screen.dart';
 import '../../viewmodel/store_profile_viewmodel.dart';
+import '../../viewmodel/user_profile_viewmodel.dart';
 import 'edit_store_profile_screen.dart';
+import '../customer/edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -17,16 +19,22 @@ class ProfileScreen extends StatelessWidget {
 
     if (user == null) {
       return const Center(child: CircularProgressIndicator());
-    }
-
-    return ChangeNotifierProvider(
-      create: (context) {
-        final profileViewModel = ProfileViewModel();
-        profileViewModel.setAuthViewModel(authViewModel);
-        // Fetch store profile picture when view model is created
-        profileViewModel.fetchStoreProfilePicture();
-        return profileViewModel;
-      },
+    }    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) {
+            final profileViewModel = ProfileViewModel();
+            profileViewModel.setAuthViewModel(authViewModel);
+            // Fetch store profile picture and store data when view model is created
+            profileViewModel.fetchStoreProfilePicture();
+            profileViewModel.fetchStoreData();
+            return profileViewModel;
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (context) => UserProfileViewModel(),
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Profile'),
@@ -96,47 +104,53 @@ class ProfileScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 12),
-              _buildMenuCard(context, [                _MenuOption(
-                  icon: Icons.person_outline,
-                  title: 'Edit Profile',
-                  subtitle: 'Update your personal information',
+              const SizedBox(height: 12),              _buildMenuCard(context, [
+                _MenuOption(
+                  icon: Icons.store_outlined,
+                  title: 'Edit Store Profile',
+                  subtitle: 'Update store information and settings',
                   onTap: () async {
                     // Show loading indicator
                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (context) => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
+                      builder:
+                          (context) =>
+                              const Center(child: CircularProgressIndicator()),
                     );
 
                     try {
                       // Fetch store data from the ProfileViewModel
-                      final profileViewModel = Provider.of<ProfileViewModel>(context, listen: false);
+                      final profileViewModel = Provider.of<ProfileViewModel>(
+                        context,
+                        listen: false,
+                      );
                       final storeData = await profileViewModel.fetchStoreData();
-                      
+
                       if (context.mounted) {
                         Navigator.of(context).pop(); // Remove loading dialog
-                        
                         final result = await Navigator.of(context).push<bool>(
                           MaterialPageRoute(
-                            builder: (context) => EditStoreProfileScreen(
-                              userProfile: user,
-                              storeProfile: storeData,
-                            ),
+                            builder:
+                                (context) => ChangeNotifierProvider.value(
+                                  value: profileViewModel,
+                                  child: EditStoreProfileScreen(
+                                    userProfile: user,
+                                    storeProfile: storeData,
+                                  ),
+                                ),
                           ),
-                        );
-
-                        // Refresh profile data if edit was successful
+                        ); // Refresh profile data if edit was successful
                         if (result == true && context.mounted) {
+                          // The ProfileViewModel is shared, so it should already be updated
+                          // Just show a success message
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Row(
                                 children: [
                                   Icon(Icons.check_circle, color: Colors.white),
                                   SizedBox(width: 12),
-                                  Text('Profile updated successfully'),
+                                  Text('Store profile updated successfully'),
                                 ],
                               ),
                               backgroundColor: colorScheme.primary,
@@ -153,7 +167,74 @@ class ProfileScreen extends StatelessWidget {
                         Navigator.of(context).pop(); // Remove loading dialog
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Error loading store data: ${e.toString()}'),
+                            content: Text(
+                              'Error loading store data: ${e.toString()}',
+                            ),
+                            backgroundColor: colorScheme.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+                _MenuOption(
+                  icon: Icons.person_outline,
+                  title: 'Edit Personal Profile',
+                  subtitle: 'Update your personal information',
+                  onTap: () async {
+                    try {
+                      final userProfileViewModel = Provider.of<UserProfileViewModel>(
+                        context,
+                        listen: false,
+                      );
+                      
+                      final result = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (context) => MultiProvider(
+                            providers: [
+                              ChangeNotifierProvider.value(
+                                value: userProfileViewModel,
+                              ),
+                              ChangeNotifierProvider.value(
+                                value: Provider.of<AuthViewModel>(context, listen: false),
+                              ),
+                            ],
+                            child: EditProfileScreen(userProfile: user),
+                          ),
+                        ),
+                      );
+
+                      if (result == true && context.mounted) {
+                        // Refresh the AuthViewModel to get updated user data
+                        final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+                        await authViewModel.refreshUserData();
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.white),
+                                SizedBox(width: 12),
+                                Text('Personal profile updated successfully'),
+                              ],
+                            ),
+                            backgroundColor: colorScheme.primary,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${e.toString()}'),
                             backgroundColor: colorScheme.error,
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
@@ -437,55 +518,80 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                const SizedBox(width: 16),                Expanded(
+                  child: Consumer2<ProfileViewModel, AuthViewModel>(
+                    builder: (context, profileViewModel, authViewModel, child) {
+                      // Use the latest user data from AuthViewModel
+                      final currentUser = authViewModel.user ?? user;
+                      // Use store data if available, otherwise fall back to user data
+                      final storeName =
+                          profileViewModel.storeData?.storeName ??
+                          currentUser.storeName;
+                      final storeDescription =
+                          profileViewModel.storeData?.description;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              '${user.firstName} ${user.lastName}',
-                              style: textTheme.titleLarge?.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${currentUser.firstName} ${currentUser.lastName}',
+                                  style: textTheme.titleLarge?.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (storeName != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              storeName,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w500,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                          ],
+                          if (storeDescription != null &&
+                              storeDescription.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              storeDescription,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                                fontStyle: FontStyle.italic,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          const SizedBox(height: 4),
+                          Text(
+                            currentUser.email,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            currentUser.phoneNumber,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
                           ),
                         ],
-                      ),
-                      if (user.storeName != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          user.storeName!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        user.email,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        user.phoneNumber,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
                 Consumer<ProfileViewModel>(
@@ -530,43 +636,47 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            // Additional Info Row
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 16,
-                  color: colorScheme.onSurface.withOpacity(0.6),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  user.createdAt != null
-                      ? 'Store since ${_formatDate(user.createdAt!)}'
-                      : 'New store',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'STORE',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSecondaryContainer,
-                      fontWeight: FontWeight.w600,
+            const SizedBox(height: 16),            // Additional Info Row
+            Consumer<AuthViewModel>(
+              builder: (context, authViewModel, child) {
+                final currentUser = authViewModel.user ?? user;
+                return Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 16,
+                      color: colorScheme.onSurface.withOpacity(0.6),
                     ),
-                  ),
-                ),
-              ],
+                    const SizedBox(width: 8),
+                    Text(
+                      currentUser.createdAt != null
+                          ? 'Store since ${_formatDate(currentUser.createdAt!)}'
+                          : 'New store',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'STORE',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),

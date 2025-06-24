@@ -380,22 +380,19 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
 
       if (!await imageFile.exists()) {
         throw Exception('Selected image file not found');
-      }
-
-      // Create unique filename
+      } // Create unique filename
       final String fileName =
-          'profile_pictures/${currentUser.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          'stores/${currentUser.uid}/profilePicture.jpg'; // Changed to stores folder structure
 
       // Create reference to Firebase Storage
-      final Reference ref = _storage.ref().child(fileName);
-
-      // Set metadata
+      final Reference ref = _storage.ref().child(fileName); // Set metadata
       final SettableMetadata metadata = SettableMetadata(
         contentType: 'image/jpeg',
         customMetadata: {
           'uploadedBy': currentUser.uid,
           'uploadedAt': DateTime.now().toIso8601String(),
-          'type': 'profile_picture',
+          'type':
+              'store_logo', // Changed from 'profile_picture' to 'store_logo'
         },
       ); // Upload file with progress tracking
       final UploadTask uploadTask = ref.putFile(imageFile, metadata);
@@ -441,9 +438,9 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         throw Exception('Failed to upload image');
       } // Update store document in Firestore
       await _firestore.collection('stores').doc(userId).update({
-        'profilePicture': downloadUrl,
+        'logoUrl': downloadUrl, // Changed from 'profilePicture' to 'logoUrl'
         'updatedAt': FieldValue.serverTimestamp(),
-      });      // Update local state
+      }); // Update local state
       _storeProfilePicture = downloadUrl;
       notifyListeners(); // Notify UI immediately after state change
 
@@ -480,12 +477,12 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       );
 
       // Get current profile picture URL before deleting
-      final currentProfilePicture = _storeProfilePicture;
-
-      // Remove from stores collection in Firestore
+      final currentProfilePicture =
+          _storeProfilePicture; // Remove from stores collection in Firestore
       debugPrint('🗑️ [ViewModel] Updating Firestore...');
       await _firestore.collection('stores').doc(userId).update({
-        'profilePicture': FieldValue.delete(),
+        'logoUrl':
+            FieldValue.delete(), // Changed from 'profilePicture' to 'logoUrl'
         'updatedAt': FieldValue.serverTimestamp(),
       });
       debugPrint('🗑️ [ViewModel] Firestore update completed');
@@ -505,7 +502,7 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
             '🗑️ [ViewModel] Error deleting file from Storage: $storageError',
           );
         }
-      }      // Update local state
+      } // Update local state
       debugPrint('🗑️ [ViewModel] Updating local state...');
       _storeProfilePicture = null;
       notifyListeners(); // Notify UI immediately after state change
@@ -536,10 +533,13 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       if (userId == null) {
         debugPrint('User not authenticated');
         return;
-      }      final doc = await _firestore.collection('stores').doc(userId).get();
+      }
+
+      final doc = await _firestore.collection('stores').doc(userId).get();
       if (doc.exists) {
         final data = doc.data();
-        _storeProfilePicture = data?['profilePicture'];
+        _storeProfilePicture =
+            data?['logoUrl']; // Changed from 'profilePicture' to 'logoUrl'
         notifyListeners();
         debugPrint('Store profile picture fetched: $_storeProfilePicture');
       }
@@ -585,6 +585,9 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     required String description,
     required Map<String, dynamic> storeAddress,
     List<String>? categories,
+    Map<String, dynamic>? businessHours,
+    Map<String, dynamic>? socialMedia,
+    List<Map<String, String>>? contactInfo,
   }) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -596,14 +599,28 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       _setUpdatingStore(true);
       _setError(null);
 
-      // Update store document
-      await _firestore.collection('stores').doc(userId).update({
+      // Prepare update data
+      final updateData = <String, dynamic>{
         'storeName': storeName,
         'description': description,
         'storeAddress': storeAddress,
         'categories': categories ?? [],
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+
+      // Add optional fields if provided
+      if (businessHours != null) {
+        updateData['businessHours'] = businessHours;
+      }
+
+      if (socialMedia != null && socialMedia.isNotEmpty) {
+        updateData['socialMedia'] = socialMedia;
+      }
+
+      if (contactInfo != null) {
+        updateData['contactInfo'] = contactInfo;
+      } // Update store document
+      await _firestore.collection('stores').doc(userId).update(updateData);
 
       // Update user document with store name
       await _firestore.collection('users').doc(userId).update({
@@ -669,13 +686,14 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       _setUpdatingStore(false);
     }
   }
+
   @override
   Future<void> clearState() async {
     debugPrint('🧹 Clearing ProfileViewModel state...');
 
     // Clear auth reference
-    _authViewModel = null; 
-    
+    _authViewModel = null;
+
     // Clear all state
     _addresses.clear();
     _error = null;

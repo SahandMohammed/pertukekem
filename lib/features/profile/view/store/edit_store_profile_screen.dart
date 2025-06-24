@@ -41,13 +41,23 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   final _instagramController = TextEditingController();
   final _twitterController = TextEditingController();
   final _websiteController = TextEditingController();
-
   // Contact Info Controllers
   final _contactPhoneController = TextEditingController();
   final _contactEmailController = TextEditingController();
 
   bool _hasChanges = false;
   List<String> _selectedCategories = [];
+
+  // Business Hours State
+  Map<String, Map<String, dynamic>> _businessHours = {
+    'monday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
+    'tuesday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
+    'wednesday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
+    'thursday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
+    'friday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
+    'saturday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
+    'sunday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
+  };
 
   @override
   void initState() {
@@ -94,6 +104,15 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
           _contactEmailController.text = contact['value'] ?? '';
         }
       }
+    }
+
+    // Initialize business hours if available
+    if (widget.storeProfile?.businessHours != null) {
+      _businessHours = Map<String, Map<String, dynamic>>.from(
+        widget.storeProfile!.businessHours!.map(
+          (key, value) => MapEntry(key, Map<String, dynamic>.from(value)),
+        ),
+      );
     }
 
     // Add listeners to detect changes
@@ -146,13 +165,40 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
         _websiteController.text.trim() !=
             (widget.storeProfile?.socialMedia?['website'] ?? '') ||
         _contactPhoneController.text.trim() != _getContactValue('phone') ||
-        _contactEmailController.text.trim() != _getContactValue('email');
+        _contactEmailController.text.trim() != _getContactValue('email') ||
+        _hasBusinessHoursChanged();
 
     if (hasChanges != _hasChanges) {
       setState(() {
         _hasChanges = hasChanges;
       });
     }
+  }
+
+  bool _hasBusinessHoursChanged() {
+    if (widget.storeProfile?.businessHours == null) {
+      // If store has no business hours but we have some set, that's a change
+      return _businessHours.isNotEmpty;
+    }
+
+    // Compare business hours maps
+    final originalHours = widget.storeProfile!.businessHours!;
+    if (_businessHours.length != originalHours.length) return true;
+
+    for (final day in _businessHours.keys) {
+      final currentDay = _businessHours[day];
+      final originalDay = originalHours[day] as Map<String, dynamic>?;
+
+      if (originalDay == null || currentDay == null) return true;
+
+      if (currentDay['isOpen'] != originalDay['isOpen'] ||
+          currentDay['openTime'] != originalDay['openTime'] ||
+          currentDay['closeTime'] != originalDay['closeTime']) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   @override
@@ -240,12 +286,14 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       if (_websiteController.text.trim().isNotEmpty) {
         socialMedia['website'] = _websiteController.text.trim();
       }
-
       final storeSuccess = await profileViewModel.updateStoreProfile(
         storeName: _storeNameController.text.trim(),
         description: _storeDescriptionController.text.trim(),
         storeAddress: storeAddress,
         categories: _selectedCategories,
+        businessHours: _businessHours,
+        socialMedia: socialMedia.isNotEmpty ? socialMedia : null,
+        contactInfo: contactInfo,
       );
 
       if (!mounted) return;
@@ -577,6 +625,206 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
     );
 
     return shouldPop ?? false;
+  }
+
+  Widget _buildBusinessHoursEditor(ColorScheme colorScheme) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      children:
+          _businessHours.keys.map((day) {
+            final dayData = _businessHours[day]!;
+            final isOpen = dayData['isOpen'] as bool;
+            final openTime = dayData['openTime'] as String;
+            final closeTime = dayData['closeTime'] as String;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            _formatDayName(day),
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            isOpen ? '$openTime - $closeTime' : 'Closed',
+                            style: textTheme.bodySmall?.copyWith(
+                              color:
+                                  isOpen
+                                      ? colorScheme.onSurface
+                                      : colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: isOpen,
+                          onChanged: (value) {
+                            setState(() {
+                              _businessHours[day] = {
+                                'isOpen': value,
+                                'openTime': openTime,
+                                'closeTime': closeTime,
+                              };
+                            });
+                            _onFieldChanged();
+                          },
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isOpen)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildTimeButton(
+                              context,
+                              'Open',
+                              openTime,
+                              () => _selectTime(day, 'openTime'),
+                              colorScheme,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'to',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildTimeButton(
+                              context,
+                              'Close',
+                              closeTime,
+                              () => _selectTime(day, 'closeTime'),
+                              colorScheme,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+    );
+  }
+
+  Widget _buildTimeButton(
+    BuildContext context,
+    String label,
+    String time,
+    VoidCallback onTap,
+    ColorScheme colorScheme,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: colorScheme.outline.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(8),
+          color: colorScheme.surface,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              time,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDayName(String day) {
+    switch (day.toLowerCase()) {
+      case 'monday':
+        return 'Monday';
+      case 'tuesday':
+        return 'Tuesday';
+      case 'wednesday':
+        return 'Wednesday';
+      case 'thursday':
+        return 'Thursday';
+      case 'friday':
+        return 'Friday';
+      case 'saturday':
+        return 'Saturday';
+      case 'sunday':
+        return 'Sunday';
+      default:
+        return day.substring(0, 1).toUpperCase() +
+            day.substring(1).toLowerCase();
+    }
+  }
+
+  Future<void> _selectTime(String day, String timeType) async {
+    final currentTime = _businessHours[day]![timeType] as String;
+    final timeParts = currentTime.split(':');
+    final currentTimeOfDay = TimeOfDay(
+      hour: int.parse(timeParts[0]),
+      minute: int.parse(timeParts[1]),
+    );
+
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: currentTimeOfDay,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (selectedTime != null) {
+      final timeString =
+          '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
+      setState(() {
+        _businessHours[day]![timeType] = timeString;
+      });
+      _onFieldChanged();
+    }
   }
 
   @override
@@ -960,6 +1208,19 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                                 colorScheme: colorScheme,
                                 textCapitalization: TextCapitalization.words,
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Business Hours Section
+                          _buildSectionCard(
+                            context,
+                            title: 'Business Hours',
+                            subtitle: 'Set your store operating hours',
+                            icon: Icons.access_time_outlined,
+                            children: [
+                              const SizedBox(height: 24),
+                              _buildBusinessHoursEditor(colorScheme),
                             ],
                           ),
                           const SizedBox(height: 24),
