@@ -381,5 +381,49 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  /// Update phone number for existing user (for profile changes)
+  Future<void> updatePhoneNumber(String verificationId, String smsCode) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+
+      if (_firebaseUser != null) {
+        // Update the phone number using updatePhoneNumber instead of linking
+        await _firebaseUser!.updatePhoneNumber(credential);
+
+        // Get the updated user after phone update
+        _firebaseUser = _auth.currentUser;
+        
+        // Update user document in Firestore with new phone number
+        await _firestore.collection('users').doc(_firebaseUser!.uid).update({
+          'phoneNumber': _firebaseUser!.phoneNumber ?? '',
+          'isPhoneVerified': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Fetch updated user data
+        await _fetchUserData();
+
+        debugPrint('Phone number updated successfully: ${_firebaseUser!.phoneNumber}');
+      } else {
+        throw FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'No authenticated user found.',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error updating phone number: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // End of class
 }
