@@ -457,7 +457,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Search for books, authors, or stores...',
+                'Search for books, authors, categories, or stores...',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
               ),
             ),

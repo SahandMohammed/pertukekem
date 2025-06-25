@@ -15,6 +15,26 @@ class SearchTab extends StatefulWidget {
 
 class _SearchTabState extends State<SearchTab> {
   Timer? _debounceTimer;
+  String? _selectedCategory;
+
+  // Popular book categories for quick access
+  final List<String> _popularCategories = [
+    'Fiction',
+    'Non-Fiction',
+    'Science',
+    'Biography',
+    'History',
+    'Romance',
+    'Mystery',
+    'Fantasy',
+    'Self-Help',
+    'Business',
+    'Technology',
+    'Health',
+    'Children',
+    'Education',
+    'Art',
+  ];
 
   @override
   void dispose() {
@@ -38,7 +58,7 @@ class _SearchTabState extends State<SearchTab> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: SearchBar(
                   controller: widget.searchController,
-                  hintText: 'Search books, authors, ISBN...',
+                  hintText: 'Search books, authors, categories, ISBN...',
                   leading: const Icon(Icons.search),
                   backgroundColor: WidgetStateProperty.all(
                     Theme.of(context).colorScheme.surface,
@@ -52,6 +72,9 @@ class _SearchTabState extends State<SearchTab> {
                   onChanged: (query) {
                     if (query.isEmpty) {
                       viewModel.clearSearch();
+                      setState(() {
+                        _selectedCategory = null;
+                      });
                     } else {
                       // Cancel previous timer if it exists
                       _debounceTimer?.cancel();
@@ -60,6 +83,12 @@ class _SearchTabState extends State<SearchTab> {
                         const Duration(milliseconds: 300),
                         () {
                           viewModel.searchListings(query);
+                          // Clear category selection when searching by text
+                          if (_selectedCategory != null) {
+                            setState(() {
+                              _selectedCategory = null;
+                            });
+                          }
                         },
                       );
                     }
@@ -68,41 +97,163 @@ class _SearchTabState extends State<SearchTab> {
               ),
             ),
           ),
-          body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child:
-                viewModel.isSearching
-                    ? const Center(child: CircularProgressIndicator())
-                    : viewModel.searchResults.isEmpty &&
-                        viewModel.searchQuery.isNotEmpty
-                    ? _buildEmptyState(
-                      'No books found for "${viewModel.searchQuery}"',
-                      Icons.search_off,
-                    )
-                    : viewModel.searchResults.isEmpty
-                    ? _buildEmptyState(
-                      'Enter a search term to find books',
-                      Icons.search,
-                    )
-                    : GridView.builder(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount:
-                            MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.65,
-                      ),
-                      itemCount: viewModel.searchResults.length,
-                      itemBuilder: (context, index) {
-                        final listing = viewModel.searchResults[index];
-                        return ListingCard(listing: listing);
-                      },
-                    ),
+          body: Column(
+            children: [
+              // Category Filter Section
+              if (widget.searchController.text.isEmpty) _buildCategoryFilter(),
+
+              // Search Results
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child:
+                      viewModel.isSearching
+                          ? const Center(child: CircularProgressIndicator())
+                          : viewModel.searchResults.isEmpty &&
+                              viewModel.searchQuery.isNotEmpty
+                          ? _buildEmptyState(
+                            'No books found for "${viewModel.searchQuery}"',
+                            Icons.search_off,
+                          )
+                          : viewModel.searchResults.isEmpty &&
+                              _selectedCategory != null
+                          ? _buildEmptyState(
+                            'No books found in "$_selectedCategory" category',
+                            Icons.category_outlined,
+                          )
+                          : viewModel.searchResults.isEmpty
+                          ? _buildEmptyState(
+                            'Enter a search term or select a category to find books',
+                            Icons.search,
+                          )
+                          : GridView.builder(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount:
+                                      MediaQuery.of(context).size.width > 600
+                                          ? 3
+                                          : 2,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 0.65,
+                                ),
+                            itemCount: viewModel.searchResults.length,
+                            itemBuilder: (context, index) {
+                              final listing = viewModel.searchResults[index];
+                              return ListingCard(listing: listing);
+                            },
+                          ),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
+  }
+
+  Widget _buildCategoryFilter() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.category_outlined,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Browse by Category',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _popularCategories.length,
+              itemBuilder: (context, index) {
+                final category = _popularCategories[index];
+                final isSelected = _selectedCategory == category;
+                return Padding(
+                  padding: EdgeInsets.only(right: 8, left: index == 0 ? 0 : 0),
+                  child: FilterChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      _onCategorySelected(selected ? category : null);
+                    },
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    selectedColor:
+                        Theme.of(context).colorScheme.primaryContainer,
+                    labelStyle: TextStyle(
+                      color:
+                          isSelected
+                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                              : Theme.of(context).colorScheme.onSurface,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    side: BorderSide(
+                      color:
+                          isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(
+                                context,
+                              ).colorScheme.outline.withOpacity(0.5),
+                    ),
+                    showCheckmark: false,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onCategorySelected(String? category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+
+    if (category != null) {
+      // Clear the search controller text when selecting a category
+      widget.searchController.clear();
+
+      // Search by category
+      final viewModel = Provider.of<CustomerHomeViewModel>(
+        context,
+        listen: false,
+      );
+      viewModel.searchListings(category);
+    } else {
+      // Clear search when no category is selected
+      final viewModel = Provider.of<CustomerHomeViewModel>(
+        context,
+        listen: false,
+      );
+      viewModel.clearSearch();
+    }
   }
 
   Widget _buildEmptyState(String message, IconData icon) {
@@ -136,8 +287,10 @@ class _SearchTabState extends State<SearchTab> {
             const SizedBox(height: 8),
             Text(
               icon == Icons.search_off
-                  ? 'Try adjusting your search terms or browse our featured books.'
-                  : 'Discover thousands of books from verified sellers.',
+                  ? 'Try adjusting your search terms, browse by category, or explore our featured books.'
+                  : icon == Icons.category_outlined
+                  ? 'Try selecting a different category or search by book title instead.'
+                  : 'Discover thousands of books from verified sellers by searching or browsing categories.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
