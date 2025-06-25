@@ -79,7 +79,11 @@ class CustomerHomeService {
   }
 
   /// Search listings by title, author, or category using case-insensitive local filtering
-  Future<List<Listing>> searchListings(String query, {int limit = 20}) async {
+  Future<List<Listing>> searchListings(
+    String query, {
+    int limit = 20,
+    String? condition,
+  }) async {
     try {
       if (query.isEmpty) return [];
 
@@ -117,15 +121,23 @@ class CustomerHomeService {
                 .map((cat) => cat.toString().toLowerCase())
                 .toList();
 
+        // Get condition field
+        final bookCondition =
+            (data['condition'] as String? ?? '').toLowerCase();
+
         // Check if query matches any searchable field (case-insensitive)
-        final bool matches =
+        final bool queryMatches =
             title.contains(lowerQuery) ||
             author.contains(lowerQuery) ||
             isbn.contains(lowerQuery) ||
             description.contains(lowerQuery) ||
             categories.any((cat) => cat.contains(lowerQuery));
 
-        if (matches) {
+        // Check condition filter if specified
+        final bool conditionMatches =
+            condition == null || bookCondition == condition.toLowerCase();
+
+        if (queryMatches && conditionMatches) {
           final listing = Listing.fromFirestore(
             doc as DocumentSnapshot<Map<String, dynamic>>,
             null,

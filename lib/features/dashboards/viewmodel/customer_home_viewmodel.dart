@@ -110,7 +110,7 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   }
 
   /// Search for listings
-  Future<void> searchListings(String query) async {
+  Future<void> searchListings(String query, {String? condition}) async {
     _searchQuery = query.trim();
 
     if (_searchQuery.isEmpty) {
@@ -124,7 +124,10 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
 
     try {
-      _searchResults = await _homeService.searchListings(_searchQuery);
+      _searchResults = await _homeService.searchListings(
+        _searchQuery,
+        condition: condition,
+      );
     } catch (e) {
       _errorMessage = 'Search failed: $e';
       debugPrint(_errorMessage);

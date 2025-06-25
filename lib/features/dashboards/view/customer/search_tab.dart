@@ -16,6 +16,7 @@ class SearchTab extends StatefulWidget {
 class _SearchTabState extends State<SearchTab> {
   Timer? _debounceTimer;
   String? _selectedCategory;
+  String? _selectedCondition; // 'new', 'used', or null for all
 
   // Popular book categories for quick access
   final List<String> _popularCategories = [
@@ -74,6 +75,8 @@ class _SearchTabState extends State<SearchTab> {
                       viewModel.clearSearch();
                       setState(() {
                         _selectedCategory = null;
+                        // Don't reset condition filter when clearing search
+                        // This allows users to maintain condition filter while browsing categories
                       });
                     } else {
                       // Cancel previous timer if it exists
@@ -82,7 +85,10 @@ class _SearchTabState extends State<SearchTab> {
                       _debounceTimer = Timer(
                         const Duration(milliseconds: 300),
                         () {
-                          viewModel.searchListings(query);
+                          viewModel.searchListings(
+                            query,
+                            condition: _selectedCondition,
+                          );
                           // Clear category selection when searching by text
                           if (_selectedCategory != null) {
                             setState(() {
@@ -93,165 +99,335 @@ class _SearchTabState extends State<SearchTab> {
                       );
                     }
                   },
+                  trailing: [
+                    IconButton(
+                      icon: Stack(
+                        children: [
+                          const Icon(Icons.tune),
+                          if (_selectedCategory != null ||
+                              _selectedCondition != null)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.error,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      onPressed: _showFilterBottomSheet,
+                      tooltip: 'Filters',
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          body: Column(
-            children: [
-              // Category Filter Section
-              if (widget.searchController.text.isEmpty) _buildCategoryFilter(),
-
-              // Search Results
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child:
-                      viewModel.isSearching
-                          ? const Center(child: CircularProgressIndicator())
-                          : viewModel.searchResults.isEmpty &&
-                              viewModel.searchQuery.isNotEmpty
-                          ? _buildEmptyState(
-                            'No books found for "${viewModel.searchQuery}"',
-                            Icons.search_off,
-                          )
-                          : viewModel.searchResults.isEmpty &&
-                              _selectedCategory != null
-                          ? _buildEmptyState(
-                            'No books found in "$_selectedCategory" category',
-                            Icons.category_outlined,
-                          )
-                          : viewModel.searchResults.isEmpty
-                          ? _buildEmptyState(
-                            'Enter a search term or select a category to find books',
-                            Icons.search,
-                          )
-                          : GridView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount:
-                                      MediaQuery.of(context).size.width > 600
-                                          ? 3
-                                          : 2,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: 0.65,
-                                ),
-                            itemCount: viewModel.searchResults.length,
-                            itemBuilder: (context, index) {
-                              final listing = viewModel.searchResults[index];
-                              return ListingCard(listing: listing);
-                            },
-                          ),
-                ),
-              ),
-            ],
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child:
+                viewModel.isSearching
+                    ? const Center(child: CircularProgressIndicator())
+                    : viewModel.searchResults.isEmpty &&
+                        viewModel.searchQuery.isNotEmpty
+                    ? _buildEmptyState(
+                      'No books found for "${viewModel.searchQuery}"',
+                      Icons.search_off,
+                    )
+                    : viewModel.searchResults.isEmpty &&
+                        _selectedCategory != null
+                    ? _buildEmptyState(
+                      'No books found in "$_selectedCategory" category',
+                      Icons.category_outlined,
+                    )
+                    : viewModel.searchResults.isEmpty
+                    ? _buildEmptyState(
+                      _selectedCondition != null
+                          ? 'Enter a search term or select a category to find ${_selectedCondition} books'
+                          : 'Enter a search term or select a category to find books',
+                      Icons.search,
+                    )
+                    : GridView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount:
+                            MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.65,
+                      ),
+                      itemCount: viewModel.searchResults.length,
+                      itemBuilder: (context, index) {
+                        final listing = viewModel.searchResults[index];
+                        return ListingCard(listing: listing);
+                      },
+                    ),
           ),
         );
       },
     );
   }
 
-  Widget _buildCategoryFilter() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.category_outlined,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Browse by Category',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _popularCategories.length,
-              itemBuilder: (context, index) {
-                final category = _popularCategories[index];
-                final isSelected = _selectedCategory == category;
-                return Padding(
-                  padding: EdgeInsets.only(right: 8, left: index == 0 ? 0 : 0),
-                  child: FilterChip(
-                    label: Text(category),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      _onCategorySelected(selected ? category : null);
-                    },
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    selectedColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    labelStyle: TextStyle(
-                      color:
-                          isSelected
-                              ? Theme.of(context).colorScheme.onPrimaryContainer
-                              : Theme.of(context).colorScheme.onSurface,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                    side: BorderSide(
-                      color:
-                          isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(
-                                context,
-                              ).colorScheme.outline.withOpacity(0.5),
-                    ),
-                    showCheckmark: false,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setModalState) => Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Handle bar
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Title and Clear button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Filter Books',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setModalState(() {
+                                _selectedCategory = null;
+                                _selectedCondition = null;
+                              });
+                              setState(() {
+                                _selectedCategory = null;
+                                _selectedCondition = null;
+                              });
+                              _applyFilters();
+                            },
+                            child: const Text('Clear All'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Category Section
+                      _buildBottomSheetCategorySection(setModalState),
+                      const SizedBox(height: 24),
+
+                      // Condition Section
+                      _buildBottomSheetConditionSection(setModalState),
+                      const SizedBox(height: 24),
+
+                      // Apply button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _applyFilters();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Apply Filters'),
+                        ),
+                      ),
+
+                      // Safe area padding
+                      SizedBox(height: MediaQuery.of(context).padding.bottom),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
           ),
-        ],
-      ),
     );
   }
 
-  void _onCategorySelected(String? category) {
-    setState(() {
-      _selectedCategory = category;
-    });
+  Widget _buildBottomSheetCategorySection(StateSetter setModalState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.category_outlined,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Category',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 40,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _popularCategories.length,
+            itemBuilder: (context, index) {
+              final category = _popularCategories[index];
+              final isSelected = _selectedCategory == category;
+              return Padding(
+                padding: EdgeInsets.only(right: 8, left: index == 0 ? 0 : 0),
+                child: FilterChip(
+                  label: Text(category),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setModalState(() {
+                      _selectedCategory = selected ? category : null;
+                    });
+                    setState(() {
+                      _selectedCategory = selected ? category : null;
+                    });
+                  },
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                  labelStyle: TextStyle(
+                    color:
+                        isSelected
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onSurface,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                  side: BorderSide(
+                    color:
+                        isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.5),
+                  ),
+                  showCheckmark: false,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
-    if (category != null) {
-      // Clear the search controller text when selecting a category
+  Widget _buildBottomSheetConditionSection(StateSetter setModalState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.filter_list_outlined,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Condition',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildBottomSheetConditionChip('All', null, setModalState),
+            const SizedBox(width: 8),
+            _buildBottomSheetConditionChip('New', 'new', setModalState),
+            const SizedBox(width: 8),
+            _buildBottomSheetConditionChip('Used', 'used', setModalState),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomSheetConditionChip(
+    String label,
+    String? condition,
+    StateSetter setModalState,
+  ) {
+    final isSelected = _selectedCondition == condition;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setModalState(() {
+          _selectedCondition = condition;
+        });
+        setState(() {
+          _selectedCondition = condition;
+        });
+      },
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      selectedColor: Theme.of(context).colorScheme.secondaryContainer,
+      labelStyle: TextStyle(
+        color:
+            isSelected
+                ? Theme.of(context).colorScheme.onSecondaryContainer
+                : Theme.of(context).colorScheme.onSurface,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color:
+            isSelected
+                ? Theme.of(context).colorScheme.secondary
+                : Theme.of(context).colorScheme.outline.withOpacity(0.5),
+      ),
+      showCheckmark: false,
+    );
+  }
+
+  void _applyFilters() {
+    final viewModel = Provider.of<CustomerHomeViewModel>(
+      context,
+      listen: false,
+    );
+
+    if (_selectedCategory != null) {
+      // Clear search text and search by category
       widget.searchController.clear();
-
-      // Search by category
-      final viewModel = Provider.of<CustomerHomeViewModel>(
-        context,
-        listen: false,
+      viewModel.searchListings(
+        _selectedCategory!,
+        condition: _selectedCondition,
       );
-      viewModel.searchListings(category);
+    } else if (viewModel.searchQuery.isNotEmpty) {
+      // Re-run current search with new condition
+      viewModel.searchListings(
+        viewModel.searchQuery,
+        condition: _selectedCondition,
+      );
     } else {
-      // Clear search when no category is selected
-      final viewModel = Provider.of<CustomerHomeViewModel>(
-        context,
-        listen: false,
-      );
+      // Clear search if no filters are active
       viewModel.clearSearch();
     }
   }
