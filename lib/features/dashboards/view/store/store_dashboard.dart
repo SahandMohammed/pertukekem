@@ -25,8 +25,6 @@ class _StoreDashboardState extends State<StoreDashboard> {
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
-    final user = authViewModel.user;
-    final storeName = user?.storeName ?? 'Store';
 
     return ChangeNotifierProvider<ProfileViewModel>(
       create: (_) {
@@ -36,114 +34,124 @@ class _StoreDashboardState extends State<StoreDashboard> {
         vm.fetchStoreData();
         return vm;
       },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            // Home Tab
-            Scaffold(
-              appBar: AppBar(
-                title: Text('Welcome, $storeName'),
-                centerTitle: false,
-                actions: [
-                  // Debug: FCM Test Button (remove in production)
-                  IconButton(
-                    icon: const Icon(Icons.bug_report),
-                    tooltip: 'FCM Debug',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/notification-test');
-                    },
-                  ),
-                  StreamBuilder<int>(
-                    stream: _notificationService.getStoreUnreadCountStream(),
-                    builder: (context, snapshot) {
-                      print(
-                        '🔔 Dashboard notification badge rebuild - State: ${snapshot.connectionState}, Data: ${snapshot.data}, Error: ${snapshot.error}',
-                      );
+      child: Builder(
+        builder: (context) {
+          final profileViewModel = Provider.of<ProfileViewModel>(context);
+          final storeName = profileViewModel.storeData?.storeName ?? 'Store';
+          return Scaffold(
+            body: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                // Home Tab
+                Scaffold(
+                  appBar: AppBar(
+                    title: Text('Welcome, $storeName'),
+                    centerTitle: false,
+                    actions: [
+                      // Debug: FCM Test Button (remove in production)
+                      IconButton(
+                        icon: const Icon(Icons.bug_report),
+                        tooltip: 'FCM Debug',
+                        onPressed: () {
+                          Navigator.of(context).pushNamed('/notification-test');
+                        },
+                      ),
+                      StreamBuilder<int>(
+                        stream:
+                            _notificationService.getStoreUnreadCountStream(),
+                        builder: (context, snapshot) {
+                          print(
+                            '🔔 Dashboard notification badge rebuild - State: ${snapshot.connectionState}, Data: ${snapshot.data}, Error: ${snapshot.error}',
+                          );
 
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return IconButton(
-                          icon: const Icon(Icons.notifications_outlined),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => const NotificationsScreen(),
-                              ),
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return IconButton(
+                              icon: const Icon(Icons.notifications_outlined),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) =>
+                                            const NotificationsScreen(),
+                                  ),
+                                );
+                              },
                             );
-                          },
-                        );
-                      }
+                          }
 
-                      if (snapshot.hasError) {
-                        print(
-                          '❌ Dashboard notification error: ${snapshot.error}',
-                        );
-                      }
-
-                      final unreadCount = snapshot.data ?? 0;
-                      print(
-                        '📊 Dashboard showing badge with count: $unreadCount',
-                      );
-
-                      return Badge(
-                        isLabelVisible: unreadCount > 0,
-                        label: Text(unreadCount.toString()),
-                        child: IconButton(
-                          icon: const Icon(Icons.notifications_outlined),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => const NotificationsScreen(),
-                              ),
+                          if (snapshot.hasError) {
+                            print(
+                              '❌ Dashboard notification error: ${snapshot.error}',
                             );
-                          },
-                        ),
-                      );
-                    },
+                          }
+
+                          final unreadCount = snapshot.data ?? 0;
+                          print(
+                            '📊 Dashboard showing badge with count: $unreadCount',
+                          );
+
+                          return Badge(
+                            isLabelVisible: unreadCount > 0,
+                            label: Text(unreadCount.toString()),
+                            child: IconButton(
+                              icon: const Icon(Icons.notifications_outlined),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) =>
+                                            const NotificationsScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              body: const DashboardHomeScreen(),
+                  body: const DashboardHomeScreen(),
+                ),
+                // Listings Tab
+                const ManageListingsScreen(),
+                // Orders Tab
+                const ManageOrdersScreen(), // Profile Tab
+                const ProfileScreen(),
+              ],
             ),
-            // Listings Tab
-            const ManageListingsScreen(),
-            // Orders Tab
-            const ManageOrdersScreen(), // Profile Tab
-            const ProfileScreen(),
-          ],
-        ),
-        bottomNavigationBar: NavigationBar(
-          onDestinationSelected: (int index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          selectedIndex: _selectedIndex,
-          destinations: const <NavigationDestination>[
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home',
+            bottomNavigationBar: NavigationBar(
+              onDestinationSelected: (int index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              selectedIndex: _selectedIndex,
+              destinations: const <NavigationDestination>[
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.inventory_2_outlined),
+                  selectedIcon: Icon(Icons.inventory_2),
+                  label: 'Listings',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.shopping_cart_outlined),
+                  selectedIcon: Icon(Icons.shopping_cart),
+                  label: 'Orders',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  selectedIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
             ),
-            NavigationDestination(
-              icon: Icon(Icons.inventory_2_outlined),
-              selectedIcon: Icon(Icons.inventory_2),
-              label: 'Listings',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.shopping_cart_outlined),
-              selectedIcon: Icon(Icons.shopping_cart),
-              label: 'Orders',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
