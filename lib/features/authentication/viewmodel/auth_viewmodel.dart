@@ -197,6 +197,37 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  /// Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // First check if user exists in our Firestore database
+      final userQuery = await _firestore
+          .collection('users')
+          .where('emailLowercase', isEqualTo: email.toLowerCase())
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'No account found with this email address',
+        );
+      }
+
+      await _auth.sendPasswordResetEmail(email: email);
+      debugPrint('Password reset email sent to: $email');
+    } catch (e) {
+      debugPrint('Error sending password reset email: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> signOut() async {
     try {
       _isLoading = true;
