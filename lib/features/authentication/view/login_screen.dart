@@ -101,6 +101,13 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
+                // Book icon to indicate this is a bookstore app
+                const Icon(
+                  Icons.menu_book_rounded,
+                  size: 64,
+                  color: Color(0xFF2C3333),
+                ),
+                const SizedBox(height: 24),
                 const Text(
                   'Welcome Back',
                   style: TextStyle(
@@ -111,8 +118,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Sign in to continue',
+                  'Sign in to your bookstore account',
                   style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Discover your next great read',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
                 ),
                 const SizedBox(height: 48),
                 TextFormField(
@@ -305,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     foregroundColor: const Color(0xFF666666),
                   ),
                   child: const Text(
-                    'Don\'t have an account? Sign Up',
+                    'New to our bookstore? Sign Up',
                     style: TextStyle(fontSize: 14),
                   ),
                 ),
