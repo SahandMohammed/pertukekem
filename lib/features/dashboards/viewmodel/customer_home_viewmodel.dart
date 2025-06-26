@@ -56,6 +56,8 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
 
   /// Load recently listed items from stores only (excludes user listings)
   Future<void> loadRecentlyListedItems() async {
+    if (!hasListeners) return; // Skip if disposed
+
     _isLoadingRecentItems = true;
     _errorMessage = null;
     notifyListeners();
@@ -69,12 +71,14 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
       debugPrint(_errorMessage);
     } finally {
       _isLoadingRecentItems = false;
-      notifyListeners();
+      if (hasListeners) notifyListeners();
     }
   }
 
   /// Load recently joined stores
   Future<void> loadRecentlyJoinedStores() async {
+    if (!hasListeners) return; // Skip if disposed
+
     _isLoadingRecentStores = true;
     _errorMessage = null;
     notifyListeners();
@@ -88,12 +92,14 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
       debugPrint(_errorMessage);
     } finally {
       _isLoadingRecentStores = false;
-      notifyListeners();
+      if (hasListeners) notifyListeners();
     }
   }
 
   /// Load all stores
   Future<void> loadAllStores() async {
+    if (!hasListeners) return; // Skip if disposed
+
     _isLoadingAllStores = true;
     _errorMessage = null;
     notifyListeners();
@@ -105,7 +111,7 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
       debugPrint(_errorMessage);
     } finally {
       _isLoadingAllStores = false;
-      notifyListeners();
+      if (hasListeners) notifyListeners();
     }
   }
 
@@ -115,9 +121,11 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
 
     if (_searchQuery.isEmpty) {
       _searchResults = [];
-      notifyListeners();
+      if (hasListeners) notifyListeners();
       return;
     }
+
+    if (!hasListeners) return; // Skip if disposed
 
     _isSearching = true;
     _errorMessage = null;
@@ -133,7 +141,7 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
       debugPrint(_errorMessage);
     } finally {
       _isSearching = false;
-      notifyListeners();
+      if (hasListeners) notifyListeners();
     }
   }
 
@@ -141,11 +149,13 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   void clearSearch() {
     _searchQuery = '';
     _searchResults = [];
-    notifyListeners();
+    if (hasListeners) notifyListeners();
   }
 
   /// Load currently reading books
   Future<void> loadCurrentlyReadingBooks() async {
+    if (!hasListeners) return; // Skip if disposed
+
     _isLoadingCurrentlyReading = true;
     _errorMessage = null;
     notifyListeners();
@@ -159,7 +169,7 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
       debugPrint(_errorMessage);
     } finally {
       _isLoadingCurrentlyReading = false;
-      notifyListeners();
+      if (hasListeners) notifyListeners();
     }
   }
 
@@ -175,7 +185,7 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   /// Clear error message
   void clearError() {
     _errorMessage = null;
-    notifyListeners();
+    if (hasListeners) notifyListeners();
   }
 
   @override
@@ -200,8 +210,10 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     _errorMessage = null;
     _searchQuery = '';
 
-    // Notify listeners
-    notifyListeners();
+    // Only notify listeners if we haven't been disposed
+    if (hasListeners) {
+      notifyListeners();
+    }
 
     debugPrint('✅ CustomerHomeViewModel state cleared');
   }

@@ -53,10 +53,12 @@ class _ProfileTabState extends State<ProfileTab> {
     final user = authViewModel.user;
 
     if (user?.userId == null) {
-      setState(() {
-        _isLoading = false;
-        _error = 'User not authenticated';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'User not authenticated';
+        });
+      }
       return;
     }
 
@@ -71,18 +73,22 @@ class _ProfileTabState extends State<ProfileTab> {
         user.userId,
       );
 
-      setState(() {
-        _userProfile = userProfile;
-        _savedBooksCount = savedBooksCount;
-        _purchaseCount = purchaseCount;
-        _isLoading = false;
-        _error = null;
-      });
+      if (mounted) {
+        setState(() {
+          _userProfile = userProfile;
+          _savedBooksCount = savedBooksCount;
+          _purchaseCount = purchaseCount;
+          _isLoading = false;
+          _error = null;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

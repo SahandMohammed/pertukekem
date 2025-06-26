@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../../../core/interfaces/state_clearable.dart';
 import '../../../core/services/fcm_service.dart';
 import '../model/user_model.dart';
 
@@ -208,34 +207,26 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  /// Sign in with email & password and refresh user data
   Future<void> login(String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      _isLoading = true;
-      notifyListeners();
-
       // Sign in user
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      _firebaseUser = userCredential.user;
 
-      // Fetch user data to check verification status
+      // Refresh local user model to include roles, storeId, etc.
+      await refreshUserData();
+
+      // Update last login timestamp
       if (_firebaseUser != null) {
-        final doc =
-            await _firestore.collection('users').doc(_firebaseUser!.uid).get();
-        if (doc.exists) {
-          final userData = UserModel.fromMap(doc.data()!);
-          if (!userData.isPhoneVerified) {
-            throw FirebaseAuthException(
-              code: 'requires-verification',
-              message:
-                  'Phone verification required. Please complete your phone verification.',
-            );
-          }
-
-          // If verified, update last login timestamp
-          await _firestore.collection('users').doc(_firebaseUser!.uid).update({
-            'lastLoginAt': FieldValue.serverTimestamp(),
-          });
-          debugPrint('User logged in: $_firebaseUser');
-        }
+        await _firestore.collection('users').doc(_firebaseUser!.uid).update({
+          'lastLoginAt': FieldValue.serverTimestamp(),
+        });
       }
     } catch (e) {
       debugPrint('Error during login: $e');

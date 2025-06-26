@@ -51,13 +51,10 @@ class StorePreviewCard extends StatelessWidget {
                 child: Row(
                   children: [
                     // Logo avatar
-                    Hero(
-                      tag: 'store_logo_preview',
-                      child: CircleAvatar(
-                        radius: 24,
-                        backgroundColor: colorScheme.surface,
-                        child: _buildLogoContent(colorScheme),
-                      ),
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: colorScheme.surface,
+                      child: _buildLogoContent(colorScheme),
                     ),
 
                     const SizedBox(width: 12),

@@ -114,6 +114,7 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "user_cards_new_fab",
         onPressed: _navigateToAddCard,
         backgroundColor: Theme.of(context).primaryColor,
         child: const Icon(Icons.add, color: Colors.white),

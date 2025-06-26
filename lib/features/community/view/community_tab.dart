@@ -825,6 +825,7 @@ class _CommunityTabState extends State<CommunityTab> {
     }
 
     return FloatingActionButton.extended(
+      heroTag: "community_add_listing_fab",
       onPressed: () {
         Navigator.push(
           context,

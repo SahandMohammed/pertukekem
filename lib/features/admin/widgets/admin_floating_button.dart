@@ -17,6 +17,7 @@ class AdminFloatingButton extends StatelessWidget {
         }
 
         return FloatingActionButton.extended(
+          heroTag: "admin_panel_fab",
           onPressed: () {
             Navigator.pushNamed(context, '/admin');
           },

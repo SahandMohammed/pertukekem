@@ -60,6 +60,7 @@ class _ManageListingsScreenState extends State<ManageListingsScreen>
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: "manage_listings_fab",
         onPressed: () => _navigateToAddListing(viewModel),
         icon: const Icon(Icons.add),
         label: const Text('New Listing'),
