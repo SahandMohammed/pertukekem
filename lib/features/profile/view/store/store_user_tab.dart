@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pertukekem/features/authentication/viewmodel/auth_viewmodel.dart';
+import 'package:pertukekem/features/authentication/view/change_password_screen.dart';
 import '../../../payments/view/store_transactions_screen.dart';
 import '../../viewmodel/store_profile_viewmodel.dart';
 import '../../viewmodel/user_profile_viewmodel.dart';
@@ -266,8 +267,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: 'Security',
                   subtitle: 'Password and security settings',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Security (Coming Soon)')),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ChangePasswordScreen(),
+                      ),
                     );
                   },
                 ),

@@ -35,8 +35,10 @@ class _LoginScreenState extends State<LoginScreen> {
         return 'No account found with this email';
       case 'wrong-password':
         return 'Incorrect password';
-      case 'requires-verification':
-        return 'Phone verification required. Please sign up again.';
+      case 'requires-phone-verification':
+        return 'Phone verification required';
+      case 'requires-email-verification':
+        return 'Email verification required';
       case 'too-many-requests':
         return 'Too many attempts. Please try again later';
       case 'invalid-email':
@@ -60,11 +62,21 @@ class _LoginScreenState extends State<LoginScreen> {
       } catch (e) {
         if (mounted) {
           String errorMessage = 'An error occurred';
+          String? errorCode;
 
           if (e.toString().contains('[firebase_auth/')) {
             // Extract error code from Firebase error message
-            final code = e.toString().split('[firebase_auth/')[1].split(']')[0];
-            errorMessage = _getFirebaseAuthErrorMessage(code);
+            errorCode = e.toString().split('[firebase_auth/')[1].split(']')[0];
+            errorMessage = _getFirebaseAuthErrorMessage(errorCode);
+          }
+
+          // Handle verification errors by navigating to appropriate screens
+          if (errorCode == 'requires-email-verification') {
+            Navigator.of(context).pushNamed('/verify-email');
+            return;
+          } else if (errorCode == 'requires-phone-verification') {
+            Navigator.of(context).pushNamed('/');
+            return; // Auth wrapper will handle phone verification
           }
 
           ScaffoldMessenger.of(context).showSnackBar(

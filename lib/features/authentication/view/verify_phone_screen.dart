@@ -45,23 +45,31 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
 
         if (mounted) {
           if (widget.isLogin) {
-            // For login, navigate to main app
+            // For login, navigate to main app (auth wrapper will handle verification checks)
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
           } else {
-            // For signup, check if the user is a store owner and needs to complete setup
-            if (viewModel.user != null &&
-                viewModel.user!.roles.contains('store')) {
-              // Navigate to store setup
+            // For signup, check if email verification is needed
+            if (viewModel.user != null && !viewModel.user!.isEmailVerified) {
+              // Navigate to email verification screen
               Navigator.of(
                 context,
-              ).pushNamedAndRemoveUntil('/store-setup', (route) => false);
+              ).pushNamedAndRemoveUntil('/verify-email', (route) => false);
             } else {
-              // Default case - navigate to main app
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/', (route) => false);
+              // Check if the user is a store owner and needs to complete setup
+              if (viewModel.user != null &&
+                  viewModel.user!.roles.contains('store')) {
+                // Navigate to store setup
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/store-setup', (route) => false);
+              } else {
+                // Default case - navigate to main app
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/', (route) => false);
+              }
             }
           }
         }

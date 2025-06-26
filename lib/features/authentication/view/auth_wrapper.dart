@@ -7,6 +7,8 @@ import '../../dashboards/view/store/store_dashboard.dart';
 import '../../profile/view/store/store_setup_screen.dart';
 import 'login_screen.dart';
 import 'blocked_user_screen.dart';
+import 'verify_email_screen.dart';
+import 'phone_verification_flow_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -24,10 +26,16 @@ class AuthWrapper extends StatelessWidget {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
-        } // If user exists but phone isn't verified, clean up and show login
+        }
+
+        // Check email verification status
+        if (!authViewModel.user!.isEmailVerified) {
+          return const VerifyEmailScreen();
+        }
+
+        // Check phone verification status
         if (!authViewModel.isPhoneVerified) {
-          // Note: cleanup is handled in AuthViewModel.handleUnverifiedUser
-          return const LoginScreen();
+          return const PhoneVerificationFlowScreen();
         }
 
         // Check if user is blocked

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pertukekem/features/cart/view/cart_screen.dart';
 import 'package:pertukekem/features/admin/view/admin_dashboard_screen.dart';
 import '../../features/authentication/view/verify_phone_screen.dart';
+import '../../features/authentication/view/verify_email_screen.dart';
 import '../../features/authentication/view/auth_wrapper.dart';
 import '../../features/profile/view/store/store_setup_screen.dart';
 
@@ -15,6 +16,8 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => VerifyPhoneScreen(verificationId: verificationId),
         );
+      case '/verify-email':
+        return MaterialPageRoute(builder: (_) => const VerifyEmailScreen());
       case '/store-setup':
         return MaterialPageRoute(builder: (_) => const StoreSetupScreen());
       case '/cart':

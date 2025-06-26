@@ -13,6 +13,7 @@ import '../../viewmodel/store_profile_viewmodel.dart';
 import '../../services/user_profile_service.dart';
 import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
 import '../../../notifications/view/customer_notification_list_screen.dart';
+import 'package:pertukekem/features/authentication/view/change_password_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -330,6 +331,18 @@ class _ProfileTabState extends State<ProfileTab> {
                                       child:
                                           const CustomerNotificationListScreen(),
                                     ),
+                              ),
+                            );
+                          },
+                        ),
+                        _MenuOption(
+                          icon: Icons.lock_outline,
+                          title: 'Change Password',
+                          subtitle: 'Update your account password',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const ChangePasswordScreen(),
                               ),
                             );
                           },

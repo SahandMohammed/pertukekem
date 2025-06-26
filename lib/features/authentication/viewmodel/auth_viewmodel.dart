@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../../../core/interfaces/state_clearable.dart';
 import '../../../core/services/fcm_service.dart';
 import '../model/user_model.dart';
 
@@ -13,7 +12,6 @@ class AuthViewModel extends ChangeNotifier {
   User? _firebaseUser;
   UserModel? _user;
   bool _isLoading = false;
-  String? _verificationId;
   int? _resendToken;
 
   // List of state clearable functions that need cleanup
@@ -23,6 +21,7 @@ class AuthViewModel extends ChangeNotifier {
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   bool get isPhoneVerified => _user?.isPhoneVerified ?? false;
+  bool get isEmailVerified => _user?.isEmailVerified ?? false;
 
   AuthViewModel() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
@@ -222,15 +221,26 @@ class AuthViewModel extends ChangeNotifier {
             await _firestore.collection('users').doc(_firebaseUser!.uid).get();
         if (doc.exists) {
           final userData = UserModel.fromMap(doc.data()!);
+
+          // Check email verification first
+          if (!userData.isEmailVerified) {
+            throw FirebaseAuthException(
+              code: 'requires-email-verification',
+              message:
+                  'Email verification required. Please verify your email address.',
+            );
+          }
+
+          // Then check phone verification
           if (!userData.isPhoneVerified) {
             throw FirebaseAuthException(
-              code: 'requires-verification',
+              code: 'requires-phone-verification',
               message:
                   'Phone verification required. Please complete your phone verification.',
             );
           }
 
-          // If verified, update last login timestamp
+          // If both verified, update last login timestamp
           await _firestore.collection('users').doc(_firebaseUser!.uid).update({
             'lastLoginAt': FieldValue.serverTimestamp(),
           });
@@ -252,22 +262,60 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // First check if user exists in our Firestore database
-      final userQuery =
-          await _firestore
-              .collection('users')
-              .where('emailLowercase', isEqualTo: email.toLowerCase())
-              .limit(1)
-              .get();
+      final emailLower = email.toLowerCase().trim();
 
-      if (userQuery.docs.isEmpty) {
-        throw FirebaseAuthException(
-          code: 'user-not-found',
-          message: 'No account found with this email address',
+      // DEBUG: Skip Firestore check temporarily to test Firebase Auth directly
+      bool skipFirestoreCheck = true; // Set to true for debugging
+
+      if (!skipFirestoreCheck) {
+        // First check if user exists in our Firestore database using emailLowercase
+        QuerySnapshot userQuery =
+            await _firestore
+                .collection('users')
+                .where('emailLowercase', isEqualTo: emailLower)
+                .limit(1)
+                .get();
+
+        // If not found by emailLowercase, try by email field (for backward compatibility)
+        if (userQuery.docs.isEmpty) {
+          userQuery =
+              await _firestore
+                  .collection('users')
+                  .where('email', isEqualTo: email.trim())
+                  .limit(1)
+                  .get();
+        }
+
+        // If still not found, try case-insensitive search on email field
+        if (userQuery.docs.isEmpty) {
+          userQuery =
+              await _firestore
+                  .collection('users')
+                  .where('email', isEqualTo: emailLower)
+                  .limit(1)
+                  .get();
+        }
+
+        debugPrint('Searching for user with email: $email');
+        debugPrint('Email lowercase: $emailLower');
+        debugPrint('Found ${userQuery.docs.length} users');
+
+        if (userQuery.docs.isEmpty) {
+          debugPrint('No user found in Firestore for email: $email');
+          throw FirebaseAuthException(
+            code: 'user-not-found',
+            message: 'No account found with this email address',
+          );
+        }
+
+        debugPrint('User found in Firestore, sending password reset email');
+      } else {
+        debugPrint(
+          'DEBUG: Skipping Firestore check, trying Firebase Auth directly',
         );
       }
 
-      await _auth.sendPasswordResetEmail(email: email);
+      await _auth.sendPasswordResetEmail(email: email.trim());
       debugPrint('Password reset email sent to: $email');
     } catch (e) {
       debugPrint('Error sending password reset email: $e');
@@ -346,13 +394,11 @@ class AuthViewModel extends ChangeNotifier {
         },
         codeSent: (String verificationId, int? resendToken) {
           debugPrint('Login verification code sent');
-          _verificationId = verificationId;
           _resendToken = resendToken;
           onCodeSent(verificationId);
         },
         codeAutoRetrievalTimeout: (String verificationId) {
           debugPrint('Auto retrieval timeout for login');
-          _verificationId = verificationId;
         },
         forceResendingToken: _resendToken,
       );
@@ -438,7 +484,6 @@ class AuthViewModel extends ChangeNotifier {
 
       // 3. Clear local state
       _user = null;
-      _verificationId = null;
       _resendToken = null;
 
       // 4. Sign out from Firebase Auth (this will trigger _onAuthStateChanged)
@@ -557,13 +602,11 @@ class AuthViewModel extends ChangeNotifier {
         },
         codeSent: (String verificationId, int? resendToken) {
           debugPrint('Verification code sent');
-          _verificationId = verificationId;
           _resendToken = resendToken;
           onCodeSent(verificationId);
         },
         codeAutoRetrievalTimeout: (String verificationId) {
           debugPrint('Auto retrieval timeout');
-          _verificationId = verificationId;
         },
         forceResendingToken: _resendToken,
       );
@@ -669,6 +712,86 @@ class AuthViewModel extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Change user password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (_firebaseUser == null || _firebaseUser!.email == null) {
+      throw Exception('No authenticated user');
+    }
+    try {
+      _isLoading = true;
+      notifyListeners();
+      // Re-authenticate user
+      final cred = EmailAuthProvider.credential(
+        email: _firebaseUser!.email!,
+        password: currentPassword,
+      );
+      await _firebaseUser!.reauthenticateWithCredential(cred);
+      // Update password
+      await _firebaseUser!.updatePassword(newPassword);
+    } catch (e) {
+      debugPrint('Error changing password: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Update email verification status in Firestore
+  Future<void> updateEmailVerificationStatus(bool isVerified) async {
+    if (_firebaseUser == null) return;
+
+    try {
+      await _firestore.collection('users').doc(_firebaseUser!.uid).update({
+        'isEmailVerified': isVerified,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update local user data
+      if (_user != null) {
+        _user = _user!.copyWith(
+          isEmailVerified: isVerified,
+          updatedAt: DateTime.now(),
+        );
+        notifyListeners();
+      }
+
+      debugPrint('Email verification status updated: $isVerified');
+    } catch (e) {
+      debugPrint('Error updating email verification status: $e');
+      rethrow;
+    }
+  }
+
+  // Update phone verification status in Firestore
+  Future<void> updatePhoneVerificationStatus(bool isVerified) async {
+    if (_firebaseUser == null) return;
+
+    try {
+      await _firestore.collection('users').doc(_firebaseUser!.uid).update({
+        'isPhoneVerified': isVerified,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update local user data
+      if (_user != null) {
+        _user = _user!.copyWith(
+          isPhoneVerified: isVerified,
+          updatedAt: DateTime.now(),
+        );
+        notifyListeners();
+      }
+
+      debugPrint('Phone verification status updated: $isVerified');
+    } catch (e) {
+      debugPrint('Error updating phone verification status: $e');
+      rethrow;
     }
   }
 
