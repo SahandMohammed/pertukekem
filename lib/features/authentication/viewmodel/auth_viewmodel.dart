@@ -229,6 +229,140 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  /// Login with phone number - sends OTP
+  Future<void> loginWithPhoneNumber({
+    required String phoneNumber,
+    required Function(String) onCodeSent,
+    required Function(String) onError,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      // Ensure phone number is in E.164 format
+      String formattedPhone = phoneNumber;
+      if (!phoneNumber.startsWith('+')) {
+        formattedPhone = '+$phoneNumber';
+      }
+
+      // First check if user exists in our Firestore database with this phone number
+      final userQuery =
+          await _firestore
+              .collection('users')
+              .where('phoneNumber', isEqualTo: formattedPhone)
+              .where('isPhoneVerified', isEqualTo: true)
+              .limit(1)
+              .get();
+
+      if (userQuery.docs.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'No verified account found with this phone number',
+        );
+      }
+
+      debugPrint('Initiating phone login for: $formattedPhone');
+
+      await _auth.verifyPhoneNumber(
+        phoneNumber: formattedPhone,
+        timeout: const Duration(seconds: 60),
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          debugPrint('Auto verification completed for login');
+          await _loginWithPhoneCredential(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          debugPrint(
+            'Phone login verification failed: ${e.code} - ${e.message}',
+          );
+          String errorMsg;
+          switch (e.code) {
+            case 'invalid-phone-number':
+              errorMsg = 'The provided phone number is invalid.';
+              break;
+            case 'too-many-requests':
+              errorMsg = 'Too many attempts. Please try again later.';
+              break;
+            case 'operation-not-allowed':
+              errorMsg =
+                  'Phone authentication is not enabled for this project.';
+              break;
+            case 'app-not-authorized':
+              errorMsg =
+                  'App authentication configuration error. Please try again.';
+              break;
+            default:
+              errorMsg = e.message ?? 'An error occurred during verification.';
+          }
+          onError(errorMsg);
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          debugPrint('Login verification code sent');
+          _verificationId = verificationId;
+          _resendToken = resendToken;
+          onCodeSent(verificationId);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          debugPrint('Auto retrieval timeout for login');
+          _verificationId = verificationId;
+        },
+        forceResendingToken: _resendToken,
+      );
+    } catch (e) {
+      debugPrint('Unexpected error in loginWithPhoneNumber: $e');
+      if (e is FirebaseAuthException) {
+        rethrow;
+      } else {
+        onError('An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Verify OTP for phone login
+  Future<void> verifyPhoneLogin(String verificationId, String smsCode) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+
+      await _loginWithPhoneCredential(credential);
+    } catch (e) {
+      debugPrint('Error during phone login verification: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Helper method to sign in with phone credential
+  Future<void> _loginWithPhoneCredential(PhoneAuthCredential credential) async {
+    try {
+      // Sign in with phone credential
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        // Update last login timestamp
+        await _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .update({'lastLoginAt': FieldValue.serverTimestamp()});
+        debugPrint(
+          'User logged in with phone: ${userCredential.user!.phoneNumber}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Error during phone credential login: $e');
+      rethrow;
+    }
+  }
+
   Future<void> signOut() async {
     try {
       _isLoading = true;

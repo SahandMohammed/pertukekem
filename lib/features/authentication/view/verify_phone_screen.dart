@@ -4,8 +4,13 @@ import '../viewmodel/auth_viewmodel.dart';
 
 class VerifyPhoneScreen extends StatefulWidget {
   final String verificationId;
+  final bool isLogin;
 
-  const VerifyPhoneScreen({super.key, required this.verificationId});
+  const VerifyPhoneScreen({
+    super.key,
+    required this.verificationId,
+    this.isLogin = false,
+  });
 
   @override
   State<VerifyPhoneScreen> createState() => _VerifyPhoneScreenState();
@@ -24,24 +29,40 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
   Future<void> _verifyOTP(AuthViewModel viewModel) async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        await viewModel.verifyPhoneNumber(
-          widget.verificationId,
-          _otpController.text.trim(),
-        );
+        if (widget.isLogin) {
+          // For login, use the phone login verification method
+          await viewModel.verifyPhoneLogin(
+            widget.verificationId,
+            _otpController.text.trim(),
+          );
+        } else {
+          // For signup, use the existing phone verification method
+          await viewModel.verifyPhoneNumber(
+            widget.verificationId,
+            _otpController.text.trim(),
+          );
+        }
 
         if (mounted) {
-          // Check if the user is a store owner and needs to complete setup
-          if (viewModel.user != null &&
-              viewModel.user!.roles.contains('store')) {
-            // Navigate to store setup
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/store-setup', (route) => false);
-          } else {
-            // Default case - navigate to main app
+          if (widget.isLogin) {
+            // For login, navigate to main app
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
+          } else {
+            // For signup, check if the user is a store owner and needs to complete setup
+            if (viewModel.user != null &&
+                viewModel.user!.roles.contains('store')) {
+              // Navigate to store setup
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/store-setup', (route) => false);
+            } else {
+              // Default case - navigate to main app
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil('/', (route) => false);
+            }
           }
         }
       } catch (e) {
@@ -86,9 +107,9 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Enter OTP',
-          style: TextStyle(color: Color(0xFF2C3333)),
+        title: Text(
+          widget.isLogin ? 'Login Verification' : 'Enter OTP',
+          style: const TextStyle(color: Color(0xFF2C3333)),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF2C3333)),

@@ -20,6 +20,7 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
   bool _isUploadingImage = false;
   bool _isRemovingImage = false;
   bool _isUpdatingStore = false;
+  bool _isDisposed = false;
   double _uploadProgress = 0.0;
   String? _error;
   String? _storeProfilePicture;
@@ -41,9 +42,16 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     _authViewModel = authViewModel;
   }
 
+  // Helper method to safely notify listeners
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _setUploadingImage(bool uploading) {
@@ -51,36 +59,38 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     if (!uploading) {
       _uploadProgress = 0.0;
     }
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _setUploadProgress(double progress) {
     _uploadProgress = progress;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _setRemovingImage(bool removing) {
     _isRemovingImage = removing;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _setUpdatingStore(bool updating) {
     _isUpdatingStore = updating;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _setError(String? error) {
     _error = error;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void clearError() {
     _error = null;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   // Load addresses from user document
   Future<void> loadAddresses(UserModel user) async {
+    if (_isDisposed) return;
+
     try {
       _setLoading(true);
       _setError(null);
@@ -102,10 +112,14 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         return b.createdAt.compareTo(a.createdAt);
       });
     } catch (e) {
-      _setError('Failed to load addresses: $e');
-      debugPrint('Error loading addresses: $e');
+      if (!_isDisposed) {
+        _setError('Failed to load addresses: $e');
+        debugPrint('Error loading addresses: $e');
+      }
     } finally {
-      _setLoading(false);
+      if (!_isDisposed) {
+        _setLoading(false);
+      }
     }
   }
 
@@ -337,12 +351,18 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
 
   // Helper method to sort addresses
   void _sortAddresses() {
+    if (_isDisposed) return;
+
     _addresses.sort((a, b) {
       if (a.isDefault && !b.isDefault) return -1;
       if (!a.isDefault && b.isDefault) return 1;
       return b.createdAt.compareTo(a.createdAt);
     });
-    Future.microtask(() => notifyListeners());
+    Future.microtask(() {
+      if (!_isDisposed) {
+        _safeNotifyListeners();
+      }
+    });
   }
 
   // Pick image from camera or gallery
@@ -442,7 +462,7 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         'updatedAt': FieldValue.serverTimestamp(),
       }); // Update local state
       _storeProfilePicture = downloadUrl;
-      notifyListeners(); // Notify UI immediately after state change
+      _safeNotifyListeners(); // Notify UI immediately after state change
 
       // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
@@ -505,7 +525,7 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       } // Update local state
       debugPrint('🗑️ [ViewModel] Updating local state...');
       _storeProfilePicture = null;
-      notifyListeners(); // Notify UI immediately after state change
+      _safeNotifyListeners(); // Notify UI immediately after state change
 
       // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
@@ -528,6 +548,8 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
 
   // Fetch store profile picture from Firestore
   Future<void> fetchStoreProfilePicture() async {
+    if (_isDisposed) return;
+
     try {
       final userId = _auth.currentUser?.uid;
       if (userId == null) {
@@ -536,20 +558,24 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       }
 
       final doc = await _firestore.collection('stores').doc(userId).get();
-      if (doc.exists) {
+      if (doc.exists && !_isDisposed) {
         final data = doc.data();
         _storeProfilePicture =
             data?['logoUrl']; // Changed from 'profilePicture' to 'logoUrl'
-        notifyListeners();
+        _safeNotifyListeners();
         debugPrint('Store profile picture fetched: $_storeProfilePicture');
       }
     } catch (e) {
-      debugPrint('Error fetching store profile picture: $e');
+      if (!_isDisposed) {
+        debugPrint('Error fetching store profile picture: $e');
+      }
     }
   }
 
   // Fetch store data for the current user
   Future<StoreModel?> fetchStoreData() async {
+    if (_isDisposed) return null;
+
     try {
       final userId = _auth.currentUser?.uid;
       if (userId == null) {
@@ -562,20 +588,26 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
 
       final doc = await _firestore.collection('stores').doc(userId).get();
       if (doc.exists) {
-        _storeData = StoreModel.fromMap(doc.data()!);
-        notifyListeners();
-        debugPrint('Store data fetched: ${_storeData?.storeName}');
+        if (!_isDisposed) {
+          _storeData = StoreModel.fromMap(doc.data()!);
+          _safeNotifyListeners();
+          debugPrint('Store data fetched: ${_storeData?.storeName}');
+        }
         return _storeData;
       } else {
         debugPrint('No store found for user: $userId');
         return null;
       }
     } catch (e) {
-      _setError('Failed to fetch store data: $e');
-      debugPrint('Error fetching store data: $e');
+      if (!_isDisposed) {
+        _setError('Failed to fetch store data: $e');
+        debugPrint('Error fetching store data: $e');
+      }
       return null;
     } finally {
-      _setLoading(false);
+      if (!_isDisposed) {
+        _setLoading(false);
+      }
     }
   }
 
@@ -720,7 +752,7 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         socialMedia: socialMedia,
       );
     }
-    notifyListeners();
+    _safeNotifyListeners();
     debugPrint('Local store data updated: \\${_storeData?.storeName}');
   }
 
@@ -742,9 +774,18 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     _storeProfilePicture = null;
     _storeData = null;
 
-    // Notify listeners
-    notifyListeners();
+    // Mark as disposed
+    _isDisposed = true;
+
+    // Notify listeners one last time
+    _safeNotifyListeners();
 
     debugPrint('✅ ProfileViewModel state cleared');
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 }
