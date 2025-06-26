@@ -204,11 +204,12 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
 
       // First check if user exists in our Firestore database
-      final userQuery = await _firestore
-          .collection('users')
-          .where('emailLowercase', isEqualTo: email.toLowerCase())
-          .limit(1)
-          .get();
+      final userQuery =
+          await _firestore
+              .collection('users')
+              .where('emailLowercase', isEqualTo: email.toLowerCase())
+              .limit(1)
+              .get();
 
       if (userQuery.docs.isEmpty) {
         throw FirebaseAuthException(

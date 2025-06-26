@@ -175,14 +175,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: _isLoading ? null : () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ForgotPasswordScreen(),
-                        ),
-                      );
-                    },
+                    onPressed:
+                        _isLoading
+                            ? null
+                            : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const ForgotPasswordScreen(),
+                                ),
+                              );
+                            },
                     style: TextButton.styleFrom(
                       foregroundColor: const Color(0xFF2C3333),
                       padding: EdgeInsets.zero,
