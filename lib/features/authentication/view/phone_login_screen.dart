@@ -16,6 +16,75 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Add listener to format phone number input
+    _phoneController.addListener(() {
+      final text = _phoneController.text;
+      if (text.isNotEmpty) {
+        // Remove any non-digit characters first
+        var cleaned = text.replaceAll(RegExp(r'[^\d+]'), '');
+
+        // Handle international format with country code
+        if (cleaned.startsWith('+')) {
+          // For international numbers, don't format, just clean
+          if (cleaned != text) {
+            _phoneController.value = TextEditingValue(
+              text: cleaned,
+              selection: TextSelection.collapsed(offset: cleaned.length),
+            );
+          }
+        } else {
+          // Remove any leading + or country codes if present locally entered
+          if (cleaned.startsWith('964')) {
+            cleaned = cleaned.substring(3);
+          }
+
+          // Format the number based on length
+          String formatted = '';
+          if (cleaned.length <= 10) {
+            // Handle 10-digit numbers: 770 000 0000
+            if (cleaned.length >= 1) {
+              formatted += cleaned.substring(
+                0,
+                cleaned.length >= 3 ? 3 : cleaned.length,
+              );
+              if (cleaned.length > 3) {
+                formatted +=
+                    ' ${cleaned.substring(3, cleaned.length >= 6 ? 6 : cleaned.length)}';
+                if (cleaned.length > 6) {
+                  formatted +=
+                      ' ${cleaned.substring(6, cleaned.length >= 10 ? 10 : cleaned.length)}';
+                }
+              }
+            }
+          } else if (cleaned.length == 11 && cleaned.startsWith('0')) {
+            // Handle 11-digit numbers starting with 0: 0770 000 0000
+            formatted += cleaned.substring(0, 4); // 0770
+            if (cleaned.length > 4) {
+              formatted += ' ${cleaned.substring(4, 7)}'; // 000
+              if (cleaned.length > 7) {
+                formatted += ' ${cleaned.substring(7, 11)}'; // 0000
+              }
+            }
+          } else {
+            // For other cases, just use the cleaned number
+            formatted = cleaned;
+          }
+
+          // Only update if the formatted text is different
+          if (formatted != text && !text.startsWith('+')) {
+            _phoneController.value = TextEditingValue(
+              text: formatted,
+              selection: TextSelection.collapsed(offset: formatted.length),
+            );
+          }
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
@@ -48,7 +117,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 
       try {
         await context.read<AuthViewModel>().loginWithPhoneNumber(
-          phoneNumber: _phoneController.text.trim(),
+          phoneNumber: _phoneController.text.trim().replaceAll(' ', ''),
           onCodeSent: (verificationId) {
             if (mounted) {
               Navigator.push(
@@ -166,7 +235,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 TextFormField(
                   controller: _phoneController,
                   decoration: InputDecoration(
-                    hintText: 'Phone Number (e.g., +1234567890)',
+                    hintText:
+                        'Phone Number (e.g., +964 770 000 0000 or 770 000 0000)',
                     prefixIcon: const Icon(
                       Icons.phone,
                       color: Color(0xFF666666),
@@ -209,7 +279,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Include your country code (e.g., +1 for US, +60 for Malaysia)',
+                          'Include your country code (e.g., +964 for Iraq) or enter local number (770 000 0000)',
                           style: TextStyle(
                             fontSize: 12,
                             color: Color(0xFF1976D2),

@@ -109,7 +109,45 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Create user with email and password
+      // Ensure phone number is in E.164 format
+      String formattedPhone = phoneNumber;
+      if (!phoneNumber.startsWith('+')) {
+        formattedPhone = '+$phoneNumber';
+      }
+
+      // FIRST: Check if email is already in use
+      final existingEmailQuery =
+          await _firestore
+              .collection('users')
+              .where('emailLowercase', isEqualTo: email.toLowerCase())
+              .limit(1)
+              .get();
+
+      if (existingEmailQuery.docs.isNotEmpty) {
+        throw FirebaseAuthException(
+          code: 'email-already-in-use',
+          message: 'An account already exists for this email address',
+        );
+      }
+
+      // SECOND: Check if phone number is already in use by another verified user
+      final existingPhoneQuery =
+          await _firestore
+              .collection('users')
+              .where('phoneNumber', isEqualTo: formattedPhone)
+              .where('isPhoneVerified', isEqualTo: true)
+              .limit(1)
+              .get();
+
+      if (existingPhoneQuery.docs.isNotEmpty) {
+        throw FirebaseAuthException(
+          code: 'phone-number-already-exists',
+          message:
+              'This phone number is already registered with another account',
+        );
+      }
+
+      // THIRD: Create user with email and password only after all validations pass
       userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -123,7 +161,7 @@ class AuthViewModel extends ChangeNotifier {
           lastName: lastName,
           email: email,
           emailLowercase: email.toLowerCase(),
-          phoneNumber: phoneNumber,
+          phoneNumber: formattedPhone,
           roles: [selectedRole],
           storeName: storeName,
           createdAt: DateTime.now(),
@@ -152,6 +190,17 @@ class AuthViewModel extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error during sign up: $e');
+
+      // If user creation failed and we have a user credential, clean up
+      if (userCredential != null && userCredential.user != null) {
+        try {
+          await userCredential.user!.delete();
+          debugPrint('Cleaned up created user due to error');
+        } catch (cleanupError) {
+          debugPrint('Error cleaning up user: $cleanupError');
+        }
+      }
+
       rethrow;
     } finally {
       _isLoading = false;
@@ -430,6 +479,36 @@ class AuthViewModel extends ChangeNotifier {
       }
 
       debugPrint('Initiating phone verification for: $formattedPhone');
+
+      // Check if phone number is already in use by another verified user
+      // Skip this check if we're in the signup flow (current user exists but not verified)
+      final existingUserQuery =
+          await _firestore
+              .collection('users')
+              .where('phoneNumber', isEqualTo: formattedPhone)
+              .where('isPhoneVerified', isEqualTo: true)
+              .limit(1)
+              .get();
+
+      if (existingUserQuery.docs.isNotEmpty) {
+        // Check if it's the same user (current user during signup)
+        if (_firebaseUser != null) {
+          final existingUser = existingUserQuery.docs.first;
+          if (existingUser.id != _firebaseUser!.uid) {
+            // Phone number belongs to a different user
+            onError(
+              'This phone number is already registered with another account',
+            );
+            return;
+          }
+        } else {
+          // No current user, so this phone number is definitely in use
+          onError(
+            'This phone number is already registered with another account',
+          );
+          return;
+        }
+      }
 
       await _auth.verifyPhoneNumber(
         phoneNumber: formattedPhone,

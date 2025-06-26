@@ -42,17 +42,46 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (text.isNotEmpty) {
         // Remove any non-digit characters first
         var cleaned = text.replaceAll(RegExp(r'[^\d]'), '');
-        // Remove leading + or country code if present
-        if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+
+        // Remove leading country code if present
         if (cleaned.startsWith(_selectedCountry.phoneCode)) {
           cleaned = cleaned.substring(_selectedCountry.phoneCode.length);
         }
-        // Format the number as XXX XXX XXXX
-        if (cleaned != text) {
-          final formatted = cleaned.replaceAllMapped(
-            RegExp(r'(\d{3})(\d{3})(\d{4})'),
-            (Match m) => '${m[1]} ${m[2]} ${m[3]}',
-          );
+
+        // Format the number based on length
+        String formatted = '';
+        if (cleaned.length <= 10) {
+          // Handle 10-digit numbers: 770 000 0000
+          if (cleaned.length >= 1) {
+            formatted += cleaned.substring(
+              0,
+              cleaned.length >= 3 ? 3 : cleaned.length,
+            );
+            if (cleaned.length > 3) {
+              formatted +=
+                  ' ${cleaned.substring(3, cleaned.length >= 6 ? 6 : cleaned.length)}';
+              if (cleaned.length > 6) {
+                formatted +=
+                    ' ${cleaned.substring(6, cleaned.length >= 10 ? 10 : cleaned.length)}';
+              }
+            }
+          }
+        } else if (cleaned.length == 11 && cleaned.startsWith('0')) {
+          // Handle 11-digit numbers starting with 0: 0770 000 0000
+          formatted += cleaned.substring(0, 4); // 0770
+          if (cleaned.length > 4) {
+            formatted += ' ${cleaned.substring(4, 7)}'; // 000
+            if (cleaned.length > 7) {
+              formatted += ' ${cleaned.substring(7, 11)}'; // 0000
+            }
+          }
+        } else {
+          // For other cases, just use the cleaned number
+          formatted = cleaned;
+        }
+
+        // Only update if the formatted text is different
+        if (formatted != text) {
           _phoneController.value = TextEditingValue(
             text: formatted,
             selection: TextSelection.collapsed(offset: formatted.length),
@@ -82,14 +111,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
           phoneNumber:
-              "+${_selectedCountry.phoneCode}${_phoneController.text.trim()}",
+              "+${_selectedCountry.phoneCode}${_phoneController.text.trim().replaceAll(' ', '')}",
           selectedRole: widget.initialRole,
         );
+        // Success case - navigation will be handled by the viewModel
       } catch (e) {
         if (mounted) {
           String errorMessage = 'An error occurred';
 
-          if (e.toString().contains('[firebase_auth/')) {
+          // Handle email already exists error
+          if (e.toString().contains('email-already-in-use')) {
+            errorMessage = 'An account already exists for this email address';
+            // Handle phone number already exists error
+          } else if (e.toString().contains('phone-number-already-exists') ||
+              e.toString().contains('credential-already-in-use') ||
+              e.toString().contains('phone number is already in use')) {
+            errorMessage =
+                'This phone number is already registered with another account';
+          } else if (e.toString().contains('[firebase_auth/')) {
             final code = e.toString().split('[firebase_auth/')[1].split(']')[0];
             errorMessage = viewModel.getFirebaseAuthErrorMessage(code);
           }
@@ -98,6 +137,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             SnackBar(
               content: Text(errorMessage),
               backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(
+                seconds: 4,
+              ), // Show error longer for conflicts
             ),
           );
         }
@@ -260,7 +302,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       TextFormField(
                         controller: _phoneController,
                         decoration: InputDecoration(
-                          hintText: '7XX XXX XXXX',
+                          hintText: '770 000 0000',
                           prefixIcon: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8.0,
@@ -310,7 +352,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your phone number';
                           }
-                          // Remove any spaces or special characters
+                          // Remove any spaces or special characters for validation
                           final cleanPhone = value.replaceAll(
                             RegExp(r'[\s\-\(\)]'),
                             '',
@@ -318,8 +360,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           if (cleanPhone.length < 10) {
                             return 'Phone number is too short';
                           }
-                          if (!cleanPhone.startsWith('7')) {
-                            return 'Phone number should start with 7';
+                          // Check if it's a valid format (starts with 7 for 10-digit or 07 for 11-digit)
+                          if (!cleanPhone.startsWith('7') &&
+                              !cleanPhone.startsWith('07')) {
+                            return 'Phone number should start with 7 or 07';
                           }
                           return null;
                         },

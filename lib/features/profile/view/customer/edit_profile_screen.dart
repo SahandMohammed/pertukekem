@@ -42,6 +42,59 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _firstNameController.addListener(_onFieldChanged);
     _lastNameController.addListener(_onFieldChanged);
     _phoneController.addListener(_onFieldChanged);
+
+    // Add phone number formatting listener
+    _phoneController.addListener(_formatPhoneNumber);
+  }
+
+  void _formatPhoneNumber() {
+    final text = _phoneController.text;
+    if (text.isNotEmpty && !text.startsWith('+')) {
+      // Remove any non-digit characters first
+      var cleaned = text.replaceAll(RegExp(r'[^\d]'), '');
+
+      // Format the number based on length
+      String formatted = '';
+      if (cleaned.length <= 10) {
+        // Handle 10-digit numbers: 770 000 0000
+        if (cleaned.length >= 1) {
+          formatted += cleaned.substring(
+            0,
+            cleaned.length >= 3 ? 3 : cleaned.length,
+          );
+          if (cleaned.length > 3) {
+            formatted +=
+                ' ${cleaned.substring(3, cleaned.length >= 6 ? 6 : cleaned.length)}';
+            if (cleaned.length > 6) {
+              formatted +=
+                  ' ${cleaned.substring(6, cleaned.length >= 10 ? 10 : cleaned.length)}';
+            }
+          }
+        }
+      } else if (cleaned.length == 11 && cleaned.startsWith('0')) {
+        // Handle 11-digit numbers starting with 0: 0770 000 0000
+        formatted += cleaned.substring(0, 4); // 0770
+        if (cleaned.length > 4) {
+          formatted += ' ${cleaned.substring(4, 7)}'; // 000
+          if (cleaned.length > 7) {
+            formatted += ' ${cleaned.substring(7, 11)}'; // 0000
+          }
+        }
+      } else {
+        // For other cases, just use the cleaned number
+        formatted = cleaned;
+      }
+
+      // Only update if the formatted text is different and avoid infinite loop
+      if (formatted != text) {
+        _phoneController.removeListener(_formatPhoneNumber);
+        _phoneController.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+        _phoneController.addListener(_formatPhoneNumber);
+      }
+    }
   }
 
   void _onFieldChanged() {
@@ -100,7 +153,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       userId: userId,
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
-      phoneNumber: _phoneController.text.trim(),
+      phoneNumber: _phoneController.text.trim().replaceAll(' ', ''),
     );
 
     if (!mounted) return;
@@ -1228,7 +1281,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       await authViewModel.sendPhoneVerification(
-        phoneNumber: newPhoneNumber,
+        phoneNumber: newPhoneNumber.replaceAll(' ', ''),
         onCodeSent: (verificationId) {
           setState(() {
             _verificationId = verificationId;

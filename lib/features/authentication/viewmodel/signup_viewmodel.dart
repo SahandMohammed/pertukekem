@@ -16,7 +16,7 @@ class SignupViewModel extends ChangeNotifier {
   String getFirebaseAuthErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use':
-        return 'An account already exists for this email';
+        return 'An account already exists for this email address';
       case 'invalid-email':
         return 'Please enter a valid email address';
       case 'operation-not-allowed':
@@ -25,6 +25,10 @@ class SignupViewModel extends ChangeNotifier {
         return 'Please enter a stronger password';
       case 'invalid-phone-number':
         return 'The provided phone number is invalid';
+      case 'phone-number-already-exists':
+        return 'This phone number is already registered with another account';
+      case 'credential-already-in-use':
+        return 'This phone number is already in use by another account';
       default:
         return 'An error occurred. Please try again';
     }
@@ -62,23 +66,26 @@ class SignupViewModel extends ChangeNotifier {
         await _authViewModel.sendPhoneVerification(
           phoneNumber: phoneNumber,
           onCodeSent: (String verificationId) {
-            // Navigate to OTP screen
+            // Navigate to OTP screen only if no errors occurred
             Navigator.of(
               context,
             ).pushNamed('/verify-phone', arguments: verificationId);
           },
           onError: (String error) {
+            // Show error and don't navigate
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(error),
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
+            // Don't navigate to next step if there's an error
           },
         );
       }
     } catch (e) {
       debugPrint('Error during signup process: $e');
+      // Don't show snackbar here - let the UI handle it
       rethrow;
     } finally {
       _isLoading = false;
