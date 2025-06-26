@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../viewmodel/auth_viewmodel.dart';
 import '../viewmodel/signup_viewmodel.dart';
 
@@ -101,28 +102,98 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  Future<bool> _checkEmailExists(String email) async {
+    final firestore = FirebaseFirestore.instance;
+    final query =
+        await firestore
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .get();
+    return query.docs.isNotEmpty;
+  }
+
+  Future<bool> _checkPhoneExists(String phone) async {
+    final firestore = FirebaseFirestore.instance;
+    final query =
+        await firestore
+            .collection('users')
+            .where('phoneNumber', isEqualTo: phone)
+            .get();
+    return query.docs.isNotEmpty;
+  }
+
   Future<void> _signUp(SignupViewModel viewModel) async {
     if (_formKey.currentState?.validate() ?? false) {
+      // Validate email
+      if (!viewModel.isValidEmail(_emailController.text.trim())) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Please enter a valid email address'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
+      // Validate phone number (basic: at least 9 digits, can be improved)
+      final phone = _phoneController.text.trim().replaceAll(' ', '');
+      if (phone.length < 9) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Please enter a valid phone number'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
+      // Check if email or phone already exists in Firestore
+      final email = _emailController.text.trim();
+      final fullPhone = "+${_selectedCountry.phoneCode}${phone}";
+      if (await _checkEmailExists(email)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'An account already exists for this email address',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
+      if (await _checkPhoneExists(fullPhone)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'This phone number is already registered with another account',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
       try {
         await viewModel.signUp(
           context: context,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          email: _emailController.text.trim(),
+          email: email,
           password: _passwordController.text,
-          phoneNumber:
-              "+${_selectedCountry.phoneCode}${_phoneController.text.trim().replaceAll(' ', '')}",
+          phoneNumber: fullPhone,
           selectedRole: widget.initialRole,
         );
         // Success case - navigation will be handled by the viewModel
       } catch (e) {
         if (mounted) {
           String errorMessage = 'An error occurred';
-
-          // Handle email already exists error
           if (e.toString().contains('email-already-in-use')) {
             errorMessage = 'An account already exists for this email address';
-            // Handle phone number already exists error
           } else if (e.toString().contains('phone-number-already-exists') ||
               e.toString().contains('credential-already-in-use') ||
               e.toString().contains('phone number is already in use')) {
@@ -132,14 +203,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
             final code = e.toString().split('[firebase_auth/')[1].split(']')[0];
             errorMessage = viewModel.getFirebaseAuthErrorMessage(code);
           }
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
               backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(
-                seconds: 4,
-              ), // Show error longer for conflicts
+              duration: const Duration(seconds: 4),
             ),
           );
         }
