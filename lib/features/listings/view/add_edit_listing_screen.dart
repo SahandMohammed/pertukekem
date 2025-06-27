@@ -27,12 +27,10 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   final int _totalSteps = 4;
   int _currentStep = 0;
 
-  // Book type selection
   String _selectedBookType = 'physical'; // 'physical' or 'ebook'
   File? _ebookFile;
   bool _isEbookUploading = false;
 
-  // Form controllers
   late TextEditingController _titleController;
   late TextEditingController _authorController;
   late TextEditingController _isbnController;
@@ -42,13 +40,11 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   late TextEditingController _publisherController;
   late TextEditingController _pageCountController;
 
-  // Dropdown values
   String _selectedCondition = 'new';
   String? _selectedLanguage;
   String? _selectedFormat;
   DateTime? _selectedYear;
 
-  // Options
   final List<String> _conditionOptions = ['new', 'used'];
   final List<String> _languageOptions = ['English', 'Kurdish', 'Arabic'];
   final List<String> _formatOptions = [
@@ -59,12 +55,10 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     'Audio Book',
   ];
 
-  // Image handling
   File? _imageFile;
   String? _networkImageUrl;
   bool _isImageUploading = false;
 
-  // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -72,7 +66,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   void initState() {
     super.initState();
 
-    // Initialize form controllers
     _titleController = TextEditingController(text: widget.listing?.title);
     _authorController = TextEditingController(text: widget.listing?.author);
     _isbnController = TextEditingController(text: widget.listing?.isbn);
@@ -99,7 +92,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     _selectedYear =
         widget.listing?.year != null ? DateTime(widget.listing!.year!) : null;
 
-    // Initialize tab controller for multi-step form
     _tabController = TabController(length: _totalSteps, vsync: this);
     _tabController.addListener(() {
       setState(() {
@@ -107,7 +99,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       });
     });
 
-    // Initialize animation controller
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -227,7 +218,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       if (result != null && result.files.single.path != null) {
         File file = File(result.files.single.path!);
 
-        // Check file size (limit to 50MB)
         int fileSizeInBytes = await file.length();
         double fileSizeInMB = fileSizeInBytes / (1024 * 1024);
 
@@ -268,7 +258,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
         return null;
       }
 
-      // Get file extension to determine content type
       String fileName = ebookFile.path.split('/').last;
       String extension = fileName.split('.').last.toLowerCase();
 
@@ -309,7 +298,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
       firebase_storage.UploadTask uploadTask = ref.putFile(ebookFile, metadata);
 
-      // Listen to upload progress
       uploadTask.snapshotEvents.listen((
         firebase_storage.TaskSnapshot snapshot,
       ) {
@@ -336,7 +324,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Additional validation for eBook files
       if (_selectedBookType == 'ebook' &&
           _ebookFile == null &&
           (widget.listing?.ebookUrl == null ||
@@ -365,7 +352,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             }
           }
 
-          // Upload eBook file if this is an eBook listing and a new file is selected
           if (_selectedBookType == 'ebook' && _ebookFile != null) {
             ebookFileUrl = await _uploadEbookFile(_ebookFile!);
             if (ebookFileUrl == null) {
@@ -385,14 +371,12 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                   ? int.tryParse(_pageCountController.text)
                   : null;
 
-          // Determine seller type and reference
           final storeDoc =
               await FirebaseFirestore.instance
                   .collection('stores')
                   .doc(currentUser.uid)
                   .get();
 
-          // Use the appropriate collection based on seller type
           final String sellerType = storeDoc.exists ? 'store' : 'user';
           final DocumentReference sellerRef = FirebaseFirestore.instance
               .collection(sellerType == 'store' ? 'stores' : 'users')
@@ -422,7 +406,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             format: _selectedFormat,
             bookType: _selectedBookType,
             ebookUrl: ebookFileUrl,
-            // Keep existing createdAt for updates, let service handle timestamps
             createdAt: widget.listing?.createdAt,
             updatedAt: widget.listing?.updatedAt,
           );
@@ -430,14 +413,12 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             await viewModel.updateListing(listing);
             if (mounted) {
               _showSuccessSnackBar('Listing updated successfully!');
-              // Return success result to trigger refresh
               Navigator.of(context).pop('updated');
             }
           } else {
             await viewModel.addListing(listing);
             if (mounted) {
               _showSuccessSnackBar('Listing added successfully!');
-              // Return success result to trigger refresh
               Navigator.of(context).pop('added');
             }
           }
@@ -460,13 +441,23 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(message, style: const TextStyle(color: Colors.white)),
           backgroundColor: Colors.red.shade800,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
           margin: const EdgeInsets.all(10),
+          duration: const Duration(
+            seconds: 4,
+          ), // Longer duration for multiple errors
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -489,21 +480,16 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   }
 
   void _nextStep() {
-    // Validate current step before proceeding
-    if (_currentStep == 1) {
-      // Book cover step
-      if (_imageFile == null &&
-          (_networkImageUrl == null || _networkImageUrl!.isEmpty)) {
-        _showErrorSnackBar('Please add a book cover image');
-        return;
-      }
-      if (_selectedBookType == 'ebook' &&
-          _ebookFile == null &&
-          (widget.listing?.ebookUrl == null ||
-              widget.listing!.ebookUrl!.isEmpty)) {
-        _showErrorSnackBar('Please select an eBook file');
-        return;
-      }
+    final errors = _getValidationErrors(_currentStep);
+
+    if (errors.isNotEmpty) {
+      final errorMessage =
+          errors.length == 1
+              ? errors.first
+              : errors.map((e) => '• $e').join('\n');
+
+      _showErrorSnackBar(errorMessage);
+      return;
     }
 
     if (_currentStep < _totalSteps - 1) {
@@ -515,6 +501,117 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     if (_currentStep > 0) {
       _tabController.animateTo(_currentStep - 1);
     }
+  }
+
+  bool _isStepValid(int stepIndex) {
+    switch (stepIndex) {
+      case 0:
+        return true;
+      case 1:
+        bool hasImage =
+            _imageFile != null ||
+            (_networkImageUrl != null && _networkImageUrl!.isNotEmpty);
+        bool hasEbookFile =
+            _selectedBookType != 'ebook' ||
+            _ebookFile != null ||
+            (widget.listing?.ebookUrl != null &&
+                widget.listing!.ebookUrl!.isNotEmpty);
+        return hasImage && hasEbookFile;
+      case 2:
+        return _titleController.text.trim().isNotEmpty &&
+            _authorController.text.trim().isNotEmpty &&
+            _isbnController.text.trim().isNotEmpty &&
+            _selectedLanguage != null &&
+            _selectedLanguage!.isNotEmpty &&
+            _selectedFormat != null &&
+            _selectedFormat!.isNotEmpty &&
+            (_pageCountController.text.trim().isEmpty ||
+                (int.tryParse(_pageCountController.text.trim()) != null &&
+                    int.parse(_pageCountController.text.trim()) > 0));
+      case 3:
+        bool hasValidPrice =
+            _priceController.text.trim().isNotEmpty &&
+            double.tryParse(_priceController.text.trim()) != null &&
+            double.parse(_priceController.text.trim()) > 0;
+        bool hasValidCategories =
+            _categoriesController.text.trim().isNotEmpty &&
+            _categoriesController.text
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .isNotEmpty;
+        return hasValidPrice && hasValidCategories;
+      default:
+        return false;
+    }
+  }
+
+  List<String> _getValidationErrors(int stepIndex) {
+    List<String> errors = [];
+
+    switch (stepIndex) {
+      case 1:
+        if (_imageFile == null &&
+            (_networkImageUrl == null || _networkImageUrl!.isEmpty)) {
+          errors.add('Please add a book cover image');
+        }
+        if (_selectedBookType == 'ebook' &&
+            _ebookFile == null &&
+            (widget.listing?.ebookUrl == null ||
+                widget.listing!.ebookUrl!.isNotEmpty)) {
+          errors.add('Please select an eBook file for eBook listings');
+        }
+        break;
+      case 2:
+        if (_titleController.text.trim().isEmpty) {
+          errors.add('Book title is required');
+        }
+        if (_authorController.text.trim().isEmpty) {
+          errors.add('Author name is required');
+        }
+        if (_isbnController.text.trim().isEmpty) {
+          errors.add('ISBN number is required');
+        }
+        if (_selectedLanguage == null || _selectedLanguage!.isEmpty) {
+          errors.add('Language selection is required');
+        }
+        if (_selectedFormat == null || _selectedFormat!.isEmpty) {
+          errors.add('Format selection is required');
+        }
+        if (_pageCountController.text.trim().isNotEmpty) {
+          final pageCount = int.tryParse(_pageCountController.text.trim());
+          if (pageCount == null || pageCount <= 0) {
+            errors.add('Page count must be a valid number greater than 0');
+          }
+        }
+        break;
+      case 3:
+        if (_priceController.text.trim().isEmpty) {
+          errors.add('Price is required');
+        } else {
+          final price = double.tryParse(_priceController.text.trim());
+          if (price == null || price <= 0) {
+            errors.add('Price must be a valid number greater than 0');
+          }
+        }
+
+        if (_categoriesController.text.trim().isEmpty) {
+          errors.add('At least one category is required');
+        } else {
+          final categories =
+              _categoriesController.text
+                  .split(',')
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList();
+          if (categories.isEmpty) {
+            errors.add('Please enter at least one valid category');
+          }
+        }
+        break;
+    }
+
+    return errors;
   }
 
   @override
@@ -545,90 +642,87 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
           key: _formKey,
           child: Column(
             children: [
-              // Step indicator
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 8,
                 ),
-                child: Row(
-                  children: List<Widget>.generate(_totalSteps, (index) {
-                    bool isActive = index == _currentStep;
-                    bool isPast = index < _currentStep;
-                    return Expanded(
-                      child: Row(
-                        children: [
-                          if (index > 0)
-                            Expanded(
-                              child: Container(
-                                height: 2,
-                                color:
-                                    isPast || isActive
-                                        ? theme.colorScheme.primary
-                                        : Colors.grey.shade300,
-                              ),
-                            ),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 15, // Half the height of the circle (32/2 - 1)
+                      left: 16, // Start from first circle center
+                      right: 16, // End at last circle center
+                      child: Container(height: 2, color: Colors.grey.shade300),
+                    ),
+                    if (_currentStep > 0)
+                      Positioned(
+                        top: 15,
+                        left: 16,
+                        width:
+                            (MediaQuery.of(context).size.width - 80) *
+                            (_currentStep /
+                                (_totalSteps -
+                                    1)), // 80 = 24*2 padding + 16*2 for circle centers
+                        child: Container(
+                          height: 2,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List<Widget>.generate(_totalSteps, (index) {
+                        bool isActive = index == _currentStep;
+                        bool isPast = index < _currentStep;
+                        bool isValid = _isStepValid(index);
+
+                        return Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                isActive
+                                    ? theme.colorScheme.primary
+                                    : isPast && isValid
+                                    ? theme.colorScheme.primary
+                                    : Colors.grey.shade200,
+                            border: Border.all(
                               color:
                                   isActive
                                       ? theme.colorScheme.primary
-                                      : isPast
-                                      ? theme.colorScheme.primary.withOpacity(
-                                        0.2,
-                                      )
-                                      : Colors.grey.shade200,
-                              border: Border.all(
-                                color:
-                                    isActive
-                                        ? theme.colorScheme.primary
-                                        : isPast
-                                        ? theme.colorScheme.primary
-                                        : Colors.grey.shade300,
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child:
-                                  isPast
-                                      ? Icon(
-                                        Icons.check,
-                                        size: 16,
-                                        color: theme.colorScheme.primary,
-                                      )
-                                      : Text(
-                                        '${index + 1}',
-                                        style: TextStyle(
-                                          color:
-                                              isActive
-                                                  ? Colors.white
-                                                  : Colors.grey.shade600,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      : isPast && isValid
+                                      ? theme.colorScheme.primary
+                                      : Colors.grey.shade300,
+                              width: 2,
                             ),
                           ),
-                          if (index < _totalSteps - 1)
-                            Expanded(
-                              child: Container(
-                                height: 2,
-                                color:
-                                    isPast
-                                        ? theme.colorScheme.primary
-                                        : Colors.grey.shade300,
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  }),
+                          child: Center(
+                            child:
+                                isPast && isValid
+                                    ? Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: Colors.white,
+                                    )
+                                    : Text(
+                                      '${index + 1}',
+                                      style: TextStyle(
+                                        color:
+                                            isActive
+                                                ? Colors.white
+                                                : Colors.grey.shade600,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 ),
               ),
 
-              // Step title
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -834,7 +928,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             ),
             const SizedBox(height: 32),
 
-            // Physical Book Option
             GestureDetector(
               onTap: () => setState(() => _selectedBookType = 'physical'),
               child: Container(
@@ -917,7 +1010,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
             const SizedBox(height: 16),
 
-            // eBook Option
             GestureDetector(
               onTap: () => setState(() => _selectedBookType = 'ebook'),
               child: Container(
@@ -1000,7 +1092,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
             const SizedBox(height: 32),
 
-            // Information container
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1099,7 +1190,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             ),
             const SizedBox(height: 32),
 
-            // Book Cover Section
             Text(
               'Book Cover Image',
               style: Theme.of(
@@ -1614,7 +1704,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     );
   }
 
-  // Book Details step
   Widget _buildBookDetailsStep() {
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -1694,7 +1783,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             ),
             const SizedBox(height: 16),
 
-            // Year input using date picker
             InkWell(
               onTap: () async {
                 final now = DateTime.now();
@@ -1947,10 +2035,8 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                 : currentText.split(',').map((e) => e.trim()).toList();
 
         if (currentCategories.contains(category)) {
-          // Remove category if already selected
           currentCategories.remove(category);
         } else {
-          // Add category if not selected
           currentCategories.add(category);
         }
 

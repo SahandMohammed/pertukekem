@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodel/auth_viewmodel.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -16,7 +16,6 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.account_circle),
           onSelected: (value) async {
             if (value == 'logout') {
-              // Show confirmation dialog
               final shouldLogout = await showDialog<bool>(
                 context: context,
                 builder:

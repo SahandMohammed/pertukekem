@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Review Model for listing reviews
 class ReviewModel {
   final String reviewId; // Unique identifier for the review
   final String listingId; // ID of the listing being reviewed
@@ -32,7 +31,6 @@ class ReviewModel {
     this.replyDate,
   });
 
-  /// Create a ReviewModel from a Firestore document
   factory ReviewModel.fromMap(Map<String, dynamic> map) {
     return ReviewModel(
       reviewId: map['reviewId'] ?? '',
@@ -54,7 +52,6 @@ class ReviewModel {
     );
   }
 
-  /// Convert this ReviewModel to a map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'reviewId': reviewId,
@@ -73,7 +70,6 @@ class ReviewModel {
     };
   }
 
-  /// Create a copy of this ReviewModel with the given fields updated
   ReviewModel copyWith({
     String? reviewId,
     String? listingId,

@@ -20,19 +20,14 @@ class FCMService {
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
-  /// Initialize FCM and request permissions
   Future<void> initialize() async {
     try {
-      // Initialize local notifications
       await _initializeLocalNotifications();
 
-      // Request permission for notifications
       await _requestPermission();
 
-      // Get FCM token
       await _getAndStoreToken();
 
-      // Configure message handlers
       _configureMessageHandlers();
 
       debugPrint('FCM Service initialized successfully');
@@ -41,7 +36,6 @@ class FCMService {
     }
   }
 
-  /// Initialize local notifications plugin
   Future<void> _initializeLocalNotifications() async {
     const androidInitialization = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -62,13 +56,11 @@ class FCMService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // Create Android notification channel
     if (Platform.isAndroid) {
       await _createNotificationChannel();
     }
   }
 
-  /// Create Android notification channel
   Future<void> _createNotificationChannel() async {
     const androidChannel = AndroidNotificationChannel(
       'pertukekem_notifications',
@@ -85,7 +77,6 @@ class FCMService {
         ?.createNotificationChannel(androidChannel);
   }
 
-  /// Request notification permissions
   Future<void> _requestPermission() async {
     final settings = await _messaging.requestPermission(
       alert: true,
@@ -104,7 +95,6 @@ class FCMService {
     }
   }
 
-  /// Get FCM token and store it in Firestore
   Future<void> _getAndStoreToken() async {
     try {
       _fcmToken = await _messaging.getToken();
@@ -116,7 +106,6 @@ class FCMService {
         debugPrint('Warning: FCM token is null after getToken() call');
       }
 
-      // Listen for token refresh
       _messaging.onTokenRefresh.listen((newToken) {
         _fcmToken = newToken;
         debugPrint('FCM Token refreshed: $newToken');
@@ -129,7 +118,6 @@ class FCMService {
     }
   }
 
-  /// Force refresh FCM token
   Future<String?> refreshToken() async {
     try {
       debugPrint('Forcing FCM token refresh...');
@@ -148,7 +136,6 @@ class FCMService {
     }
   }
 
-  /// Store FCM token in Firestore user document
   Future<void> _storeTokenInFirestore(String token) async {
     try {
       final currentUser = _auth.currentUser;
@@ -161,7 +148,6 @@ class FCMService {
         'lastUpdated': FieldValue.serverTimestamp(),
       };
 
-      // Store token in fcmTokens object
       await _firestore.collection('users').doc(currentUser.uid).set({
         'fcmTokens': {deviceId: deviceInfo},
         'updatedAt': FieldValue.serverTimestamp(),
@@ -173,29 +159,22 @@ class FCMService {
     }
   }
 
-  /// Get a unique device identifier
   String _getDeviceId() {
-    // Create a consistent device identifier based on platform
     final platform = Platform.isIOS ? 'ios' : 'android';
-    // Use a fixed identifier per platform to avoid creating multiple entries
     return '${platform}_device';
   }
 
-  /// Configure message handlers for different app states
   void _configureMessageHandlers() {
-    // Handle messages when app is in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Received foreground message: ${message.messageId}');
       _handleForegroundMessage(message);
     });
 
-    // Handle notification taps when app is in background but not terminated
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('Notification tapped (background): ${message.messageId}');
       _handleNotificationTap(message);
     });
 
-    // Check if app was opened from a terminated state via notification
     _messaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         debugPrint('App opened from terminated state: ${message.messageId}');
@@ -204,13 +183,10 @@ class FCMService {
     });
   }
 
-  /// Handle local notification tap
   void _onNotificationTapped(NotificationResponse notificationResponse) {
     debugPrint('Local notification tapped: ${notificationResponse.payload}');
 
     if (notificationResponse.payload != null) {
-      // Parse payload and navigate accordingly
-      // Payload format: "type:orderId" or just "type"
       final parts = notificationResponse.payload!.split(':');
       final type = parts.isNotEmpty ? parts[0] : '';
       final id = parts.length > 1 ? parts[1] : null;
@@ -224,34 +200,26 @@ class FCMService {
     }
   }
 
-  /// Handle foreground messages (show local notification only)
   void _handleForegroundMessage(RemoteMessage message) {
     if (message.notification != null) {
-      // Only show local notification in foreground
-      // Don't show in-app notification to avoid duplicates
       _showLocalNotification(message);
     }
   }
 
-  /// Show system notification using flutter_local_notifications
   Future<void> _showLocalNotification(RemoteMessage message) async {
     try {
       final notification = message.notification;
       if (notification == null) return;
 
-      // Create unique notification ID to prevent duplicates
       final messageId = message.messageId ?? message.hashCode.toString();
 
-      // Check if we already showed this notification (use global set)
       if (_globalShownNotifications.contains(messageId)) {
         debugPrint('Foreground notification already shown: $messageId');
         return;
       }
 
-      // Add to shown notifications set
       _globalShownNotifications.add(messageId);
 
-      // Clean up old entries (keep only last 50)
       if (_globalShownNotifications.length > 50) {
         final oldEntries = _globalShownNotifications.take(
           _globalShownNotifications.length - 50,
@@ -298,37 +266,29 @@ class FCMService {
     }
   }
 
-  /// Handle notification tap actions
   void _handleNotificationTap(RemoteMessage message) {
     final data = message.data;
     final type = data['type'];
 
     switch (type) {
       case 'new_order':
-        // Navigate to orders screen
         _navigateToOrders(data);
         break;
       case 'order_update':
-        // Navigate to specific order
         _navigateToOrderDetails(data);
         break;
       case 'low_stock':
-        // Navigate to listings
         _navigateToListings(data);
         break;
       default:
-        // Navigate to notifications screen
         _navigateToNotifications();
         break;
     }
   }
 
-  /// Navigation methods
   void _navigateToOrders(Map<String, dynamic> data) {
     final context = _getNavigatorContext();
     if (context != null) {
-      // Navigate to orders tab or screen
-      // Implementation depends on your navigation structure
       Navigator.of(context).pushNamed('/orders');
     }
   }
@@ -355,14 +315,10 @@ class FCMService {
     }
   }
 
-  /// Get current navigator context
   BuildContext? _getNavigatorContext() {
-    // This would need to be implemented based on your app structure
-    // You might need to store a global navigator key
     return null;
   }
 
-  /// Subscribe to topic for store owners
   Future<void> subscribeToStoreNotifications(String storeId) async {
     try {
       await _messaging.subscribeToTopic('store_$storeId');
@@ -372,7 +328,6 @@ class FCMService {
     }
   }
 
-  /// Unsubscribe from topic
   Future<void> unsubscribeFromStoreNotifications(String storeId) async {
     try {
       await _messaging.unsubscribeFromTopic('store_$storeId');
@@ -382,7 +337,6 @@ class FCMService {
     }
   }
 
-  /// Trigger FCM token storage for current user (call after login)
   Future<void> onUserLogin() async {
     try {
       final currentUser = _auth.currentUser;
@@ -391,7 +345,6 @@ class FCMService {
         return;
       }
 
-      // Try to get a fresh token if we don't have one
       if (_fcmToken == null) {
         debugPrint('No FCM token available, attempting to get fresh token');
         _fcmToken = await _messaging.getToken();
@@ -411,7 +364,6 @@ class FCMService {
     }
   }
 
-  /// Clean up tokens when user signs out
   Future<void> clearTokens() async {
     try {
       final currentUser = _auth.currentUser;
@@ -429,40 +381,31 @@ class FCMService {
   }
 }
 
-// Global set to track shown notifications across handlers
 final Set<String> _globalShownNotifications = <String>{};
 
-/// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('Background message received: ${message.messageId}');
 
-  // Initialize Firebase if not already done
   await Firebase.initializeApp();
 
-  // Show local notification for background messages
   await _showBackgroundLocalNotification(message);
 }
 
-/// Show local notification for background messages
 Future<void> _showBackgroundLocalNotification(RemoteMessage message) async {
   try {
     final notification = message.notification;
     if (notification == null) return;
 
-    // Create unique notification ID to prevent duplicates
     final messageId = message.messageId ?? message.hashCode.toString();
 
-    // Check if we already showed this notification
     if (_globalShownNotifications.contains(messageId)) {
       debugPrint('Background notification already shown: $messageId');
       return;
     }
 
-    // Add to shown notifications set
     _globalShownNotifications.add(messageId);
 
-    // Clean up old entries (keep only last 50)
     if (_globalShownNotifications.length > 50) {
       final oldEntries = _globalShownNotifications.take(
         _globalShownNotifications.length - 50,
@@ -472,7 +415,6 @@ Future<void> _showBackgroundLocalNotification(RemoteMessage message) async {
 
     final localNotifications = FlutterLocalNotificationsPlugin();
 
-    // Initialize if needed
     const androidInitialization = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );

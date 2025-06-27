@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Input validation utilities
 class Validators {
-  /// Email validation
   static String? email(String? value) {
     if (value == null || value.isEmpty) {
       return 'Email is required';
@@ -19,7 +17,6 @@ class Validators {
     return null;
   }
 
-  /// Password validation
   static String? password(String? value) {
     if (value == null || value.isEmpty) {
       return 'Password is required';
@@ -32,7 +29,6 @@ class Validators {
     return null;
   }
 
-  /// Required field validation
   static String? required(String? value, [String? fieldName]) {
     if (value == null || value.trim().isEmpty) {
       return '${fieldName ?? 'This field'} is required';
@@ -40,7 +36,6 @@ class Validators {
     return null;
   }
 
-  /// Phone number validation
   static String? phoneNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Phone number is required';
@@ -55,7 +50,6 @@ class Validators {
     return null;
   }
 
-  /// Price validation
   static String? price(String? value) {
     if (value == null || value.isEmpty) {
       return 'Price is required';
@@ -69,7 +63,6 @@ class Validators {
     return null;
   }
 
-  /// URL validation
   static String? url(String? value) {
     if (value == null || value.isEmpty) {
       return null; // URL is optional
@@ -86,7 +79,6 @@ class Validators {
     return null;
   }
 
-  /// Minimum length validation
   static String? minLength(String? value, int minLength, [String? fieldName]) {
     if (value == null || value.isEmpty) {
       return '${fieldName ?? 'This field'} is required';
@@ -99,7 +91,6 @@ class Validators {
     return null;
   }
 
-  /// Maximum length validation
   static String? maxLength(String? value, int maxLength, [String? fieldName]) {
     if (value != null && value.length > maxLength) {
       return '${fieldName ?? 'This field'} must not exceed $maxLength characters';

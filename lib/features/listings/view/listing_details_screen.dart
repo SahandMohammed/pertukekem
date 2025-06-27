@@ -6,13 +6,14 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../model/listing_model.dart';
 import '../model/review_model.dart';
-import '../../dashboards/store/models/store_model.dart';
+import '../../dashboards/model/store_model.dart';
 import '../../../core/services/review_service.dart';
-import '../../authentication/viewmodels/auth_viewmodel.dart';
-import '../../payments/screens/payment_screen.dart';
-import '../../library/services/library_service.dart';
+import '../../authentication/viewmodel/auth_viewmodel.dart';
+import '../../payments/view/payment_screen.dart';
+import '../../library/service/library_service.dart';
+import '../../library/service/saved_books_service.dart';
 import '../../cart/services/cart_service.dart';
-import '../../cart/screens/cart_screen.dart';
+import '../../cart/view/cart_screen.dart';
 
 class ListingDetailsScreen extends StatefulWidget {
   final Listing listing;
@@ -26,6 +27,7 @@ class ListingDetailsScreen extends StatefulWidget {
 class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   final ReviewService _reviewService = ReviewService();
   final LibraryService _libraryService = LibraryService();
+  final SavedBooksService _savedBooksService = SavedBooksService();
   StoreModel? _storeInfo;
   Map<String, dynamic>? _reviewStats;
   bool _isLoadingStore = true;
@@ -33,11 +35,15 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   bool _isCheckingOwnership = true;
   bool _userOwnsBook = false;
   bool _isStoreAccount = false;
-
+  bool _isBookSaved = false;
+  bool _isLoadingSavedState = true;
   Listing get listing => widget.listing;
 
   bool get _isAnyLoading =>
-      _isLoadingStore || _isLoadingReviews || _isCheckingOwnership;
+      _isLoadingStore ||
+      _isLoadingReviews ||
+      _isCheckingOwnership ||
+      _isLoadingSavedState;
   @override
   void initState() {
     super.initState();
@@ -45,8 +51,8 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     _loadReviewStats();
     _checkBookOwnership();
     _checkUserType();
+    _checkSavedState();
 
-    // Initialize cart service
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CartService>().initializeCart();
     });
@@ -54,7 +60,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
 
   Future<void> _loadStoreInfo() async {
     if (listing.sellerType != 'store') {
-      // Add a small delay to ensure shimmer shows for non-store listings too
       await Future.delayed(const Duration(milliseconds: 500));
       setState(() => _isLoadingStore = false);
       return;
@@ -97,7 +102,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   Future<void> _checkBookOwnership() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null || listing.id == null) {
-      // Add a small delay to ensure shimmer shows even when user isn't logged in
       await Future.delayed(const Duration(milliseconds: 300));
       setState(() => _isCheckingOwnership = false);
       return;
@@ -124,7 +128,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     }
 
     try {
-      // Check user roles in the users collection
       final userDoc =
           await FirebaseFirestore.instance
               .collection('users')
@@ -134,8 +137,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       if (userDoc.exists) {
         final userData = userDoc.data();
         final roles = userData?['roles'] as List<dynamic>?;
-
-        // Check if user has store role
         setState(() {
           _isStoreAccount = roles?.contains('store') ?? false;
         });
@@ -148,6 +149,101 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     }
   }
 
+  Future<void> _checkSavedState() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || listing.id == null) {
+      setState(() => _isLoadingSavedState = false);
+      return;
+    }
+
+    setState(() => _isLoadingSavedState = true);
+    try {
+      final isSaved = await _savedBooksService.isBookSaved(listing.id!);
+      setState(() {
+        _isBookSaved = isSaved;
+      });
+    } catch (e) {
+      debugPrint('Error checking saved state: $e');
+    } finally {
+      setState(() => _isLoadingSavedState = false);
+    }
+  }
+
+  Future<void> _toggleSavedState() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to save books'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (listing.id == null) return;
+
+    try {
+      if (_isBookSaved) {
+        await _savedBooksService.unsaveBook(listing.id!);
+        setState(() => _isBookSaved = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Book removed from saved'),
+            backgroundColor: Colors.grey,
+          ),
+        );
+      } else {
+        String sellerId = '';
+        String sellerName = '';
+
+        if (listing.sellerType == 'store' && _storeInfo != null) {
+          sellerId = listing.sellerRef.id;
+          sellerName = _storeInfo!.storeName;
+        } else {
+          try {
+            final userDoc =
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(listing.sellerRef.id)
+                    .get();
+            if (userDoc.exists) {
+              final userData = userDoc.data()!;
+              sellerId = listing.sellerRef.id;
+              sellerName =
+                  userData['displayName'] ??
+                  userData['email'] ??
+                  'Unknown Seller';
+            }
+          } catch (e) {
+            sellerId = listing.sellerRef.id;
+            sellerName = 'Unknown Seller';
+          }
+        }
+
+        await _savedBooksService.saveBookFromListing(
+          listing,
+          sellerId,
+          sellerName,
+        );
+        setState(() => _isBookSaved = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Book saved to your collection'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildShimmerPlaceholder() {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -155,7 +251,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
-          // Shimmer App Bar with Cover Image
           SliverAppBar(
             expandedHeight: 400,
             pinned: true,
@@ -231,7 +326,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
             ),
           ),
 
-          // Shimmer Content
           SliverToBoxAdapter(
             child: Container(
               decoration: BoxDecoration(
@@ -248,7 +342,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title shimmer
                       Container(
                         height: 32,
                         width: double.infinity,
@@ -268,7 +361,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Price and condition shimmer
                       Container(
                         height: 80,
                         width: double.infinity,
@@ -279,7 +371,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Details shimmer
                       ...List.generate(
                         5,
                         (index) => Padding(
@@ -309,7 +400,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Description shimmer
                       Container(
                         height: 20,
                         width: 100,
@@ -335,7 +425,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Reviews shimmer
                       Container(
                         height: 20,
                         width: 80,
@@ -433,7 +522,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   }
 
   Widget _buildShimmerBottomButton() {
-    // final colorScheme = Theme.of(context).colorScheme; // No longer needed here if only used for shimmer
 
     return Container(
       width: double.infinity,
@@ -481,7 +569,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // Show shimmer while any loading state is active
     if (_isAnyLoading) {
       return _buildShimmerPlaceholder();
     }
@@ -490,7 +577,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
-          // App Bar with Cover Image
           SliverAppBar(
             expandedHeight: 400,
             pinned: true,
@@ -516,7 +602,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               ),
             ),
             actions: [
-              // Cart button - only show for customers
               Consumer<AuthViewModel>(
                 builder: (context, authViewModel, child) {
                   final userRoles = authViewModel.user?.roles ?? [];
@@ -591,10 +676,28 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                   ],
                 ),
                 child: IconButton(
-                  onPressed: () {
-                    // TODO: Add to favorites/share functionality
-                  },
-                  icon: const Icon(Icons.favorite_border),
+                  onPressed: _toggleSavedState,
+                  icon:
+                      _isLoadingSavedState
+                          ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                colorScheme.primary,
+                              ),
+                            ),
+                          )
+                          : Icon(
+                            _isBookSaved
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color:
+                                _isBookSaved
+                                    ? Colors.red
+                                    : colorScheme.onSurface,
+                          ),
                 ),
               ),
             ],
@@ -663,7 +766,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
             ),
           ),
 
-          // Content
           SliverToBoxAdapter(
             child: Container(
               decoration: BoxDecoration(
@@ -677,19 +779,15 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Book Title and Basic Info
                     _buildTitleSection(context),
                     const SizedBox(height: 24),
 
-                    // Price and Condition
                     _buildPriceAndConditionSection(context),
                     const SizedBox(height: 32),
 
-                    // Book Details
                     _buildDetailsSection(context),
                     const SizedBox(height: 32),
 
-                    // Description
                     if (listing.description != null) ...[
                       _buildDescriptionSection(context),
                       const SizedBox(height: 32),
@@ -886,31 +984,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color:
-                  listing.condition == 'new'
-                      ? Colors.green.withOpacity(0.2)
-                      : Colors.orange.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color:
-                    listing.condition == 'new' ? Colors.green : Colors.orange,
-                width: 1.5,
-              ),
-            ),
-            child: Text(
-              listing.condition.toUpperCase(),
-              style: textTheme.labelLarge?.copyWith(
-                color:
-                    listing.condition == 'new'
-                        ? Colors.green.shade700
-                        : Colors.orange.shade700,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -1088,7 +1161,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 color: colorScheme.onSurface,
               ),
             ),
-            // Hide Write Review button for store accounts
             if (!_isStoreAccount)
               TextButton.icon(
                 onPressed: () => _showAddReviewDialog(context),
@@ -1111,7 +1183,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
           const SizedBox(height: 20),
         ],
 
-        // Reviews List
         StreamBuilder<List<ReviewModel>>(
           stream: _reviewService.getListingReviews(listing.id!),
           builder: (context, snapshot) {
@@ -1191,7 +1262,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   Widget _buildContactSellerButton(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Hide the entire contact seller button for store accounts
     if (_isStoreAccount) {
       return const SizedBox.shrink();
     }
@@ -1201,7 +1271,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         final userRoles = authViewModel.user?.roles ?? [];
         final isCustomer = userRoles.contains('customer');
 
-        // Determine button appearance based on ownership status
         final bool showOwnershipInfo = isCustomer && _userOwnsBook;
 
         final Color textColor =
@@ -1296,16 +1365,17 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                                   isCustomer && listing.bookType == 'physical'
                                       ? cartService.isInCart(listing.id ?? '')
                                       : false;
-
                               return Text(
                                 showOwnershipInfo
                                     ? 'View in Library'
-                                    : (isCustomer
-                                        ? (listing.bookType == 'physical'
-                                            ? (isInCart
-                                                ? 'View Cart'
-                                                : 'Add to Cart')
-                                            : 'Buy Now')
+                                    : (listing.sellerType == 'store'
+                                        ? (isCustomer
+                                            ? (listing.bookType == 'physical'
+                                                ? (isInCart
+                                                    ? 'View Cart'
+                                                    : 'Add to Cart')
+                                                : 'Buy Now')
+                                            : 'Contact Store')
                                         : 'Contact Seller'),
                                 style: TextStyle(
                                   fontSize: 17,
@@ -1358,13 +1428,16 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   }
 
   void _showBuyNowDialog(BuildContext context) {
-    // Check if user already owns this book
     if (_userOwnsBook) {
       _showAlreadyOwnedDialog(context);
       return;
     }
 
-    // Navigate to payment screen for eBooks
+    if (listing.sellerType != 'store') {
+      _showContactDialog(context);
+      return;
+    }
+
     if (listing.bookType == 'ebook') {
       Navigator.push(
         context,
@@ -1373,27 +1446,22 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         ),
       );
     } else {
-      // For physical books, check if already in cart
       final cartService = context.read<CartService>();
       final isInCart = cartService.isInCart(listing.id ?? '');
 
       if (isInCart) {
-        // If already in cart, navigate to cart
         _navigateToCart(context);
       } else {
-        // If not in cart, add it immediately
         _addToCart(context);
       }
     }
   }
 
   Future<void> _addToCart(BuildContext context) async {
-    // Capture references early to avoid context access after async operations
     final cartService = context.read<CartService>();
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
-      // Show loading indicator
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           const SnackBar(
@@ -1538,7 +1606,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to library or show access to the book
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text(
@@ -1591,7 +1658,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         children: [
           Row(
             children: [
-              // Average Rating
               Expanded(
                 flex: 2,
                 child: Column(
@@ -1615,7 +1681,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
                 ),
               ),
 
-              // Rating Distribution
               Expanded(
                 flex: 3,
                 child: Column(
@@ -1703,7 +1768,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Reviewer Info and Rating
           Row(
             children: [
               CircleAvatar(
@@ -1775,7 +1839,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
             ],
           ),
 
-          // Review Comment
           const SizedBox(height: 12),
           Text(
             review.comment,
@@ -1785,7 +1848,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
             ),
           ),
 
-          // Seller Reply
           if (review.replyFromSeller != null) ...[
             const SizedBox(height: 12),
             Container(
@@ -1832,7 +1894,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
             ),
           ],
 
-          // Helpful Actions
           const SizedBox(height: 12),
           Row(
             children: [
@@ -1860,7 +1921,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
   }
 
   void _showAddReviewDialog(BuildContext context) {
-    // Prevent store accounts from opening the review dialog
     if (_isStoreAccount) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Store accounts cannot write reviews')),
@@ -1959,7 +2019,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       return;
     }
 
-    // Prevent store accounts from submitting reviews
     if (_isStoreAccount) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Store accounts cannot write reviews')),
@@ -1976,7 +2035,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         return;
       }
 
-      // Get user info
       final userDoc =
           await FirebaseFirestore.instance
               .collection('users')
@@ -2002,7 +2060,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Review submitted successfully!')));
 
-      // Refresh review stats
       _loadReviewStats();
     } catch (e) {
       ScaffoldMessenger.of(
