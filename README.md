@@ -1,9 +1,12 @@
-# Pertukekem
+📚 Pertukekem: Online Bookstore App
 
 ## Introduction
 
-Pertukekem is a next-generation, AI-powered online bookstore and digital library platform designed to revolutionize the way readers, store owners, and administrators interact with books and each other. Built with Flutter and Firebase, Pertukekem combines a beautiful, modern user interface with robust backend services, real-time notifications, and advanced AI features. Whether you're a book lover searching for your next read, a store owner managing inventory and orders, or an admin overseeing the ecosystem, Pertukekem provides a seamless, secure, and engaging experience for all.
+Pertukekem is a Flutter-based mobile application that modernizes the book shopping experience by offering a unified platform for buying, selling, and accessing both new and second-hand books. The app supports a user-to-user marketplace, bookstore listings, secure checkout, delivery tracking, and an AI-powered assistant for book inquiries.
 
+Built using Flutter and Firebase, Pertukekem integrates real-time data synchronization, secure authentication, and a modern MVVM architecture. Users can read e-books directly within the app through a built-in reader, which includes reading progress tracking.
+
+The app aims to bridge the gap between readers and sellers with intuitive UI, flexible payment options, and community-driven features.
 ---
 
 ## Table of Contents
