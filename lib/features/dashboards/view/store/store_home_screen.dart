@@ -297,21 +297,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        // Debug section for order issues
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
-                title: 'Debug Orders',
-                subtitle: 'Fix order display issues',
-                icon: Icons.bug_report,
-                color: Colors.orange,
-                onTap: () => _debugOrderIssues(),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -773,74 +758,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
         return Icons.info;
       default:
         return Icons.notifications; // Default icon for other notification types
-    }
-  }
-
-  Future<void> _debugOrderIssues() async {
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => const AlertDialog(
-              content: Row(
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 16),
-                  Text('Debugging and fixing order issues...'),
-                ],
-              ),
-            ),
-      );
-
-      // Create OrderViewModel instance and run debug/fix
-
-      // Close loading dialog
-      if (mounted) Navigator.of(context).pop();
-
-      // Check if there was an error
-
-      // Show result dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // Refresh the dashboard to show any fixed orders
-                      setState(() {});
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-        );
-      }
-    } catch (e) {
-      // Close loading dialog if still open
-      if (mounted) Navigator.of(context).pop();
-
-      // Show error dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Debug Error'),
-                content: Text('Error during debug: $e'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-        );
-      }
     }
   }
 }

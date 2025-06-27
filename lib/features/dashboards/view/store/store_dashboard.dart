@@ -48,22 +48,10 @@ class _StoreDashboardState extends State<StoreDashboard> {
                     title: Text('Welcome, $storeName'),
                     centerTitle: false,
                     actions: [
-                      // Debug: FCM Test Button (remove in production)
-                      IconButton(
-                        icon: const Icon(Icons.bug_report),
-                        tooltip: 'FCM Debug',
-                        onPressed: () {
-                          Navigator.of(context).pushNamed('/notification-test');
-                        },
-                      ),
                       StreamBuilder<int>(
                         stream:
                             _notificationService.getStoreUnreadCountStream(),
                         builder: (context, snapshot) {
-                          print(
-                            '🔔 Dashboard notification badge rebuild - State: ${snapshot.connectionState}, Data: ${snapshot.data}, Error: ${snapshot.error}',
-                          );
-
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
                             return IconButton(
@@ -80,16 +68,7 @@ class _StoreDashboardState extends State<StoreDashboard> {
                             );
                           }
 
-                          if (snapshot.hasError) {
-                            print(
-                              '❌ Dashboard notification error: ${snapshot.error}',
-                            );
-                          }
-
                           final unreadCount = snapshot.data ?? 0;
-                          print(
-                            '📊 Dashboard showing badge with count: $unreadCount',
-                          );
 
                           return Badge(
                             isLabelVisible: unreadCount > 0,
