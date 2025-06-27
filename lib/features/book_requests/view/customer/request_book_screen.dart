@@ -7,10 +7,7 @@ import 'store_selection_screen.dart';
 class RequestBookScreen extends StatefulWidget {
   final StoreModel? preSelectedStore;
 
-  const RequestBookScreen({
-    super.key,
-    this.preSelectedStore,
-  });
+  const RequestBookScreen({super.key, this.preSelectedStore});
 
   @override
   State<RequestBookScreen> createState() => _RequestBookScreenState();
@@ -64,9 +61,7 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.1),
-                  ),
+                  side: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -127,7 +122,8 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
               const SizedBox(height: 12),
               Consumer<BookRequestViewModel>(
                 builder: (context, viewModel, child) {
-                  if (viewModel.isLoading && viewModel.availableStores.isEmpty) {
+                  if (viewModel.isLoading &&
+                      viewModel.availableStores.isEmpty) {
                     return const Card(
                       child: Padding(
                         padding: EdgeInsets.all(20),
@@ -169,22 +165,26 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: _selectedStore != null
-                            ? colorScheme.primary.withOpacity(0.3)
-                            : colorScheme.outline.withOpacity(0.1),
+                        color:
+                            _selectedStore != null
+                                ? colorScheme.primary.withOpacity(0.3)
+                                : colorScheme.outline.withOpacity(0.1),
                       ),
                     ),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () async {
-                        final selectedStore = await Navigator.of(context).push<StoreModel>(
+                        final selectedStore = await Navigator.of(
+                          context,
+                        ).push<StoreModel>(
                           MaterialPageRoute(
-                            builder: (context) => ChangeNotifierProvider.value(
-                              value: context.read<BookRequestViewModel>(),
-                              child: StoreSelectionScreen(
-                                initialSelection: _selectedStore,
-                              ),
-                            ),
+                            builder:
+                                (context) => ChangeNotifierProvider.value(
+                                  value: context.read<BookRequestViewModel>(),
+                                  child: StoreSelectionScreen(
+                                    initialSelection: _selectedStore,
+                                  ),
+                                ),
                           ),
                         );
 
@@ -200,9 +200,10 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                           children: [
                             Icon(
                               Icons.store_outlined,
-                              color: _selectedStore != null
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
+                              color:
+                                  _selectedStore != null
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -210,11 +211,14 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _selectedStore != null ? 'Store Selected' : 'Choose a store',
+                                    _selectedStore != null
+                                        ? 'Store Selected'
+                                        : 'Choose a store',
                                     style: textTheme.bodySmall?.copyWith(
-                                      color: _selectedStore != null
-                                          ? colorScheme.primary
-                                          : colorScheme.onSurfaceVariant,
+                                      color:
+                                          _selectedStore != null
+                                              ? colorScheme.primary
+                                              : colorScheme.onSurfaceVariant,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -272,9 +276,7 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.1),
-                  ),
+                  side: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
                 ),
                 child: TextFormField(
                   controller: _bookTitleController,
@@ -305,16 +307,13 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: colorScheme.outline.withOpacity(0.1),
-                  ),
+                  side: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
                 ),
                 child: TextFormField(
                   controller: _noteController,
                   decoration: const InputDecoration(
                     labelText: 'Additional Notes (Optional)',
-                    hintText:
-                        'Author, edition, specific requirements, etc...',
+                    hintText: 'Author, edition, specific requirements, etc...',
                     prefixIcon: Icon(Icons.note_outlined),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(16),
@@ -332,28 +331,32 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                 child: Consumer<BookRequestViewModel>(
                   builder: (context, viewModel, child) {
                     return FilledButton(
-                      onPressed: (viewModel.isSubmitting || _isLoading)
-                          ? null
-                          : _submitRequest,
+                      onPressed:
+                          (viewModel.isSubmitting || _isLoading)
+                              ? null
+                              : _submitRequest,
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: viewModel.isSubmitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text(
-                              'Submit Request',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                      child:
+                          viewModel.isSubmitting
+                              ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Text(
+                                'Submit Request',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
                     );
                   },
                 ),
@@ -367,9 +370,7 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
                 color: colorScheme.primaryContainer.withOpacity(0.3),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: colorScheme.primary.withOpacity(0.2),
-                  ),
+                  side: BorderSide(color: colorScheme.primary.withOpacity(0.2)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -425,9 +426,10 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
       storeId: _selectedStore!.storeId,
       storeName: _selectedStore!.storeName,
       bookTitle: _bookTitleController.text.trim(),
-      note: _noteController.text.trim().isNotEmpty
-          ? _noteController.text.trim()
-          : null,
+      note:
+          _noteController.text.trim().isNotEmpty
+              ? _noteController.text.trim()
+              : null,
     );
 
     setState(() => _isLoading = false);
@@ -440,9 +442,7 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
             children: [
               Icon(Icons.check_circle, color: Colors.white),
               SizedBox(width: 12),
-              Expanded(
-                child: Text('Book request submitted successfully!'),
-              ),
+              Expanded(child: Text('Book request submitted successfully!')),
             ],
           ),
           backgroundColor: Theme.of(context).colorScheme.primary,

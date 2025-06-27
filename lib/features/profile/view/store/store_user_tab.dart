@@ -307,10 +307,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => ChangeNotifierProvider.value(
-                          value: context.read<BookRequestViewModel>(),
-                          child: const StoreRequestManagementScreen(),
-                        ),
+                        builder:
+                            (context) => ChangeNotifierProvider.value(
+                              value: context.read<BookRequestViewModel>(),
+                              child: const StoreRequestManagementScreen(),
+                            ),
                       ),
                     );
                   },

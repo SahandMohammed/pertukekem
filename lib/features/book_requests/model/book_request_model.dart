@@ -1,12 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum BookRequestStatus {
-  pending,
-  accepted,
-  rejected,
-  fulfilled,
-  cancelled,
-}
+enum BookRequestStatus { pending, accepted, rejected, fulfilled, cancelled }
 
 class BookRequest {
   final String id;
@@ -52,13 +46,15 @@ class BookRequest {
         orElse: () => BookRequestStatus.pending,
       ),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: data['updatedAt'] != null
-          ? (data['updatedAt'] as Timestamp).toDate()
-          : null,
+      updatedAt:
+          data['updatedAt'] != null
+              ? (data['updatedAt'] as Timestamp).toDate()
+              : null,
       storeResponse: data['storeResponse'],
-      responseDate: data['responseDate'] != null
-          ? (data['responseDate'] as Timestamp).toDate()
-          : null,
+      responseDate:
+          data['responseDate'] != null
+              ? (data['responseDate'] as Timestamp).toDate()
+              : null,
     );
   }
 

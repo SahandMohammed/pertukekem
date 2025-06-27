@@ -99,11 +99,7 @@ class _StoreRequestManagementScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: colorScheme.error,
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: colorScheme.error),
                   const SizedBox(height: 16),
                   Text(
                     'Error Loading Requests',
@@ -131,12 +127,13 @@ class _StoreRequestManagementScreenState
             );
           }
 
-          final filteredRequests = _selectedStatus == null
-              ? viewModel.storeRequests
-              : viewModel.getRequestsByStatus(
-                  viewModel.storeRequests,
-                  _selectedStatus,
-                );
+          final filteredRequests =
+              _selectedStatus == null
+                  ? viewModel.storeRequests
+                  : viewModel.getRequestsByStatus(
+                    viewModel.storeRequests,
+                    _selectedStatus,
+                  );
 
           if (viewModel.storeRequests.isEmpty) {
             return _buildEmptyState();
@@ -146,24 +143,25 @@ class _StoreRequestManagementScreenState
             children: [
               // Filter Chips
               _buildFilterChips(viewModel),
-              
+
               // Requests List
               Expanded(
-                child: filteredRequests.isEmpty
-                    ? _buildNoResultsState()
-                    : RefreshIndicator(
-                        onRefresh: () => viewModel.loadStoreRequests(),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: filteredRequests.length,
-                          itemBuilder: (context, index) {
-                            return _buildRequestCard(
-                              filteredRequests[index],
-                              viewModel,
-                            );
-                          },
+                child:
+                    filteredRequests.isEmpty
+                        ? _buildNoResultsState()
+                        : RefreshIndicator(
+                          onRefresh: () => viewModel.loadStoreRequests(),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredRequests.length,
+                            itemBuilder: (context, index) {
+                              return _buildRequestCard(
+                                filteredRequests[index],
+                                viewModel,
+                              );
+                            },
+                          ),
                         ),
-                      ),
               ),
             ],
           );
@@ -190,11 +188,11 @@ class _StoreRequestManagementScreenState
           ),
           const SizedBox(width: 8),
           ...BookRequestStatus.values.map((status) {
-            final count = viewModel.getRequestsByStatus(
-              viewModel.storeRequests,
-              status,
-            ).length;
-            
+            final count =
+                viewModel
+                    .getRequestsByStatus(viewModel.storeRequests, status)
+                    .length;
+
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
@@ -213,7 +211,10 @@ class _StoreRequestManagementScreenState
     );
   }
 
-  Widget _buildRequestCard(BookRequest request, BookRequestViewModel viewModel) {
+  Widget _buildRequestCard(
+    BookRequest request,
+    BookRequestViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -237,9 +238,7 @@ class _StoreRequestManagementScreenState
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.1),
-        ),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -281,8 +280,10 @@ class _StoreRequestManagementScreenState
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: getStatusColor(request.status).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -320,10 +321,7 @@ class _StoreRequestManagementScreenState
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      request.note!,
-                      style: textTheme.bodyMedium,
-                    ),
+                    Text(request.note!, style: textTheme.bodyMedium),
                   ],
                 ),
               ),
@@ -352,10 +350,7 @@ class _StoreRequestManagementScreenState
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      request.storeResponse!,
-                      style: textTheme.bodyMedium,
-                    ),
+                    Text(request.storeResponse!, style: textTheme.bodyMedium),
                   ],
                 ),
               ),
@@ -381,11 +376,12 @@ class _StoreRequestManagementScreenState
                 const Spacer(),
                 if (request.status == BookRequestStatus.pending) ...[
                   TextButton(
-                    onPressed: () => _showResponseDialog(
-                      request,
-                      BookRequestStatus.rejected,
-                      viewModel,
-                    ),
+                    onPressed:
+                        () => _showResponseDialog(
+                          request,
+                          BookRequestStatus.rejected,
+                          viewModel,
+                        ),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.red,
                       visualDensity: VisualDensity.compact,
@@ -394,11 +390,12 @@ class _StoreRequestManagementScreenState
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: () => _showResponseDialog(
-                      request,
-                      BookRequestStatus.accepted,
-                      viewModel,
-                    ),
+                    onPressed:
+                        () => _showResponseDialog(
+                          request,
+                          BookRequestStatus.accepted,
+                          viewModel,
+                        ),
                     style: FilledButton.styleFrom(
                       visualDensity: VisualDensity.compact,
                     ),
@@ -407,11 +404,12 @@ class _StoreRequestManagementScreenState
                 ],
                 if (request.status == BookRequestStatus.accepted)
                   FilledButton(
-                    onPressed: () => _showResponseDialog(
-                      request,
-                      BookRequestStatus.fulfilled,
-                      viewModel,
-                    ),
+                    onPressed:
+                        () => _showResponseDialog(
+                          request,
+                          BookRequestStatus.fulfilled,
+                          viewModel,
+                        ),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.green,
                       visualDensity: VisualDensity.compact,
@@ -524,64 +522,70 @@ class _StoreRequestManagementScreenState
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${newStatus.name.capitalize()} Request'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Book: "${request.bookTitle}"',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text('Customer: ${request.customerName}'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: responseController,
-              decoration: InputDecoration(
-                labelText: 'Response Message ${newStatus == BookRequestStatus.rejected ? '(Required)' : '(Optional)'}',
-                hintText: newStatus == BookRequestStatus.accepted
-                    ? 'Book is available. Price: \$XX.XX'
-                    : newStatus == BookRequestStatus.fulfilled
-                        ? 'Book has been fulfilled and is ready for pickup/delivery'
-                        : 'Unfortunately, this book is not available',
-                border: const OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (newStatus == BookRequestStatus.rejected &&
-                  responseController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Response message is required for rejection'),
+      builder:
+          (context) => AlertDialog(
+            title: Text('${newStatus.name.capitalize()} Request'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Book: "${request.bookTitle}"',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text('Customer: ${request.customerName}'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: responseController,
+                  decoration: InputDecoration(
+                    labelText:
+                        'Response Message ${newStatus == BookRequestStatus.rejected ? '(Required)' : '(Optional)'}',
+                    hintText:
+                        newStatus == BookRequestStatus.accepted
+                            ? 'Book is available. Price: \$XX.XX'
+                            : newStatus == BookRequestStatus.fulfilled
+                            ? 'Book has been fulfilled and is ready for pickup/delivery'
+                            : 'Unfortunately, this book is not available',
+                    border: const OutlineInputBorder(),
                   ),
-                );
-                return;
-              }
-              response = responseController.text.trim();
-              Navigator.of(context).pop(true);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: newStatus == BookRequestStatus.rejected
-                  ? Colors.red
-                  : newStatus == BookRequestStatus.fulfilled
-                      ? Colors.green
-                      : null,
+                  maxLines: 3,
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+              ],
             ),
-            child: Text(newStatus.name.capitalize()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (newStatus == BookRequestStatus.rejected &&
+                      responseController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Response message is required for rejection',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  response = responseController.text.trim();
+                  Navigator.of(context).pop(true);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      newStatus == BookRequestStatus.rejected
+                          ? Colors.red
+                          : newStatus == BookRequestStatus.fulfilled
+                          ? Colors.green
+                          : null,
+                ),
+                child: Text(newStatus.name.capitalize()),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true && mounted) {

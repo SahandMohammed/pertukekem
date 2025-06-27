@@ -25,14 +25,15 @@ class BookRequestService {
       // Get customer information
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
-      
+
       if (!userDoc.exists) {
         throw Exception('User profile not found');
       }
 
       final userData = userDoc.data()!;
-      final customerName = '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
-      
+      final customerName =
+          '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
+
       if (customerName.isEmpty) {
         throw Exception('Customer name not found in profile');
       }
@@ -69,11 +70,12 @@ class BookRequestService {
     }
 
     try {
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('customerId', isEqualTo: currentUser.uid)
-          .orderBy('createdAt', descending: true)
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('customerId', isEqualTo: currentUser.uid)
+              .orderBy('createdAt', descending: true)
+              .get();
 
       return querySnapshot.docs
           .map((doc) => BookRequest.fromFirestore(doc))
@@ -94,7 +96,7 @@ class BookRequestService {
       // Get user's store ID
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
-      
+
       if (!userDoc.exists) {
         throw Exception('User not found');
       }
@@ -104,11 +106,12 @@ class BookRequestService {
         throw Exception('User does not have a store');
       }
 
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('storeId', isEqualTo: storeId)
-          .orderBy('createdAt', descending: true)
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('storeId', isEqualTo: storeId)
+              .orderBy('createdAt', descending: true)
+              .get();
 
       return querySnapshot.docs
           .map((doc) => BookRequest.fromFirestore(doc))
@@ -130,9 +133,12 @@ class BookRequestService {
         .where('customerId', isEqualTo: currentUser.uid)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BookRequest.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => BookRequest.fromFirestore(doc))
+                  .toList(),
+        );
   }
 
   /// Stream book requests for a store (real-time updates)
@@ -147,7 +153,7 @@ class BookRequestService {
       // Get user's store ID
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
-      
+
       if (!userDoc.exists) {
         yield [];
         return;
@@ -164,9 +170,12 @@ class BookRequestService {
           .where('storeId', isEqualTo: storeId)
           .orderBy('createdAt', descending: true)
           .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => BookRequest.fromFirestore(doc))
-              .toList());
+          .map(
+            (snapshot) =>
+                snapshot.docs
+                    .map((doc) => BookRequest.fromFirestore(doc))
+                    .toList(),
+          );
     } catch (e) {
       yield [];
     }
@@ -206,7 +215,7 @@ class BookRequestService {
       // Verify the request belongs to the current user
       final requestDoc =
           await _firestore.collection(_collection).doc(requestId).get();
-      
+
       if (!requestDoc.exists) {
         throw Exception('Request not found');
       }
@@ -232,10 +241,8 @@ class BookRequestService {
   /// Get all available stores for book requests
   Future<List<StoreModel>> getAvailableStores() async {
     try {
-      final querySnapshot = await _firestore
-          .collection('stores')
-          .orderBy('storeName')
-          .get();
+      final querySnapshot =
+          await _firestore.collection('stores').orderBy('storeName').get();
 
       return querySnapshot.docs
           .map((doc) => StoreModel.fromMap(doc.data()))
@@ -253,18 +260,19 @@ class BookRequestService {
     try {
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
-      
+
       if (!userDoc.exists) return 0;
 
       final storeId = userDoc.data()?['storeId'];
       if (storeId == null) return 0;
 
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('storeId', isEqualTo: storeId)
-          .where('status', isEqualTo: BookRequestStatus.pending.name)
-          .count()
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('storeId', isEqualTo: storeId)
+              .where('status', isEqualTo: BookRequestStatus.pending.name)
+              .count()
+              .get();
 
       return querySnapshot.count ?? 0;
     } catch (e) {

@@ -248,7 +248,7 @@ class _ProfileTabState extends State<ProfileTab> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 12                      ),
+                      const SizedBox(height: 12),
                       _buildMenuCard(context, [
                         _MenuOption(
                           icon: Icons.request_quote_outlined,
@@ -257,10 +257,12 @@ class _ProfileTabState extends State<ProfileTab> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => ChangeNotifierProvider.value(
-                                  value: context.read<BookRequestViewModel>(),
-                                  child: const RequestBookScreen(),
-                                ),
+                                builder:
+                                    (context) => ChangeNotifierProvider.value(
+                                      value:
+                                          context.read<BookRequestViewModel>(),
+                                      child: const RequestBookScreen(),
+                                    ),
                               ),
                             );
                           },
@@ -272,10 +274,13 @@ class _ProfileTabState extends State<ProfileTab> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => ChangeNotifierProvider.value(
-                                  value: context.read<BookRequestViewModel>(),
-                                  child: const CustomerRequestHistoryScreen(),
-                                ),
+                                builder:
+                                    (context) => ChangeNotifierProvider.value(
+                                      value:
+                                          context.read<BookRequestViewModel>(),
+                                      child:
+                                          const CustomerRequestHistoryScreen(),
+                                    ),
                               ),
                             );
                           },
@@ -304,10 +309,12 @@ class _ProfileTabState extends State<ProfileTab> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => ChangeNotifierProvider.value(
-                                  value: context.read<BookRequestViewModel>(),
-                                  child: const RequestBookScreen(),
-                                ),
+                                builder:
+                                    (context) => ChangeNotifierProvider.value(
+                                      value:
+                                          context.read<BookRequestViewModel>(),
+                                      child: const RequestBookScreen(),
+                                    ),
                               ),
                             );
                           },
@@ -319,10 +326,13 @@ class _ProfileTabState extends State<ProfileTab> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => ChangeNotifierProvider.value(
-                                  value: context.read<BookRequestViewModel>(),
-                                  child: const CustomerRequestHistoryScreen(),
-                                ),
+                                builder:
+                                    (context) => ChangeNotifierProvider.value(
+                                      value:
+                                          context.read<BookRequestViewModel>(),
+                                      child:
+                                          const CustomerRequestHistoryScreen(),
+                                    ),
                               ),
                             );
                           },

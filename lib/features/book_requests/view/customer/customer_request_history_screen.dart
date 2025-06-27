@@ -55,11 +55,7 @@ class _CustomerRequestHistoryScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: colorScheme.error,
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: colorScheme.error),
                   const SizedBox(height: 16),
                   Text(
                     'Error Loading Requests',
@@ -87,12 +83,13 @@ class _CustomerRequestHistoryScreenState
             );
           }
 
-          final filteredRequests = _selectedStatus == null
-              ? viewModel.customerRequests
-              : viewModel.getRequestsByStatus(
-                  viewModel.customerRequests,
-                  _selectedStatus,
-                );
+          final filteredRequests =
+              _selectedStatus == null
+                  ? viewModel.customerRequests
+                  : viewModel.getRequestsByStatus(
+                    viewModel.customerRequests,
+                    _selectedStatus,
+                  );
 
           if (viewModel.customerRequests.isEmpty) {
             return _buildEmptyState();
@@ -102,24 +99,25 @@ class _CustomerRequestHistoryScreenState
             children: [
               // Filter Chips
               _buildFilterChips(viewModel),
-              
+
               // Requests List
               Expanded(
-                child: filteredRequests.isEmpty
-                    ? _buildNoResultsState()
-                    : RefreshIndicator(
-                        onRefresh: () => viewModel.loadCustomerRequests(),
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: filteredRequests.length,
-                          itemBuilder: (context, index) {
-                            return _buildRequestCard(
-                              filteredRequests[index],
-                              viewModel,
-                            );
-                          },
+                child:
+                    filteredRequests.isEmpty
+                        ? _buildNoResultsState()
+                        : RefreshIndicator(
+                          onRefresh: () => viewModel.loadCustomerRequests(),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredRequests.length,
+                            itemBuilder: (context, index) {
+                              return _buildRequestCard(
+                                filteredRequests[index],
+                                viewModel,
+                              );
+                            },
+                          ),
                         ),
-                      ),
               ),
             ],
           );
@@ -129,10 +127,11 @@ class _CustomerRequestHistoryScreenState
         onPressed: () async {
           final result = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
-              builder: (context) => ChangeNotifierProvider.value(
-                value: context.read<BookRequestViewModel>(),
-                child: const RequestBookScreen(),
-              ),
+              builder:
+                  (context) => ChangeNotifierProvider.value(
+                    value: context.read<BookRequestViewModel>(),
+                    child: const RequestBookScreen(),
+                  ),
             ),
           );
 
@@ -164,11 +163,11 @@ class _CustomerRequestHistoryScreenState
           ),
           const SizedBox(width: 8),
           ...BookRequestStatus.values.map((status) {
-            final count = viewModel.getRequestsByStatus(
-              viewModel.customerRequests,
-              status,
-            ).length;
-            
+            final count =
+                viewModel
+                    .getRequestsByStatus(viewModel.customerRequests, status)
+                    .length;
+
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
@@ -187,7 +186,10 @@ class _CustomerRequestHistoryScreenState
     );
   }
 
-  Widget _buildRequestCard(BookRequest request, BookRequestViewModel viewModel) {
+  Widget _buildRequestCard(
+    BookRequest request,
+    BookRequestViewModel viewModel,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -211,9 +213,7 @@ class _CustomerRequestHistoryScreenState
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.1),
-        ),
+        side: BorderSide(color: colorScheme.outline.withOpacity(0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -246,8 +246,10 @@ class _CustomerRequestHistoryScreenState
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: getStatusColor(request.status).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -285,10 +287,7 @@ class _CustomerRequestHistoryScreenState
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      request.note!,
-                      style: textTheme.bodyMedium,
-                    ),
+                    Text(request.note!, style: textTheme.bodyMedium),
                   ],
                 ),
               ),
@@ -317,10 +316,7 @@ class _CustomerRequestHistoryScreenState
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      request.storeResponse!,
-                      style: textTheme.bodyMedium,
-                    ),
+                    Text(request.storeResponse!, style: textTheme.bodyMedium),
                   ],
                 ),
               ),
@@ -418,10 +414,11 @@ class _CustomerRequestHistoryScreenState
               onPressed: () async {
                 final result = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
-                    builder: (context) => ChangeNotifierProvider.value(
-                      value: context.read<BookRequestViewModel>(),
-                      child: const RequestBookScreen(),
-                    ),
+                    builder:
+                        (context) => ChangeNotifierProvider.value(
+                          value: context.read<BookRequestViewModel>(),
+                          child: const RequestBookScreen(),
+                        ),
                   ),
                 );
 
@@ -489,25 +486,24 @@ class _CustomerRequestHistoryScreenState
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Request'),
-        content: Text(
-          'Are you sure you want to cancel your request for "${request.bookTitle}"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Keep Request'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cancel Request'),
+            content: Text(
+              'Are you sure you want to cancel your request for "${request.bookTitle}"?',
             ),
-            child: const Text('Cancel Request'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Keep Request'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Cancel Request'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true && mounted) {

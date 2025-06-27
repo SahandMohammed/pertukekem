@@ -60,9 +60,10 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
 
     try {
       _storeRequests = await _bookRequestService.getStoreBookRequests();
-      _pendingRequestsCount = _storeRequests
-          .where((request) => request.status == BookRequestStatus.pending)
-          .length;
+      _pendingRequestsCount =
+          _storeRequests
+              .where((request) => request.status == BookRequestStatus.pending)
+              .length;
     } catch (e) {
       _setError('Failed to load store requests: $e');
       debugPrint('Error loading store requests: $e');
@@ -191,9 +192,8 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     final grouped = <BookRequestStatus, List<BookRequest>>{};
 
     for (final status in BookRequestStatus.values) {
-      grouped[status] = requests
-          .where((request) => request.status == status)
-          .toList();
+      grouped[status] =
+          requests.where((request) => request.status == status).toList();
     }
 
     return grouped;
