@@ -113,10 +113,10 @@ pertukekem/
 
 ## Screenshots
 
-> <img src="screenshots/CustomerDashboard.png" alt="Customer Dashboard" width="200" />
-> <img src="screenshots/AIChatScreen.png" alt="AI Chat" width="200" />
-> <img src="screenshots/BookDetails.png" alt="Book Details" width="200" />
-> <img src="screenshots/Admin.png" alt="Admin Dashboard" width="200" />
+> <img src="screenshots/CustomerDashboard.png" alt="Customer Dashboard" width="160" />
+> <img src="screenshots/AIChatScreen.png" alt="AI Chat" width="160" />
+> <img src="screenshots/BookDetails.png" alt="Book Details" width="160" />
+> <img src="screenshots/Admin.png" alt="Admin Dashboard" width="160" />
 
 ---
 
