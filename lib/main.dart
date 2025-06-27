@@ -15,6 +15,7 @@ import 'package:pertukekem/features/profile/viewmodel/store_profile_viewmodel.da
 import 'package:pertukekem/features/profile/viewmodel/user_profile_viewmodel.dart';
 import 'package:pertukekem/features/payments/viewmodel/payment_card_viewmodel.dart';
 import 'package:pertukekem/features/admin/viewmodel/admin_viewmodel.dart';
+import 'package:pertukekem/features/book_requests/viewmodel/book_request_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'features/authentication/viewmodel/auth_viewmodel.dart';
 import 'features/authentication/view/auth_wrapper.dart';
@@ -52,6 +53,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StoreOrderViewModel()),
         ChangeNotifierProvider(create: (_) => CheckoutViewModel()),
         ChangeNotifierProvider(create: (_) => AdminViewModel()),
+        ChangeNotifierProvider(create: (_) => BookRequestViewModel()),
       ],
       child: Consumer<AuthViewModel>(
         builder: (context, authViewModel, child) {
@@ -83,6 +85,7 @@ void _registerStateClearables(
   final storeOrderViewModel = context.read<StoreOrderViewModel>();
   final checkoutViewModel = context.read<CheckoutViewModel>();
   final adminViewModel = context.read<AdminViewModel>();
+  final bookRequestViewModel = context.read<BookRequestViewModel>();
 
   // Register clearState methods with AuthViewModel
   authViewModel.registerStateClearable(storeViewModel.clearState);
@@ -96,6 +99,7 @@ void _registerStateClearables(
   authViewModel.registerStateClearable(storeOrderViewModel.clearState);
   authViewModel.registerStateClearable(checkoutViewModel.clearState);
   authViewModel.registerStateClearable(adminViewModel.clearState);
+  authViewModel.registerStateClearable(bookRequestViewModel.clearState);
 }
 
 class MyApp extends StatelessWidget {

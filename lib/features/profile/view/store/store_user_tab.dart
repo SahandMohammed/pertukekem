@@ -8,6 +8,8 @@ import '../../viewmodel/store_profile_viewmodel.dart';
 import '../../viewmodel/user_profile_viewmodel.dart';
 import 'edit_store_profile_screen.dart';
 import '../customer/edit_profile_screen.dart';
+import '../../../book_requests/view/store/store_request_management_screen.dart';
+import '../../../book_requests/viewmodel/book_request_viewmodel.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -294,6 +296,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => const StoreTransactionsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _MenuOption(
+                  icon: Icons.request_page_outlined,
+                  title: 'Book Requests',
+                  subtitle: 'View and respond to customer book requests',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: context.read<BookRequestViewModel>(),
+                          child: const StoreRequestManagementScreen(),
+                        ),
                       ),
                     );
                   },

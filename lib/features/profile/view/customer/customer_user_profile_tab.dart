@@ -14,6 +14,9 @@ import '../../services/user_profile_service.dart';
 import '../../../notifications/viewmodel/customer_notification_viewmodel.dart';
 import '../../../notifications/view/customer_notification_list_screen.dart';
 import 'package:pertukekem/features/authentication/view/change_password_screen.dart';
+import '../../../book_requests/view/customer/request_book_screen.dart';
+import '../../../book_requests/view/customer/customer_request_history_screen.dart';
+import '../../../book_requests/viewmodel/book_request_viewmodel.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -245,8 +248,38 @@ class _ProfileTabState extends State<ProfileTab> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 12                      ),
                       _buildMenuCard(context, [
+                        _MenuOption(
+                          icon: Icons.request_quote_outlined,
+                          title: 'Request a Book',
+                          subtitle: 'Ask stores for books you need',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: context.read<BookRequestViewModel>(),
+                                  child: const RequestBookScreen(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        _MenuOption(
+                          icon: Icons.history_outlined,
+                          title: 'My Book Requests',
+                          subtitle: 'View your request history',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: context.read<BookRequestViewModel>(),
+                                  child: const CustomerRequestHistoryScreen(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                         _MenuOption(
                           icon: Icons.bookmark_outline,
                           title: 'Saved Books',
@@ -262,6 +295,36 @@ class _ProfileTabState extends State<ProfileTab> {
                             if (mounted) {
                               _refreshStats();
                             }
+                          },
+                        ),
+                        _MenuOption(
+                          icon: Icons.request_quote_outlined,
+                          title: 'Request a Book',
+                          subtitle: 'Request a book from stores',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: context.read<BookRequestViewModel>(),
+                                  child: const RequestBookScreen(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        _MenuOption(
+                          icon: Icons.history_outlined,
+                          title: 'My Book Requests',
+                          subtitle: 'View your request history',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider.value(
+                                  value: context.read<BookRequestViewModel>(),
+                                  child: const CustomerRequestHistoryScreen(),
+                                ),
+                              ),
+                            );
                           },
                         ),
                         _MenuOption(
