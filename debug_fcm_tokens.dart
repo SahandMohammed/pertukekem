@@ -1,5 +1,3 @@
-// Debug script to check and fix FCM token storage issues
-// This will help us identify why push notifications aren't being delivered
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,7 +9,6 @@ class FCMDebugHelper {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
-  /// Check current user's FCM token storage
   static Future<void> checkCurrentUserFCMTokens() async {
     try {
       final user = _auth.currentUser;
@@ -23,11 +20,9 @@ class FCMDebugHelper {
       print('=== FCM DEBUG FOR USER: ${user.uid} ===');
       print('📧 Email: ${user.email}');
 
-      // Get current FCM token
       final currentToken = await _messaging.getToken();
       print('📱 Current FCM Token: $currentToken');
 
-      // Check user document
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       if (!userDoc.exists) {
         print('❌ User document does not exist!');
@@ -40,7 +35,6 @@ class FCMDebugHelper {
       print('📚 Store Name: ${userData['storeName']}');
       print('🔐 Roles: ${userData['roles']}');
 
-      // Check FCM tokens in user document
       final fcmTokens = userData['fcmTokens'];
       if (fcmTokens == null) {
         print('❌ No fcmTokens field in user document!');
@@ -56,7 +50,6 @@ class FCMDebugHelper {
           print('    - Last Updated: ${tokenInfo['lastUpdated']}');
         }
 
-        // Check if current token is stored
         bool currentTokenStored = false;
         for (final tokenInfo in (fcmTokens as Map).values) {
           if (tokenInfo['token'] == currentToken) {
@@ -75,7 +68,6 @@ class FCMDebugHelper {
     }
   }
 
-  /// Fix FCM token storage by creating the field and storing current token
   static Future<void> _fixFCMTokenStorage(String userId, String? token) async {
     if (token == null) {
       print('❌ No FCM token available to store');
@@ -92,7 +84,6 @@ class FCMDebugHelper {
         'lastUpdated': FieldValue.serverTimestamp(),
       };
 
-      // Use set with merge to ensure the field is created
       await _firestore.collection('users').doc(userId).set({
         'fcmTokens': {deviceId: tokenInfo},
         'updatedAt': FieldValue.serverTimestamp(),
@@ -104,7 +95,6 @@ class FCMDebugHelper {
     }
   }
 
-  /// Store FCM token using proper method
   static Future<void> _storeFCMToken(String userId, String token) async {
     try {
       final deviceId = 'android_${DateTime.now().millisecondsSinceEpoch}';
@@ -125,7 +115,6 @@ class FCMDebugHelper {
     }
   }
 
-  /// Test push notification trigger creation
   static Future<void> testNotificationTrigger() async {
     try {
       final user = _auth.currentUser;
@@ -134,7 +123,6 @@ class FCMDebugHelper {
         return;
       }
 
-      // Get user's store ID
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
       final storeId = userData?['storeId'];
@@ -146,7 +134,6 @@ class FCMDebugHelper {
 
       print('🧪 Creating test notification trigger...');
 
-      // Create a test notification trigger
       await _firestore.collection('pushNotificationTriggers').add({
         'storeId': storeId,
         'type': 'test',
@@ -162,7 +149,6 @@ class FCMDebugHelper {
     }
   }
 
-  /// Check Cloud Function logs
   static Future<void> checkCloudFunctionLogs() async {
     print('📋 To check Cloud Function logs, run:');
     print('   firebase functions:log --only sendPushNotification');

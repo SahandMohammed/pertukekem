@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Custom error widget for displaying error states
 class ErrorDisplay extends StatelessWidget {
   final String message;
   final String? title;
@@ -63,7 +62,6 @@ class ErrorDisplay extends StatelessWidget {
   }
 }
 
-/// Compact error widget for inline error display
 class InlineErrorDisplay extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;

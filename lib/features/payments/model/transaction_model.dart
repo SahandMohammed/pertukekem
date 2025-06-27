@@ -31,7 +31,6 @@ class Transaction {
     this.orderId,
   });
 
-  // Factory constructor to create Transaction from Firestore document
   factory Transaction.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Transaction(
@@ -54,7 +53,6 @@ class Transaction {
     );
   }
 
-  // Convert Transaction to Map for Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'transactionId': transactionId,
@@ -73,7 +71,6 @@ class Transaction {
     };
   }
 
-  // Copy with method for updating transaction
   Transaction copyWith({
     String? id,
     String? transactionId,

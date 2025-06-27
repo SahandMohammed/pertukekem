@@ -6,18 +6,15 @@ import '../service/store_rating_service.dart';
 class StoreRatingViewModel extends ChangeNotifier {
   final StoreRatingService _ratingService = StoreRatingService();
 
-  // Current state
   StoreRating? _userRating;
   List<StoreRating> _allRatings = [];
   bool _isLoading = false;
   bool _isSubmitting = false;
   String? _error;
   Map<String, dynamic>? _ratingStats;
-  // Form state
   double _selectedRating = 0.0;
   String _comment = '';
 
-  // Getters
   StoreRating? get userRating => _userRating;
   List<StoreRating> get allRatings => _allRatings;
   bool get isLoading => _isLoading;
@@ -38,27 +35,22 @@ class StoreRatingViewModel extends ChangeNotifier {
     _error = null;
 
     try {
-      // Load user's rating
       await _loadUserRating(storeId);
 
-      // Load rating stats
       await _loadRatingStats(storeId);
 
-      // Listen to all ratings
       _listenToStoreRatings(storeId);
     } catch (e) {
       _error = 'Failed to load rating data: $e';
     } finally {
       _isLoading = false;
 
-      // Use post frame callback to notify listeners after build is complete
       SchedulerBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
     }
   }
 
-  // Load user's current rating
   Future<void> _loadUserRating(String storeId) async {
     try {
       _userRating = await _ratingService.getUserRating(storeId);
@@ -71,7 +63,6 @@ class StoreRatingViewModel extends ChangeNotifier {
     }
   }
 
-  // Load rating statistics
   Future<void> _loadRatingStats(String storeId) async {
     try {
       _ratingStats = await _ratingService.getStoreRatingStats(storeId);
@@ -80,20 +71,17 @@ class StoreRatingViewModel extends ChangeNotifier {
     }
   }
 
-  // Listen to store ratings in real-time
   void _listenToStoreRatings(String storeId) {
     _ratingService
         .getStoreRatings(storeId)
         .listen(
           (ratings) {
             _allRatings = ratings;
-            // Use post frame callback to avoid setState during build
             SchedulerBinding.instance.addPostFrameCallback((_) {
               notifyListeners();
             });
           },
           onError: (e) {
-            // Use post frame callback for error handling too
             SchedulerBinding.instance.addPostFrameCallback((_) {
               _setError('Failed to load ratings: $e');
             });
@@ -101,21 +89,18 @@ class StoreRatingViewModel extends ChangeNotifier {
         );
   }
 
-  // Update selected rating
   void updateRating(double rating) {
     if (_selectedRating == rating) return; // Add this guard
     _selectedRating = rating;
     notifyListeners();
   }
 
-  // Update comment
   void updateComment(String comment) {
     if (_comment == comment) return; // Add this guard
     _comment = comment;
     notifyListeners();
   }
 
-  // Submit or update rating
   Future<bool> submitRating(String storeId) async {
     if (_selectedRating == 0.0) {
       _setError('Please select a rating');
@@ -132,7 +117,6 @@ class StoreRatingViewModel extends ChangeNotifier {
         comment: _comment.trim(),
       );
 
-      // Reload user rating and stats
       await _loadUserRating(storeId);
       await _loadRatingStats(storeId);
 
@@ -145,7 +129,6 @@ class StoreRatingViewModel extends ChangeNotifier {
     }
   }
 
-  // Delete user's rating
   Future<bool> deleteRating(String storeId) async {
     _setSubmitting(true);
     _clearError();
@@ -153,12 +136,10 @@ class StoreRatingViewModel extends ChangeNotifier {
     try {
       await _ratingService.deleteRating(storeId);
 
-      // Reset state
       _userRating = null;
       _selectedRating = 0.0;
       _comment = '';
 
-      // Reload stats
       await _loadRatingStats(storeId);
 
       _setSubmitting(false);
@@ -171,7 +152,6 @@ class StoreRatingViewModel extends ChangeNotifier {
     }
   }
 
-  // Reset form
   void resetForm() {
     if (_userRating != null) {
       _selectedRating = _userRating!.rating;
@@ -184,7 +164,6 @@ class StoreRatingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Validation
   bool get isFormValid => _selectedRating > 0.0;
 
   String? validateRating() {

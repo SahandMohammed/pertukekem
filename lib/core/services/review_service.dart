@@ -16,7 +16,6 @@ class ReviewService {
         );
   }
 
-  /// Get all reviews for a specific listing
   Stream<List<ReviewModel>> getListingReviews(String listingId) {
     return _reviewsRef
         .where('listingId', isEqualTo: listingId)
@@ -25,7 +24,6 @@ class ReviewService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  /// Get review statistics for a listing
   Future<Map<String, dynamic>> getListingReviewStats(String listingId) async {
     final snapshot =
         await _reviewsRef.where('listingId', isEqualTo: listingId).get();
@@ -56,7 +54,6 @@ class ReviewService {
     };
   }
 
-  /// Add a new review
   Future<void> addReview({
     required String listingId,
     required double rating,
@@ -70,7 +67,6 @@ class ReviewService {
       throw Exception('User not authenticated');
     }
 
-    // Check if user has already reviewed this listing
     final existingReview =
         await _reviewsRef
             .where('listingId', isEqualTo: listingId)
@@ -100,7 +96,6 @@ class ReviewService {
     await _reviewsRef.doc(reviewId).set(review);
   }
 
-  /// Update review helpfulness
   Future<void> toggleReviewHelpfulness(String reviewId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -127,7 +122,6 @@ class ReviewService {
     });
   }
 
-  /// Add seller reply to a review
   Future<void> addSellerReply(String reviewId, String reply) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -141,7 +135,6 @@ class ReviewService {
     });
   }
 
-  /// Delete a review (only by the reviewer)
   Future<void> deleteReview(String reviewId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {

@@ -35,7 +35,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _startListeningToOrder() {
-    // Listen to buyer orders stream and filter for our specific order
     _orderSubscription = _orderService.getBuyerOrders().listen(
       (orders) {
         if (mounted) {
@@ -169,7 +168,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ),
       ),
       title: Row(
-        // Moved Row directly to title
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -209,7 +207,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         ],
       ),
       centerTitle: false, // Ensure title aligns to start
-      // Removed flexibleSpace and FlexibleSpaceBar
     );
   }
 

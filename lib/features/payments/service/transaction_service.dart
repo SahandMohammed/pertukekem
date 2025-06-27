@@ -10,7 +10,6 @@ class TransactionService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'transactions';
 
-  // Create a new transaction
   Future<String> createTransaction({
     required String transactionId,
     required String buyerId,
@@ -50,7 +49,6 @@ class TransactionService {
     }
   }
 
-  // Update transaction status
   Future<void> updateTransactionStatus({
     required String transactionId,
     required String status,
@@ -75,7 +73,6 @@ class TransactionService {
     }
   }
 
-  // Get transaction by ID
   Future<tx_model.Transaction?> getTransactionById(String transactionId) async {
     try {
       final doc =
@@ -91,7 +88,6 @@ class TransactionService {
     }
   }
 
-  // Get transaction by transaction ID (the generated TXN string)
   Future<tx_model.Transaction?> getTransactionByTransactionId(
     String transactionId,
   ) async {
@@ -113,7 +109,6 @@ class TransactionService {
     }
   }
 
-  // Get all transactions for a user (as buyer)
   Future<List<tx_model.Transaction>> getTransactionsForBuyer(
     String buyerId,
   ) async {
@@ -134,7 +129,6 @@ class TransactionService {
     }
   }
 
-  // Get all transactions for a seller
   Future<List<tx_model.Transaction>> getTransactionsForSeller(
     String sellerId,
   ) async {
@@ -155,7 +149,6 @@ class TransactionService {
     }
   }
 
-  // Get all transactions (for admin)
   Future<List<tx_model.Transaction>> getAllTransactions({
     int limit = 50,
     DocumentSnapshot? startAfter,
@@ -181,7 +174,6 @@ class TransactionService {
     }
   }
 
-  // Get transaction statistics for admin dashboard
   Future<Map<String, dynamic>> getTransactionStatistics() async {
     try {
       final allTransactions = await _firestore.collection(_collection).get();
@@ -200,7 +192,6 @@ class TransactionService {
         (sum, t) => sum + t.amount,
       );
 
-      // Get transactions from last 30 days
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
       final recentTransactions =
           transactions
@@ -223,7 +214,6 @@ class TransactionService {
     }
   }
 
-  // Search transactions
   Future<List<tx_model.Transaction>> searchTransactions({
     String? transactionId,
     String? buyerId,
@@ -278,7 +268,6 @@ class TransactionService {
     }
   }
 
-  // Complete a transaction
   Future<void> completeTransaction(String transactionId) async {
     await updateTransactionStatus(
       transactionId: transactionId,
@@ -287,7 +276,6 @@ class TransactionService {
     );
   }
 
-  // Fail a transaction
   Future<void> failTransaction(String transactionId) async {
     await updateTransactionStatus(
       transactionId: transactionId,
@@ -296,17 +284,14 @@ class TransactionService {
     );
   }
 
-  // Get transactions by user ID (as buyer or seller)
   Future<List<tx_model.Transaction>> getTransactionsByUserId(
     String userId,
   ) async {
     try {
-      // Get transactions where user is buyer
       final buyerQuery = _firestore
           .collection(_collection)
           .where('buyerId', isEqualTo: userId);
 
-      // Get transactions where user is seller
       final sellerQuery = _firestore
           .collection(_collection)
           .where('sellerId', isEqualTo: userId);
@@ -316,21 +301,18 @@ class TransactionService {
 
       final allTransactions = <tx_model.Transaction>[];
 
-      // Add buyer transactions
       allTransactions.addAll(
         buyerSnapshot.docs.map(
           (doc) => tx_model.Transaction.fromFirestore(doc),
         ),
       );
 
-      // Add seller transactions
       allTransactions.addAll(
         sellerSnapshot.docs.map(
           (doc) => tx_model.Transaction.fromFirestore(doc),
         ),
       );
 
-      // Sort by created date, most recent first
       allTransactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       return allTransactions;
@@ -340,7 +322,6 @@ class TransactionService {
     }
   }
 
-  // Get transactions by status
   Future<List<tx_model.Transaction>> getTransactionsByStatus(
     String status,
   ) async {
@@ -361,14 +342,12 @@ class TransactionService {
     }
   }
 
-  // Get transactions by seller ID - alias for compatibility
   Future<List<tx_model.Transaction>> getTransactionsBySellerId(
     String sellerId,
   ) async {
     return getTransactionsForSeller(sellerId);
   }
 
-  // Refund a transaction
   Future<void> refundTransaction(String transactionId) async {
     await updateTransactionStatus(
       transactionId: transactionId,

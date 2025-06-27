@@ -5,7 +5,6 @@ import '../../viewmodel/store_setup_viewmodel.dart';
 import 'widgets/address_form.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Step 3: Address
 class StoreSetupStep3ContactScreen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
@@ -53,7 +52,6 @@ class _StoreSetupStep3ContactScreenState
     final textTheme = Theme.of(context).textTheme;
     return Consumer<StoreSetupViewmodel>(
       builder: (context, viewModel, child) {
-        // Debug print for current state when UI rebuilds
         debugPrint(
           '🎨 UI Rebuild - Current validation state: ${_isFormValid(viewModel)}',
         );
@@ -88,7 +86,6 @@ class _StoreSetupStep3ContactScreenState
             children: [
               Column(
                 children: [
-                  // Progress indicator
                   Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -136,13 +133,11 @@ class _StoreSetupStep3ContactScreenState
                     ),
                   ),
 
-                  // Content
                   Expanded(
                     child: FadeTransition(
                       opacity: _fadeAnimation,
                       child: CustomScrollView(
                         slivers: [
-                          // Live preview
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -155,7 +150,6 @@ class _StoreSetupStep3ContactScreenState
                             ),
                           ),
 
-                          // Form content
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -177,7 +171,6 @@ class _StoreSetupStep3ContactScreenState
                                   ),
                                   const SizedBox(height: 24),
 
-                                  // Address Section
                                   AddressForm(
                                     formKey: _addressFormKey,
                                     initialAddress: viewModel.storeAddress,
@@ -187,7 +180,6 @@ class _StoreSetupStep3ContactScreenState
                             ),
                           ),
 
-                          // Bottom padding for floating button
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 100),
                           ),
@@ -198,14 +190,12 @@ class _StoreSetupStep3ContactScreenState
                 ],
               ),
 
-              // Sticky CTA buttons
               Positioned(
                 left: 16,
                 right: 16,
                 bottom: MediaQuery.of(context).padding.bottom + 16,
                 child: Row(
                   children: [
-                    // Back button
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
@@ -227,7 +217,6 @@ class _StoreSetupStep3ContactScreenState
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Continue button
                     Expanded(
                       flex: 2,
                       child: FilledButton(
@@ -252,7 +241,6 @@ class _StoreSetupStep3ContactScreenState
                 ),
               ),
 
-              // Loading overlay
               if (viewModel.isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),
@@ -280,7 +268,6 @@ class _StoreSetupStep3ContactScreenState
   }
 
   bool _isFormValid(StoreSetupViewmodel viewModel) {
-    // Debug prints for all address fields
     debugPrint('🔍 _isFormValid Debug:');
     debugPrint('  storeAddress: ${viewModel.storeAddress}');
     debugPrint('  storeAddress.isEmpty: ${viewModel.storeAddress.isEmpty}');
@@ -309,7 +296,6 @@ class _StoreSetupStep3ContactScreenState
   void _onNext() {
     debugPrint('🚀 _onNext called');
 
-    // Save address form data first
     debugPrint('📝 Saving form data...');
     _addressFormKey.currentState?.save();
     final addressData = _addressFormKey.currentState?.value;
@@ -326,7 +312,6 @@ class _StoreSetupStep3ContactScreenState
       debugPrint('⚠️ Address data is null!');
     }
 
-    // Check if form is valid after saving
     debugPrint('🔍 Checking form validity after saving...');
     final isValidAfterSave = _isFormValid(context.read<StoreSetupViewmodel>());
 

@@ -23,7 +23,6 @@ class CartService extends ChangeNotifier implements StateClearable {
 
   String? get _currentUserId => _auth.currentUser?.uid;
 
-  // Initialize cart for current user
   Future<void> initializeCart() async {
     if (_currentUserId == null) return;
 
@@ -40,7 +39,6 @@ class CartService extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Load cart from Firestore
   Future<void> _loadCart() async {
     if (_currentUserId == null) return;
 
@@ -73,25 +71,21 @@ class CartService extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Add item to cart
   Future<bool> addToCart(Listing listing, {int quantity = 1}) async {
     if (_currentUserId == null) return false;
     if (listing.bookType != 'physical') return false; // Only physical books
 
     try {
-      // Check if item already exists in cart
       final existingItemIndex =
           _cart?.items.indexWhere((item) => item.listing.id == listing.id) ??
           -1;
 
       if (existingItemIndex != -1) {
-        // Update quantity of existing item
         await _updateItemQuantity(
           _cart!.items[existingItemIndex].id,
           _cart!.items[existingItemIndex].quantity + quantity,
         );
       } else {
-        // Add new item
         final cartItem = CartItem(
           id: '', // Will be set by Firestore
           userId: _currentUserId!,
@@ -106,7 +100,6 @@ class CartService extends ChangeNotifier implements StateClearable {
             .collection('items')
             .add(cartItem.toMap());
 
-        // Update local cart
         final newItem = cartItem.copyWith(id: docRef.id);
         final updatedItems = List<CartItem>.from(_cart?.items ?? []);
         updatedItems.add(newItem);
@@ -128,7 +121,6 @@ class CartService extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update item quantity
   Future<bool> _updateItemQuantity(String itemId, int quantity) async {
     if (_currentUserId == null) return false;
 
@@ -140,7 +132,6 @@ class CartService extends ChangeNotifier implements StateClearable {
           .doc(itemId)
           .update({'quantity': quantity});
 
-      // Update local cart
       if (_cart != null) {
         final updatedItems =
             _cart!.items.map((item) {
@@ -164,7 +155,6 @@ class CartService extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update item quantity (public method)
   Future<bool> updateQuantity(String itemId, int quantity) async {
     if (quantity <= 0) {
       return removeFromCart(itemId);
@@ -172,7 +162,6 @@ class CartService extends ChangeNotifier implements StateClearable {
     return _updateItemQuantity(itemId, quantity);
   }
 
-  // Remove item from cart
   Future<bool> removeFromCart(String itemId) async {
     if (_currentUserId == null) return false;
 
@@ -184,7 +173,6 @@ class CartService extends ChangeNotifier implements StateClearable {
           .doc(itemId)
           .delete();
 
-      // Update local cart
       if (_cart != null) {
         final updatedItems =
             _cart!.items.where((item) => item.id != itemId).toList();
@@ -203,7 +191,6 @@ class CartService extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Clear entire cart
   Future<bool> clearCart() async {
     if (_currentUserId == null) return false;
 
@@ -236,12 +223,10 @@ class CartService extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Check if item is in cart
   bool isInCart(String listingId) {
     return _cart?.items.any((item) => item.listing.id == listingId) ?? false;
   }
 
-  // Get item quantity in cart
   int getItemQuantity(String listingId) {
     if (_cart == null || _cart!.items.isEmpty) return 0;
 
@@ -251,12 +236,10 @@ class CartService extends ChangeNotifier implements StateClearable {
       );
       return item.quantity;
     } catch (e) {
-      // Item not found in cart
       return 0;
     }
   }
 
-  // Dispose cart when user logs out
   @override
   void dispose() {
     _cart = null;
@@ -265,11 +248,9 @@ class CartService extends ChangeNotifier implements StateClearable {
 
   @override
   Future<void> clearState() async {
-    // Clear cart data
     _cart = null;
     _isLoading = false;
 
-    // Notify listeners
     notifyListeners();
 
     debugPrint('✅ CartService state cleared');

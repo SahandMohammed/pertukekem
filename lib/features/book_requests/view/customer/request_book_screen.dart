@@ -56,7 +56,6 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Card
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -112,7 +111,6 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
 
               const SizedBox(height: 24),
 
-              // Store Selection
               Text(
                 'Select Store',
                 style: textTheme.titleMedium?.copyWith(
@@ -264,7 +262,6 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
 
               const SizedBox(height: 24),
 
-              // Book Title Input
               Text(
                 'Book Information',
                 style: textTheme.titleMedium?.copyWith(
@@ -302,7 +299,6 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
 
               const SizedBox(height: 16),
 
-              // Note Input
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -325,7 +321,6 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
 
               const SizedBox(height: 32),
 
-              // Submit Button
               SizedBox(
                 width: double.infinity,
                 child: Consumer<BookRequestViewModel>(
@@ -364,7 +359,6 @@ class _RequestBookScreenState extends State<RequestBookScreen> {
 
               const SizedBox(height: 16),
 
-              // Info Card
               Card(
                 elevation: 0,
                 color: colorScheme.primaryContainer.withOpacity(0.3),

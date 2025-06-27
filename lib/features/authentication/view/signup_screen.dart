@@ -37,22 +37,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void initState() {
     super.initState();
-    // Add listener to format phone number input
     _phoneController.addListener(() {
       final text = _phoneController.text;
       if (text.isNotEmpty) {
-        // Remove any non-digit characters first
         var cleaned = text.replaceAll(RegExp(r'[^\d]'), '');
 
-        // Remove leading country code if present
         if (cleaned.startsWith(_selectedCountry.phoneCode)) {
           cleaned = cleaned.substring(_selectedCountry.phoneCode.length);
         }
 
-        // Format the number based on length
         String formatted = '';
         if (cleaned.length <= 10) {
-          // Handle 10-digit numbers: 770 000 0000
           if (cleaned.length >= 1) {
             formatted += cleaned.substring(
               0,
@@ -68,7 +63,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             }
           }
         } else if (cleaned.length == 11 && cleaned.startsWith('0')) {
-          // Handle 11-digit numbers starting with 0: 0770 000 0000
           formatted += cleaned.substring(0, 4); // 0770
           if (cleaned.length > 4) {
             formatted += ' ${cleaned.substring(4, 7)}'; // 000
@@ -77,11 +71,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             }
           }
         } else {
-          // For other cases, just use the cleaned number
           formatted = cleaned;
         }
 
-        // Only update if the formatted text is different
         if (formatted != text) {
           _phoneController.value = TextEditingValue(
             text: formatted,
@@ -124,7 +116,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signUp(SignupViewModel viewModel) async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Validate email
       if (!viewModel.isValidEmail(_emailController.text.trim())) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -136,7 +127,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         }
         return;
       }
-      // Validate phone number (basic: at least 9 digits, can be improved)
       final phone = _phoneController.text.trim().replaceAll(' ', '');
       if (phone.length < 9) {
         if (mounted) {
@@ -149,7 +139,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         }
         return;
       }
-      // Check if email or phone already exists in Firestore
       final email = _emailController.text.trim();
       final fullPhone = "+${_selectedCountry.phoneCode}${phone}";
       if (await _checkEmailExists(email)) {
@@ -188,7 +177,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           phoneNumber: fullPhone,
           selectedRole: widget.initialRole,
         );
-        // Success case - navigation will be handled by the viewModel
       } catch (e) {
         if (mounted) {
           String errorMessage = 'An error occurred';
@@ -420,7 +408,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your phone number';
                           }
-                          // Remove any spaces or special characters for validation
                           final cleanPhone = value.replaceAll(
                             RegExp(r'[\s\-\(\)]'),
                             '',
@@ -428,7 +415,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           if (cleanPhone.length < 10) {
                             return 'Phone number is too short';
                           }
-                          // Check if it's a valid format (starts with 7 for 10-digit or 07 for 11-digit)
                           if (!cleanPhone.startsWith('7') &&
                               !cleanPhone.startsWith('07')) {
                             return 'Phone number should start with 7 or 07';

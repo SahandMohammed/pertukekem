@@ -68,11 +68,9 @@ class _PaymentScreenState extends State<PaymentScreen>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
-    // Start animations
     _fadeController.forward();
     _slideController.forward();
 
-    // Load saved cards
     _loadSavedCards();
   }
 
@@ -91,7 +89,6 @@ class _PaymentScreenState extends State<PaymentScreen>
       setState(() {
         _savedCards = cards;
         _showSavedCards = cards.isNotEmpty;
-        // Auto-select the default card if available
         if (cards.isNotEmpty) {
           _selectedSavedCard = cards.firstWhere(
             (card) => card.isDefault,
@@ -147,11 +144,9 @@ class _PaymentScreenState extends State<PaymentScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Order Summary Card
                   _buildOrderSummary(context),
                   const SizedBox(height: 32),
 
-                  // Payment Methods
                   _buildPaymentMethods(context),
                   const SizedBox(height: 24), // Payment Form
                   if (_selectedPaymentMethod == 'credit_card') ...[
@@ -161,15 +156,12 @@ class _PaymentScreenState extends State<PaymentScreen>
                     const SizedBox(height: 24),
                   ],
 
-                  // Customer Information
                   _buildCustomerInfo(context),
                   const SizedBox(height: 32),
 
-                  // Pay Button
                   _buildPayButton(context),
                   const SizedBox(height: 16),
 
-                  // Security Notice
                   _buildSecurityNotice(context),
                 ],
               ),
@@ -616,7 +608,6 @@ class _PaymentScreenState extends State<PaymentScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // Hide form if a saved card is selected
     if (_selectedSavedCard != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -772,7 +763,6 @@ class _PaymentScreenState extends State<PaymentScreen>
                 },
               ),
               const SizedBox(height: 16),
-              // Only show save card option when using new card
               if (_selectedSavedCard == null) ...[
                 Row(
                   children: [
@@ -941,15 +931,12 @@ class _PaymentScreenState extends State<PaymentScreen>
     });
 
     try {
-      // Generate transaction ID
       final transactionId = 'TXN${DateTime.now().millisecondsSinceEpoch}';
 
-      // Get seller information from the listing
       final sellerRef = widget.listing.sellerRef;
       final sellerDoc = await sellerRef.get();
       final sellerId = sellerDoc.id;
 
-      // Save card if requested and using new card
       if (_saveCard &&
           _selectedSavedCard == null &&
           _selectedPaymentMethod == 'credit_card') {
@@ -966,11 +953,9 @@ class _PaymentScreenState extends State<PaymentScreen>
           debugPrint('Card saved successfully');
         } catch (e) {
           debugPrint('Error saving card: $e');
-          // Don't fail payment if card saving fails
         }
       }
 
-      // Update last used date for selected saved card
       if (_selectedSavedCard != null) {
         try {
           await _paymentCardService.updateCardLastUsed(_selectedSavedCard!.id);
@@ -979,7 +964,6 @@ class _PaymentScreenState extends State<PaymentScreen>
         }
       }
 
-      // Create transaction record
       String? transactionDocId;
       try {
         transactionDocId = await _transactionService.createTransaction(
@@ -1009,11 +993,9 @@ class _PaymentScreenState extends State<PaymentScreen>
         debugPrint('Transaction created with ID: $transactionDocId');
       } catch (e) {
         debugPrint('Error creating transaction: $e');
-        // Continue with payment flow even if transaction logging fails
       } // Simulate payment processing
       await Future.delayed(const Duration(seconds: 2));
 
-      // Mark transaction as completed
       if (transactionDocId != null) {
         try {
           await _transactionService.completeTransaction(transactionDocId);
@@ -1036,13 +1018,11 @@ class _PaymentScreenState extends State<PaymentScreen>
           debugPrint('Order created with ID: $orderId');
         } catch (e) {
           debugPrint('Error creating order: $e');
-          // Continue with payment flow even if order creation fails
         }
       } else {
         debugPrint('Skipping order creation for ebook purchase');
       }
 
-      // Add book to user's library (for all book types, but especially important for eBooks)
       try {
         await _libraryService.addBookToLibrary(
           userId: authViewModel.user!.userId,
@@ -1054,7 +1034,6 @@ class _PaymentScreenState extends State<PaymentScreen>
         debugPrint('Book added to library successfully');
       } catch (e) {
         debugPrint('Error adding book to library: $e');
-        // Continue with payment flow even if library addition fails
       }
 
       if (mounted) {
@@ -1089,7 +1068,6 @@ class _PaymentScreenState extends State<PaymentScreen>
   }
 }
 
-// Custom input formatters
 class _CardNumberInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(

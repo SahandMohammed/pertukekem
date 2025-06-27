@@ -38,7 +38,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _startListeningToOrder() {
-    // Listen to seller orders stream and filter for our specific order
     _orderSubscription = _orderService.getSellerOrders().listen(
       (orders) {
         if (mounted) {
@@ -532,7 +531,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Book Image
               Container(
                 width: 80,
                 height: 120,
@@ -569,7 +567,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         ),
               ),
               const SizedBox(width: 16),
-              // Book Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,7 +624,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 16),
-          // Book Details Grid
           Column(
             children: [
               _buildBookDetailRow('ISBN', book.isbn),
@@ -1297,9 +1293,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         final data = doc.data();
         print('✅ Found listing data: $data');
 
-        // Check if essential fields are present and provide defaults for missing ones
         if (data != null) {
-          // Log specific field availability
           print('📝 Field availability check:');
           print('  - title: ${data['title']}');
           print('  - author: ${data['author']}');
@@ -1309,10 +1303,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           print('  - price: ${data['price']}');
           print('  - coverUrl: ${data['coverUrl']}');
 
-          // Ensure required fields have defaults if missing
           final Map<String, dynamic> processedData = Map.from(data);
 
-          // Add missing required fields with defaults
           if (processedData['author'] == null) {
             processedData['author'] = 'Unknown Author';
             print('⚠️ Missing author field, using default: "Unknown Author"');
@@ -1396,7 +1388,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   ) {
     viewModel.updateOrderStatus(order.id, newStatus);
 
-    // Notify other parts of the app about the order status change
     final syncService = OrderSyncService();
     syncService.notifyOrderUpdated(
       order.id,
@@ -1451,7 +1442,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               FilledButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  // TODO: Update order with tracking number if provided
                   _updateOrderStatus(
                     context,
                     OrderStatus.shipped,
@@ -1467,7 +1457,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   void _copyTrackingNumber(BuildContext context) {
-    // TODO: Implement copy to clipboard
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Tracking number copied to clipboard'),

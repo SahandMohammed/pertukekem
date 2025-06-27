@@ -7,7 +7,6 @@ import '../../dashboards/model/store_model.dart';
 class BookRequestViewModel extends ChangeNotifier implements StateClearable {
   final BookRequestService _bookRequestService = BookRequestService();
 
-  // State
   List<BookRequest> _customerRequests = [];
   List<BookRequest> _storeRequests = [];
   List<StoreModel> _availableStores = [];
@@ -16,7 +15,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
   String? _error;
   int _pendingRequestsCount = 0;
 
-  // Getters
   List<BookRequest> get customerRequests => _customerRequests;
   List<BookRequest> get storeRequests => _storeRequests;
   List<StoreModel> get availableStores => _availableStores;
@@ -25,7 +23,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
   String? get error => _error;
   int get pendingRequestsCount => _pendingRequestsCount;
 
-  /// Clear all state
   @override
   Future<void> clearState() async {
     _customerRequests.clear();
@@ -38,7 +35,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
   }
 
-  /// Load customer's book requests
   Future<void> loadCustomerRequests() async {
     _setLoading(true);
     _setError(null);
@@ -53,7 +49,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Load store's book requests
   Future<void> loadStoreRequests() async {
     _setLoading(true);
     _setError(null);
@@ -72,7 +67,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Load available stores
   Future<void> loadAvailableStores() async {
     _setLoading(true);
     _setError(null);
@@ -87,7 +81,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Submit a book request
   Future<bool> submitBookRequest({
     required String storeId,
     required String storeName,
@@ -105,7 +98,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
         note: note,
       );
 
-      // Refresh customer requests
       await loadCustomerRequests();
       return true;
     } catch (e) {
@@ -117,7 +109,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Respond to a book request (store owner)
   Future<bool> respondToRequest({
     required String requestId,
     required BookRequestStatus status,
@@ -133,7 +124,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
         response: response,
       );
 
-      // Refresh store requests
       await loadStoreRequests();
       return true;
     } catch (e) {
@@ -145,7 +135,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Cancel a book request (customer)
   Future<bool> cancelRequest(String requestId) async {
     _setLoading(true);
     _setError(null);
@@ -153,7 +142,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     try {
       await _bookRequestService.cancelBookRequest(requestId);
 
-      // Refresh customer requests
       await loadCustomerRequests();
       return true;
     } catch (e) {
@@ -165,7 +153,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Get pending requests count for store
   Future<void> loadPendingRequestsCount() async {
     try {
       _pendingRequestsCount =
@@ -176,7 +163,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Filter requests by status
   List<BookRequest> getRequestsByStatus(
     List<BookRequest> requests,
     BookRequestStatus? status,
@@ -185,7 +171,6 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     return requests.where((request) => request.status == status).toList();
   }
 
-  /// Get requests grouped by status
   Map<BookRequestStatus, List<BookRequest>> getRequestsGroupedByStatus(
     List<BookRequest> requests,
   ) {
@@ -199,12 +184,10 @@ class BookRequestViewModel extends ChangeNotifier implements StateClearable {
     return grouped;
   }
 
-  /// Clear error
   void clearError() {
     _setError(null);
   }
 
-  // Private helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

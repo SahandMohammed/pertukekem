@@ -23,7 +23,6 @@ class OrderService {
         );
   }
 
-  // Create a new order
   Future<String> createOrder({
     required String buyerId,
     required DocumentReference sellerRef,
@@ -58,7 +57,6 @@ class OrderService {
       final orderId =
           docRef.id; // Create notification for store owner about new order
       try {
-        // Get buyer information for notification
         final buyerDoc = await buyerRef.get();
         String customerName = 'Customer';
         if (buyerDoc.exists) {
@@ -68,13 +66,10 @@ class OrderService {
           }
         }
 
-        // Determine storeId based on seller type
         String storeId;
         if (sellerRef.path.startsWith('stores/')) {
-          // Seller is a store, use the store ID directly
           storeId = sellerRef.id;
         } else if (sellerRef.path.startsWith('users/')) {
-          // Seller is a user, get their storeId from user document
           final sellerDoc = await sellerRef.get();
           if (sellerDoc.exists) {
             final sellerData = sellerDoc.data();
@@ -82,7 +77,6 @@ class OrderService {
                 sellerData.containsKey('storeId')) {
               storeId = sellerData['storeId'];
             } else {
-              // User doesn't have a store, skip notification
               print(
                 'User seller ${sellerRef.id} does not have a store, skipping notification',
               );
@@ -105,7 +99,6 @@ class OrderService {
           customerName: customerName,
         );
       } catch (e) {
-        // Don't fail order creation if notification fails
         print('Failed to create order notification: $e');
       }
 
@@ -115,7 +108,6 @@ class OrderService {
     }
   }
 
-  // Check if store exists
   Future<bool> checkStoreExists() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return false;
@@ -145,7 +137,6 @@ class OrderService {
     }
   }
 
-  // Get orders for a buyer (customer)
   Stream<List<order_model.Order>> getBuyerOrders() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -161,7 +152,6 @@ class OrderService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  // Force refresh orders from server (no cache)
   Future<List<order_model.Order>> getBuyerOrdersFromServer() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -184,7 +174,6 @@ class OrderService {
     return orders;
   }
 
-  // Get delivered orders for a buyer (for library purposes)
   Future<List<order_model.Order>> getDeliveredOrdersForBuyer(
     String buyerId,
   ) async {
@@ -227,16 +216,13 @@ class OrderService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Notify other parts of the app about the order status change
       _syncService.notifyOrderUpdated(
         orderId,
         newStatus.name,
         customerId: order.buyerRef.id,
       );
 
-      // Create notification for order status update
       try {
-        // Get buyer information for notification
         final buyerDoc = await order.buyerRef.get();
         String customerName = 'Customer';
         if (buyerDoc.exists) {
@@ -246,13 +232,10 @@ class OrderService {
           }
         }
 
-        // Determine storeId based on seller type
         String storeId;
         if (order.sellerRef.path.startsWith('stores/')) {
-          // Seller is a store, use the store ID directly
           storeId = order.sellerRef.id;
         } else if (order.sellerRef.path.startsWith('users/')) {
-          // Seller is a user, get their storeId from user document
           final sellerDoc = await order.sellerRef.get();
           if (sellerDoc.exists) {
             final sellerData = sellerDoc.data();
@@ -260,7 +243,6 @@ class OrderService {
                 sellerData.containsKey('storeId')) {
               storeId = sellerData['storeId'];
             } else {
-              // User doesn't have a store, skip notification
               print(
                 'User seller ${order.sellerRef.id} does not have a store, skipping notification',
               );
@@ -282,14 +264,12 @@ class OrderService {
           customerName: customerName,
         );
 
-        // Create customer notification for order status update
         await _createCustomerNotificationForOrderUpdate(
           order: order,
           newStatus: newStatus,
           orderId: orderId,
         );
       } catch (e) {
-        // Don't fail order update if notification fails
         print('Failed to create order update notification: $e');
       }
     } catch (e) {
@@ -336,7 +316,6 @@ class OrderService {
     try {
       print('🔍 Checking orders collection status...');
 
-      // Check if collection exists by trying to get any document
       final snapshot = await _firestore
           .collection('orders')
           .limit(1)
@@ -345,12 +324,10 @@ class OrderService {
       print('📊 Orders collection exists: ${snapshot.docs.isNotEmpty}');
       print('📦 Total docs in first check: ${snapshot.docs.length}');
 
-      // Check total count
       final countSnapshot = await _firestore.collection('orders').count().get();
 
       print('🔢 Total orders in collection: ${countSnapshot.count}');
 
-      // Check if current user has any orders
       final currentUser = _auth.currentUser;
       if (currentUser != null) {
         final buyerRef = _firestore.collection('users').doc(currentUser.uid);
@@ -368,7 +345,6 @@ class OrderService {
     }
   }
 
-  // Debug methods to help identify order reference issues
   Future<void> debugOrderReferences() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -380,7 +356,6 @@ class OrderService {
     print('🔍 Current user UID: ${currentUser.uid}');
 
     try {
-      // 1. Check user document and storeId
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
       if (userDoc.exists) {
@@ -389,7 +364,6 @@ class OrderService {
         print('📄 User document storeId: $storeId');
         print('✅ StoreId matches UID: ${storeId == currentUser.uid}');
 
-        // 2. Check if store document exists
         if (storeId != null) {
           final storeDoc =
               await _firestore.collection('stores').doc(storeId).get();
@@ -405,7 +379,6 @@ class OrderService {
         return;
       }
 
-      // 3. Check all orders in the system
       final ordersSnapshot = await _firestore.collection('orders').get();
       print('\n📦 Total orders in system: ${ordersSnapshot.docs.length}');
 
@@ -419,7 +392,6 @@ class OrderService {
         final sellerRef = data['sellerRef'] as DocumentReference;
         final buyerRef = data['buyerRef'] as DocumentReference;
 
-        // Check if this order belongs to current user as seller
         if (sellerRef.path == 'stores/${currentUser.uid}' ||
             sellerRef.path == 'users/${currentUser.uid}') {
           userAsSellerCount++;
@@ -427,7 +399,6 @@ class OrderService {
           print('📦 Order ${doc.id} - User is SELLER (${sellerRef.path})');
         }
 
-        // Check if this order belongs to current user as buyer
         if (buyerRef.path == 'users/${currentUser.uid}') {
           userAsBuyerCount++;
           userBuyerOrders.add(doc.id);
@@ -439,7 +410,6 @@ class OrderService {
       print('   - Orders where user is seller: $userAsSellerCount');
       print('   - Orders where user is buyer: $userAsBuyerCount');
 
-      // 4. Test the current getSellerOrders query
       final userStoreId = userDoc.data()?['storeId'];
       if (userStoreId != null) {
         final storeRef = _firestore.collection('stores').doc(userStoreId);
@@ -458,7 +428,6 @@ class OrderService {
         } else {
           print('   ❌ No orders found with current query!');
 
-          // Check for potential mismatches
           print('\n🔍 Checking for potential reference mismatches:');
 
           for (final orderId in userSellerOrders) {
@@ -475,7 +444,6 @@ class OrderService {
         }
       }
 
-      // 5. Check listing references for context
       await _debugListingReferences();
     } catch (e) {
       print('❌ Error during debugging: $e');
@@ -491,7 +459,6 @@ class OrderService {
     print('\n=== DEBUGGING LISTING REFERENCES ===');
 
     try {
-      // Check listings where user is seller
       final listingsSnapshot = await _firestore.collection('listings').get();
 
       int userListingsCount = 0;
@@ -517,9 +484,7 @@ class OrderService {
     }
   }
 
-  // Debug method to check orders collection status
 
-  // Fix order reference consistency issues
   Future<void> fixOrderReferences() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -529,7 +494,6 @@ class OrderService {
     print('🔧 Starting order reference fix...');
 
     try {
-      // 1. Get user's store ID
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
       if (!userDoc.exists) {
@@ -544,10 +508,8 @@ class OrderService {
       print('👤 User ID: ${currentUser.uid}');
       print('🏪 Store ID: $storeId');
 
-      // 2. Check if storeId matches userId (it should)
       if (storeId != currentUser.uid) {
         print('⚠️ WARNING: storeId ($storeId) != userId (${currentUser.uid})');
-        // This is the root cause - let's fix it
         await _firestore.collection('users').doc(currentUser.uid).update({
           'storeId': currentUser.uid,
           'updatedAt': FieldValue.serverTimestamp(),
@@ -555,7 +517,6 @@ class OrderService {
         print('✅ Fixed user document storeId');
       }
 
-      // 3. Check all orders where user might be seller
       final allOrdersSnapshot = await _firestore.collection('orders').get();
       List<String> ordersToFix = [];
 
@@ -563,7 +524,6 @@ class OrderService {
         final data = doc.data();
         final sellerRef = data['sellerRef'] as DocumentReference;
 
-        // Check if this order has old reference that needs fixing
         if (sellerRef.path == 'users/${currentUser.uid}' ||
             sellerRef.path == 'stores/$storeId' ||
             sellerRef.path == 'stores/${currentUser.uid}') {
@@ -573,7 +533,6 @@ class OrderService {
 
       print('📦 Found ${ordersToFix.length} orders that might need fixing');
 
-      // 4. Update orders to use consistent store reference
       final correctStoreRef = _firestore
           .collection('stores')
           .doc(currentUser.uid);
@@ -593,14 +552,12 @@ class OrderService {
     }
   }
 
-  // Get orders for a seller (store)
   Stream<List<order_model.Order>> getSellerOrders() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
       throw Exception('User not authenticated');
     }
 
-    // Use store reference for consistent seller identification
     final storeRef = _firestore.collection('stores').doc(currentUser.uid);
 
     return _ordersRef
@@ -610,7 +567,6 @@ class OrderService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  // Get orders for a seller with status filter
   Stream<List<order_model.Order>> getSellerOrdersByStatus(
     order_model.OrderStatus status,
   ) {
@@ -629,7 +585,6 @@ class OrderService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  // Force refresh seller orders from server (no cache)
   Future<List<order_model.Order>> getSellerOrdersFromServer() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -655,7 +610,6 @@ class OrderService {
     return orders;
   }
 
-  // Get seller orders count by status
   Future<Map<String, int>> getSellerOrdersCountByStatus() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -666,7 +620,6 @@ class OrderService {
     final counts = <String, int>{};
 
     try {
-      // Get count for each status
       for (final status in order_model.OrderStatus.values) {
         final snapshot =
             await _ordersRef
@@ -677,7 +630,6 @@ class OrderService {
         counts[status.name] = snapshot.count ?? 0;
       }
 
-      // Get total count
       final totalSnapshot =
           await _ordersRef
               .where('sellerRef', isEqualTo: storeRef)
@@ -691,7 +643,6 @@ class OrderService {
     }
   }
 
-  /// Create customer notification for order status update
   Future<void> _createCustomerNotificationForOrderUpdate({
     required order_model.Order order,
     required order_model.OrderStatus newStatus,
@@ -702,11 +653,9 @@ class OrderService {
         '🔔 Creating customer notification for order $orderId, status: ${newStatus.name}',
       );
 
-      // Get store information for notification
       String storeName = 'Store';
 
       if (order.sellerRef.path.startsWith('stores/')) {
-        // Get store name from stores collection
         final storeDoc = await order.sellerRef.get();
         if (storeDoc.exists) {
           final storeData = storeDoc.data();
@@ -716,7 +665,6 @@ class OrderService {
           }
         }
       } else if (order.sellerRef.path.startsWith('users/')) {
-        // Get store name from user's store
         final sellerDoc = await order.sellerRef.get();
         if (sellerDoc.exists) {
           final sellerData = sellerDoc.data();
@@ -791,7 +739,6 @@ class OrderService {
           );
           break;
         default:
-          // For any other status, create a generic update notification
           await _notificationService.createCustomerSystemNotification(
             customerId: customerId,
             title: 'Order Update',

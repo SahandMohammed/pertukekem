@@ -7,7 +7,6 @@ class UserProfileService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  /// Fetch user profile data from Firestore
   Future<UserModel?> getUserProfile(String userId) async {
     try {
       final docSnapshot =
@@ -15,7 +14,6 @@ class UserProfileService {
 
       if (docSnapshot.exists && docSnapshot.data() != null) {
         final data = docSnapshot.data()!;
-        // Add the userId to the data since it's not stored in the document
         data['userId'] = userId;
         return UserModel.fromMap(data);
       }
@@ -25,7 +23,6 @@ class UserProfileService {
     }
   }
 
-  /// Update user profile data in Firestore
   Future<void> updateUserProfile(
     String userId,
     Map<String, dynamic> updates,
@@ -40,7 +37,6 @@ class UserProfileService {
     }
   }
 
-  /// Listen to user profile changes
   Stream<UserModel?> getUserProfileStream(String userId) {
     return _firestore.collection('users').doc(userId).snapshots().map((
       snapshot,
@@ -54,7 +50,6 @@ class UserProfileService {
     });
   }
 
-  /// Get user's saved books count
   Future<int> getUserSavedBooksCount(String userId) async {
     try {
       final userDoc = await _firestore.collection('users').doc(userId).get();
@@ -70,7 +65,6 @@ class UserProfileService {
     }
   }
 
-  /// Get user's purchase count from orders
   Future<int> getUserPurchaseCount(String userId) async {
     try {
       final ordersQuery =
@@ -86,7 +80,6 @@ class UserProfileService {
     }
   }
 
-  /// Upload profile picture to Firebase Storage
   Future<String> uploadProfilePicture(String userId, File imageFile) async {
     try {
       final ref = _storage.ref().child('users/$userId/profile_picture.jpg');
@@ -110,24 +103,20 @@ class UserProfileService {
     }
   }
 
-  /// Delete profile picture from Firebase Storage
   Future<void> deleteProfilePicture(
     String userId,
     String? currentImageUrl,
   ) async {
     try {
       if (currentImageUrl != null && currentImageUrl.isNotEmpty) {
-        // Delete from Firebase Storage
         final ref = _storage.refFromURL(currentImageUrl);
         await ref.delete();
       }
     } catch (e) {
-      // Don't throw error if file doesn't exist
       print('Warning: Could not delete profile picture: $e');
     }
   }
 
-  /// Update user profile picture
   Future<void> updateProfilePicture(String userId, String? imageUrl) async {
     try {
       final updates = <String, dynamic>{

@@ -12,7 +12,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
   String? _error;
   bool _isInitialized = false;
 
-  // Stream subscriptions for proper disposal
   StreamSubscription<List<UnifiedNotification>>? _notificationsSubscription;
   StreamSubscription<int>? _unreadCountSubscription;
 
@@ -23,7 +22,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
 
   bool get hasUnreadNotifications => _unreadCount > 0;
 
-  /// Initialize the viewmodel and start listening to notifications
   Future<void> initialize() async {
     if (_isInitialized) {
       return; // Prevent multiple initializations
@@ -31,7 +29,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
 
     _isInitialized = true;
 
-    // Cancel existing subscriptions to prevent duplicates
     await _notificationsSubscription?.cancel();
     await _unreadCountSubscription?.cancel();
 
@@ -39,7 +36,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
     _listenToUnreadCount();
   }
 
-  /// Listen to notifications stream
   void _listenToNotifications() {
     print('🔔 Starting to listen to customer notifications');
     _notificationsSubscription = _notificationService
@@ -59,7 +55,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
         );
   }
 
-  /// Listen to unread count stream
   void _listenToUnreadCount() {
     print('🔔 Starting to listen to unread count');
     _unreadCountSubscription = _notificationService
@@ -76,7 +71,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
         );
   }
 
-  /// Mark a notification as read
   Future<void> markAsRead(String notificationId) async {
     try {
       await _notificationService.markAsRead(notificationId);
@@ -86,7 +80,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
     }
   }
 
-  /// Mark all notifications as read
   Future<void> markAllAsRead() async {
     _isLoading = true;
     _error = null;
@@ -104,7 +97,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Delete a notification
   Future<void> deleteNotification(String notificationId) async {
     try {
       await _notificationService.deleteNotification(notificationId);
@@ -114,28 +106,23 @@ class CustomerNotificationViewModel extends ChangeNotifier {
     }
   }
 
-  /// Clear error
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
-  /// Get notifications by type
   List<UnifiedNotification> getNotificationsByType(NotificationType type) {
     return _notifications.where((n) => n.type == type).toList();
   }
 
-  /// Get unread notifications
   List<UnifiedNotification> get unreadNotifications {
     return _notifications.where((n) => !n.isRead).toList();
   }
 
-  /// Get read notifications
   List<UnifiedNotification> get readNotifications {
     return _notifications.where((n) => n.isRead).toList();
   }
 
-  /// Get today's notifications
   List<UnifiedNotification> get todayNotifications {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -151,7 +138,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
     }).toList();
   }
 
-  /// Get this week's notifications
   List<UnifiedNotification> get thisWeekNotifications {
     final now = DateTime.now();
     final weekStart = now.subtract(Duration(days: now.weekday - 1));
@@ -167,7 +153,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
     }).toList();
   }
 
-  /// Get order-related notifications
   List<UnifiedNotification> get orderNotifications {
     return _notifications
         .where(
@@ -182,7 +167,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
         .toList();
   }
 
-  /// Get book-related notifications
   List<UnifiedNotification> get bookNotifications {
     return _notifications
         .where(
@@ -194,7 +178,6 @@ class CustomerNotificationViewModel extends ChangeNotifier {
         .toList();
   }
 
-  /// Get promotional notifications
   List<UnifiedNotification> get promotionalNotifications {
     return _notifications
         .where((n) => n.type == NotificationType.promotionalOffer)

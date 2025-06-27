@@ -152,7 +152,6 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         throw Exception('User not logged in');
       }
 
-      // Get user's store ID
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
       final storeId = userData?['storeId'];
@@ -195,7 +194,6 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         throw Exception('User not logged in');
       }
 
-      // Get user's store ID
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
       final storeId = userData?['storeId'];
@@ -238,7 +236,6 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         throw Exception('User not logged in');
       }
 
-      // Get user's store ID
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
       final storeId = userData?['storeId'];
@@ -247,7 +244,6 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         throw Exception('User does not have a store');
       }
 
-      // Create a direct push notification trigger
       await _firestore.collection('pushNotificationTriggers').add({
         'storeId': storeId,
         'type': 'test',
@@ -292,7 +288,6 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
       final storeId = userData?['storeId'];
       final fcmTokens = userData?['fcmTokens'];
 
-      // Get current FCM token
       final currentToken = _fcmService.fcmToken;
 
       setState(() {
@@ -344,13 +339,11 @@ ${fcmTokens != null ? _formatFCMTokens(fcmTokens as Map) : 'None stored'}
         throw Exception('User not logged in');
       }
 
-      // Get current FCM token
       final currentToken = _fcmService.fcmToken;
       if (currentToken == null) {
         throw Exception('No FCM token available');
       }
 
-      // Store token using the correct method
       final deviceId = 'android_${DateTime.now().millisecondsSinceEpoch}';
       final tokenInfo = {
         'token': currentToken,
@@ -390,7 +383,6 @@ ${fcmTokens != null ? _formatFCMTokens(fcmTokens as Map) : 'None stored'}
         throw Exception('User not logged in');
       }
 
-      // Call the FCM service method to trigger token storage
       await _fcmService.onUserLogin();
 
       setState(() {
@@ -448,7 +440,6 @@ Current logged in user should have FCM tokens stored to receive notifications.
         throw Exception('User not logged in');
       }
 
-      // Force refresh the FCM token
       final newToken = await _fcmService.refreshToken();
 
       setState(() {

@@ -65,7 +65,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Section
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -113,7 +112,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             const SizedBox(height: 24),
 
-            // Quick Actions
             Text(
               'Quick Actions',
               style: Theme.of(

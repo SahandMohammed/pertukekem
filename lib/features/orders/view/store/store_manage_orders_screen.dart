@@ -146,7 +146,6 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                 selectedFilter = filterKey;
               });
 
-              // Update the viewmodel filter
               final viewModel = context.read<StoreOrderViewModel>();
               if (filterKey == 'all') {
                 viewModel.loadOrders();
@@ -698,7 +697,6 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
     final success = await viewModel.updateOrderStatus(order.id, newStatus);
 
     if (success && mounted) {
-      // Notify other parts of the app about the order status change
       final syncService = OrderSyncService();
       syncService.notifyOrderUpdated(
         order.id,

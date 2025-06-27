@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Store Model for store-specific data
 class StoreModel {
   final String storeId; // Unique identifier for the store
   final String ownerId; // UID of the user who owns the store
@@ -39,7 +38,6 @@ class StoreModel {
     this.socialMedia,
   });
 
-  /// Create a StoreModel from a Firestore document
   factory StoreModel.fromMap(Map<String, dynamic> map) {
     return StoreModel(
       storeId: map['storeId'] ?? '',
@@ -65,7 +63,6 @@ class StoreModel {
     );
   }
 
-  /// Convert this StoreModel to a map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'storeId': storeId,
@@ -87,7 +84,6 @@ class StoreModel {
     };
   }
 
-  /// Create a copy of this StoreModel with the given fields updated
   StoreModel copyWith({
     String? storeId,
     String? ownerId,

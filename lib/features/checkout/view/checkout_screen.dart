@@ -26,7 +26,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController(initialPage: 0);
 
-  // Animation controllers
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
@@ -70,10 +69,8 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final checkoutViewModel = context.read<CheckoutViewModel>();
 
-      // Reset checkout state to ensure we start from step 0
       checkoutViewModel.resetToInitialState();
 
-      // Reset page controller to page 0
       if (_pageController.hasClients) {
         _pageController.animateToPage(
           0,

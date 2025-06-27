@@ -22,7 +22,6 @@ class EditStoreProfileScreen extends StatefulWidget {
 class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Store Information Controllers
   final _storeNameController = TextEditingController();
   final _storeDescriptionController = TextEditingController();
   final _streetController = TextEditingController();
@@ -32,19 +31,16 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   final _countryController = TextEditingController();
   final _additionalInfoController = TextEditingController();
 
-  // Social Media Controllers
   final _facebookController = TextEditingController();
   final _instagramController = TextEditingController();
   final _twitterController = TextEditingController();
   final _websiteController = TextEditingController();
-  // Contact Info Controllers
   final _contactPhoneController = TextEditingController();
   final _contactEmailController = TextEditingController();
 
   bool _hasChanges = false;
   List<String> _selectedCategories = [];
 
-  // Business Hours State
   Map<String, Map<String, dynamic>> _businessHours = {
     'monday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
     'tuesday': {'isOpen': true, 'openTime': '09:00', 'closeTime': '18:00'},
@@ -62,12 +58,10 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
   }
 
   void _initializeControllers() {
-    // Initialize store information
     _storeNameController.text = widget.storeProfile?.storeName ?? '';
     _storeDescriptionController.text = widget.storeProfile?.description ?? '';
     _selectedCategories = List.from(widget.storeProfile?.categories ?? []);
 
-    // Initialize address if available
     if (widget.storeProfile?.storeAddress != null) {
       final address = widget.storeProfile!.storeAddress!;
       _streetController.text = address['street'] ?? '';
@@ -78,7 +72,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       _additionalInfoController.text = address['additionalInfo'] ?? '';
     }
 
-    // Initialize social media if available
     if (widget.storeProfile?.socialMedia != null) {
       final socialMedia = widget.storeProfile!.socialMedia!;
       _facebookController.text = socialMedia['facebook'] ?? '';
@@ -88,7 +81,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
     } // Initialize contact info if available
     if (widget.storeProfile?.contactInfo != null &&
         widget.storeProfile!.contactInfo.isNotEmpty) {
-      // Find phone and email from contact info maps
       for (var contact in widget.storeProfile!.contactInfo) {
         if (contact['type'] == 'phone') {
           _contactPhoneController.text = contact['value'] ?? '';
@@ -98,7 +90,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       }
     }
 
-    // Initialize business hours if available
     if (widget.storeProfile?.businessHours != null) {
       _businessHours = Map<String, Map<String, dynamic>>.from(
         widget.storeProfile!.businessHours!.map(
@@ -161,11 +152,9 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
 
   bool _hasBusinessHoursChanged() {
     if (widget.storeProfile?.businessHours == null) {
-      // If store has no business hours but we have some set, that's a change
       return _businessHours.isNotEmpty;
     }
 
-    // Compare business hours maps
     final originalHours = widget.storeProfile!.businessHours!;
     if (_businessHours.length != originalHours.length) return true;
 
@@ -215,7 +204,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
       return;
     }
     try {
-      // Update store profile
       final storeAddress = {
         'street': _streetController.text.trim(),
         'city': _cityController.text.trim(),
@@ -225,7 +213,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
         'additionalInfo': _additionalInfoController.text.trim(),
       };
 
-      // Create contact info as list of maps
       final contactInfo = <Map<String, String>>[];
       if (_contactPhoneController.text.trim().isNotEmpty) {
         contactInfo.add({
@@ -240,7 +227,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
         });
       }
 
-      // Create social media map
       final socialMedia = <String, String>{};
       if (_facebookController.text.trim().isNotEmpty) {
         socialMedia['facebook'] = _facebookController.text.trim();
@@ -266,7 +252,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
 
       if (!mounted) return;
       if (storeSuccess) {
-        // Optimistic UI updates - update local data immediately for instant feedback        // Apply optimistic updates to local models
         authViewModel.updateLocalUserData(
           storeName: _storeNameController.text.trim(),
         );
@@ -281,7 +266,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
           contactInfo: contactInfo,
         );
 
-        // Show success message immediately (before server refresh)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -299,10 +283,8 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
           ),
         );
 
-        // Return success immediately with optimistic updates
         Navigator.of(context).pop(true);
 
-        // Do server refresh in background (optional for data consistency)
         debugPrint(
           '🔄 EditStoreProfile - Doing background refresh for consistency...',
         );
@@ -954,7 +936,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Header Section
                           Center(
                             child: Column(
                               children: [
@@ -980,7 +961,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                           ),
                           const SizedBox(height: 48),
 
-                          // Store Information Section
                           _buildSectionCard(
                             context,
                             title: 'Store Information',
@@ -1054,7 +1034,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Store Address Section
                           _buildSectionCard(
                             context,
                             title: 'Store Address',
@@ -1138,7 +1117,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Business Hours Section
                           _buildSectionCard(
                             context,
                             title: 'Business Hours',
@@ -1151,7 +1129,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Social Media Section
                           _buildSectionCard(
                             context,
                             title: 'Social Media & Contact',
@@ -1223,7 +1200,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Account Information Section
                           _buildSectionCard(
                             context,
                             title: 'Account Information',
@@ -1265,7 +1241,6 @@ class _EditStoreProfileScreenState extends State<EditStoreProfileScreen> {
                           ),
                           const SizedBox(height: 40),
 
-                          // Save Changes Button
                           SizedBox(
                             width: double.infinity,
                             height: 56,

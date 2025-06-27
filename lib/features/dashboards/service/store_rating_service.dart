@@ -6,7 +6,6 @@ class StoreRatingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Submit or update a rating for a store
   Future<void> submitRating({
     required String storeId,
     required double rating,
@@ -16,7 +15,6 @@ class StoreRatingService {
     if (user == null) throw Exception('User not authenticated');
 
     try {
-      // Get user data for display purposes
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
 
@@ -31,7 +29,6 @@ class StoreRatingService {
         userProfilePicture: userData?['profilePicture'],
       );
 
-      // Write rating to subcollection
       await _firestore
           .collection('stores')
           .doc(storeId)
@@ -39,14 +36,12 @@ class StoreRatingService {
           .doc(user.uid)
           .set(storeRating.toFirestore());
 
-      // Update store aggregate data
       await _updateStoreAggregates(storeId);
     } catch (e) {
       throw Exception('Failed to submit rating: $e');
     }
   }
 
-  // Get user's rating for a specific store
   Future<StoreRating?> getUserRating(String storeId) async {
     final user = _auth.currentUser;
     if (user == null) return null;
@@ -69,7 +64,6 @@ class StoreRatingService {
     }
   }
 
-  // Stream all ratings for a store
   Stream<List<StoreRating>> getStoreRatings(String storeId) {
     return _firestore
         .collection('stores')
@@ -85,7 +79,6 @@ class StoreRatingService {
         );
   }
 
-  // Delete a user's rating
   Future<void> deleteRating(String storeId) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('User not authenticated');
@@ -98,14 +91,12 @@ class StoreRatingService {
           .doc(user.uid)
           .delete();
 
-      // Update store aggregate data
       await _updateStoreAggregates(storeId);
     } catch (e) {
       throw Exception('Failed to delete rating: $e');
     }
   }
 
-  // Update store aggregate rating data
   Future<void> _updateStoreAggregates(String storeId) async {
     try {
       final ratingsSnapshot =
@@ -116,7 +107,6 @@ class StoreRatingService {
               .get();
 
       if (ratingsSnapshot.docs.isEmpty) {
-        // No ratings, reset to defaults
         await _firestore.collection('stores').doc(storeId).update({
           'rating': 0.0,
           'totalRatings': 0,
@@ -124,7 +114,6 @@ class StoreRatingService {
         return;
       }
 
-      // Calculate new averages
       double totalRating = 0.0;
       int ratingCount = ratingsSnapshot.docs.length;
 
@@ -135,7 +124,6 @@ class StoreRatingService {
 
       final avgRating = totalRating / ratingCount;
 
-      // Update store document
       await _firestore.collection('stores').doc(storeId).update({
         'rating': double.parse(avgRating.toStringAsFixed(1)),
         'totalRatings': ratingCount,
@@ -145,7 +133,6 @@ class StoreRatingService {
     }
   }
 
-  // Get store rating statistics
   Future<Map<String, dynamic>> getStoreRatingStats(String storeId) async {
     try {
       final ratingsSnapshot =
@@ -171,7 +158,6 @@ class StoreRatingService {
         final rating = (data['rating'] ?? 0.0).toDouble();
         totalRating += rating;
 
-        // Count distribution (round to nearest star)
         final starRating = rating.round();
         if (starRating >= 1 && starRating <= 5) {
           distribution[starRating] = (distribution[starRating] ?? 0) + 1;

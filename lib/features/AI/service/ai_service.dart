@@ -2,8 +2,6 @@ import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
-/// Service class to manage Firebase AI functionality
-/// Provides access to both Google AI and Vertex AI backends
 class AIService {
   static AIService? _instance;
   late GenerativeModel _currentModel;
@@ -11,22 +9,18 @@ class AIService {
   bool _useVertexBackend = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Private constructor
   AIService._();
 
-  /// Singleton instance of AIService
   static AIService get instance {
     _instance ??= AIService._();
     return _instance!;
   }
 
-  /// Initialize the AI service with default settings
   Future<void> initialize({bool useVertexBackend = false}) async {
     _useVertexBackend = useVertexBackend;
     await _initializeModel(_useVertexBackend);
   }
 
-  /// Initialize the generative model based on backend choice
   Future<void> _initializeModel(bool useVertexBackend) async {
     try {
       if (useVertexBackend) {
@@ -49,7 +43,6 @@ class AIService {
     }
   }
 
-  /// Initialize Imagen model for image generation
   ImagenModel _initializeImagenModel(FirebaseAI instance) {
     var generationConfig = ImagenGenerationConfig(
       numberOfImages: 1,
@@ -66,13 +59,11 @@ class AIService {
     );
   }
 
-  /// Switch between Google AI and Vertex AI backends
   Future<void> toggleBackend() async {
     _useVertexBackend = !_useVertexBackend;
     await _initializeModel(_useVertexBackend);
   }
 
-  /// Set specific backend
   Future<void> setBackend(bool useVertexBackend) async {
     if (_useVertexBackend != useVertexBackend) {
       _useVertexBackend = useVertexBackend;
@@ -80,7 +71,6 @@ class AIService {
     }
   }
 
-  /// Generate text content from prompt
   Future<String> generateContent(String prompt) async {
     try {
       final response = await _currentModel.generateContent([
@@ -93,7 +83,6 @@ class AIService {
     }
   }
 
-  /// Generate streaming text content from prompt
   Stream<String> generateStreamingContent(String prompt) async* {
     try {
       final stream = _currentModel.generateContentStream([
@@ -110,7 +99,6 @@ class AIService {
     }
   }
 
-  /// Count tokens in a prompt
   Future<int> countTokens(String prompt) async {
     try {
       final response = await _currentModel.countTokens([Content.text(prompt)]);
@@ -121,17 +109,13 @@ class AIService {
     }
   }
 
-  /// Start multi-turn chat conversations
   ChatSession startChat({List<Content>? history}) {
     return _currentModel.startChat(history: history);
   }
 
-  // Chat session management
   ChatSession? _currentChatSession;
 
-  /// Start a chat conversation with predefined bookstore-focused system context
   ChatSession startBookstoreFocusedChat() {
-    // Create system context for bookstore conversations
     final systemContext = Content.text('''
 You are a specialized AI assistant for an online bookstore called Pertukekem. Your role is to help users with:
 
@@ -169,25 +153,20 @@ Remember: You are a book-loving assistant here to enhance the reading experience
     return _currentChatSession!;
   }
 
-  /// Get current active chat session or create new one
   ChatSession getCurrentChatSession() {
     _currentChatSession ??= startBookstoreFocusedChat();
     return _currentChatSession!;
   }
 
-  /// End current chat session and clear cache
   void endCurrentChatSession() {
     _currentChatSession = null;
     debugPrint('Chat session ended and cache cleared');
   }
 
-  /// Check if there's an active chat session
   bool get hasActiveChatSession => _currentChatSession != null;
 
-  /// Generate bookstore-related content with context
   Future<String> generateBookstoreContent(String prompt) async {
     try {
-      // Use the current chat session to maintain context
       final chatSession = getCurrentChatSession();
       final response = await chatSession.sendMessage(Content.text(prompt));
       return response.text ?? 'No response generated';
@@ -197,7 +176,6 @@ Remember: You are a book-loving assistant here to enhance the reading experience
     }
   }
 
-  /// Get book recommendations based on user preferences
   Future<String> getBookRecommendations(String preferences) async {
     try {
       final prompt = '''
@@ -219,7 +197,6 @@ Please make the recommendations engaging and personalized.
     }
   }
 
-  /// Get information about a specific book or author
   Future<String> getBookInformation(String query) async {
     try {
       final prompt = '''
@@ -243,7 +220,6 @@ Keep the information engaging and helpful for someone interested in reading.
     }
   }
 
-  // Getters
   GenerativeModel get currentModel => _currentModel;
   ImagenModel get currentImagenModel => _currentImagenModel;
   bool get isUsingVertexBackend => _useVertexBackend;

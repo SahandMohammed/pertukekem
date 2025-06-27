@@ -98,7 +98,6 @@ class CheckoutBottomBar extends StatelessWidget {
       final results = await viewModel.processOrder(cart);
 
       if (context.mounted) {
-        // Convert dynamic results to CheckoutResult objects
         final checkoutResults =
             results.map((result) {
               if (result is CheckoutResult) {
@@ -106,7 +105,6 @@ class CheckoutBottomBar extends StatelessWidget {
               } else if (result is Map<String, dynamic>) {
                 return CheckoutResult.fromJson(result);
               } else {
-                // Fallback for any unexpected result format
                 return CheckoutResult(
                   success: false,
                   listingId: '',
@@ -119,10 +117,8 @@ class CheckoutBottomBar extends StatelessWidget {
               }
             }).toList();
 
-        // Calculate total amount
         final totalAmount = cart.totalAmount;
 
-        // Navigate to success screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder:

@@ -50,7 +50,6 @@ class PaymentCardSelection extends StatelessWidget {
                     const Spacer(),
                     TextButton.icon(
                       onPressed: () {
-                        // TODO: Navigate to manage cards
                       },
                       icon: const Icon(Icons.settings_rounded, size: 16),
                       label: const Text('Manage'),

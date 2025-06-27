@@ -97,10 +97,8 @@ class _CustomerRequestHistoryScreenState
 
           return Column(
             children: [
-              // Filter Chips
               _buildFilterChips(viewModel),
 
-              // Requests List
               Expanded(
                 child:
                     filteredRequests.isEmpty
@@ -220,7 +218,6 @@ class _CustomerRequestHistoryScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with book title and status
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -324,7 +321,6 @@ class _CustomerRequestHistoryScreenState
 
             const SizedBox(height: 12),
 
-            // Footer with date and actions
             Row(
               children: [
                 Icon(

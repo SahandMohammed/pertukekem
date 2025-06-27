@@ -22,7 +22,6 @@ class AdminListingCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                // Book Cover
                 Container(
                   width: 60,
                   height: 80,
@@ -46,7 +45,6 @@ class AdminListingCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // Book Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,7 +112,6 @@ class AdminListingCard extends StatelessWidget {
                   ),
                 ),
 
-                // Status and Actions
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -184,7 +181,6 @@ class AdminListingCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Seller Info
             Row(
               children: [
                 Icon(
@@ -230,7 +226,6 @@ class AdminListingCard extends StatelessWidget {
               ],
             ),
 
-            // Categories
             if (listing.category.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(
@@ -261,7 +256,6 @@ class AdminListingCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Actions
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

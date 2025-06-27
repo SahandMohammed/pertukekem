@@ -8,13 +8,11 @@ class SavedBooksService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Add a book to user's favorites from a LibraryBook
   Future<void> saveBook(LibraryBook book) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) throw Exception('User not authenticated');
 
     try {
-      // Create a saved book document in the user's savedBooks subcollection
       await _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -51,14 +49,12 @@ class SavedBooksService {
         'favorites': FieldValue.arrayUnion([book.bookId]),
       });
 
-      // Notify listeners that saved books have changed
       SavedBooksNotifier().notifyBookSavedStatusChanged();
     } catch (e) {
       throw Exception('Failed to save book: $e');
     }
   }
 
-  /// Add a book to user's favorites from a Listing
   Future<void> saveBookFromListing(
     Listing listing,
     String sellerId,
@@ -68,7 +64,6 @@ class SavedBooksService {
     if (currentUser == null) throw Exception('User not authenticated');
 
     try {
-      // Create a saved book document in the user's savedBooks subcollection
       await _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -110,20 +105,17 @@ class SavedBooksService {
         'favorites': FieldValue.arrayUnion([listing.id!]),
       });
 
-      // Notify listeners that saved books have changed
       SavedBooksNotifier().notifyBookSavedStatusChanged();
     } catch (e) {
       throw Exception('Failed to save book: $e');
     }
   }
 
-  /// Remove a book from user's favorites
   Future<void> unsaveBook(String bookId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) throw Exception('User not authenticated');
 
     try {
-      // Remove from savedBooks subcollection
       await _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -134,14 +126,12 @@ class SavedBooksService {
         'favorites': FieldValue.arrayRemove([bookId]),
       });
 
-      // Notify listeners that saved books have changed
       SavedBooksNotifier().notifyBookSavedStatusChanged();
     } catch (e) {
       throw Exception('Failed to unsave book: $e');
     }
   }
 
-  /// Check if a book is saved by the current user
   Future<bool> isBookSaved(String bookId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return false;
@@ -161,7 +151,6 @@ class SavedBooksService {
     }
   }
 
-  /// Get all saved books for the current user
   Future<List<LibraryBook>> getSavedBooks() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) throw Exception('User not authenticated');
@@ -211,7 +200,6 @@ class SavedBooksService {
     }
   }
 
-  /// Stream of saved books for real-time updates
   Stream<List<LibraryBook>> getSavedBooksStream() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return Stream.value([]);
@@ -257,7 +245,6 @@ class SavedBooksService {
         });
   }
 
-  /// Get saved books count for stats
   Future<int> getSavedBooksCount() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return 0;

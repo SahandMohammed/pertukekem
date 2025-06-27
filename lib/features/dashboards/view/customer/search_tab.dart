@@ -18,7 +18,6 @@ class _SearchTabState extends State<SearchTab> {
   String? _selectedCategory;
   String? _selectedCondition; // 'new', 'used', or null for all
 
-  // Popular book categories for quick access
   final List<String> _popularCategories = [
     'Fiction',
     'Non-Fiction',
@@ -75,13 +74,9 @@ class _SearchTabState extends State<SearchTab> {
                       viewModel.clearSearch();
                       setState(() {
                         _selectedCategory = null;
-                        // Don't reset condition filter when clearing search
-                        // This allows users to maintain condition filter while browsing categories
                       });
                     } else {
-                      // Cancel previous timer if it exists
                       _debounceTimer?.cancel();
-                      // Start a new timer
                       _debounceTimer = Timer(
                         const Duration(milliseconds: 300),
                         () {
@@ -89,7 +84,6 @@ class _SearchTabState extends State<SearchTab> {
                             query,
                             condition: _selectedCondition,
                           );
-                          // Clear category selection when searching by text
                           if (_selectedCategory != null) {
                             setState(() {
                               _selectedCategory = null;
@@ -189,7 +183,6 @@ class _SearchTabState extends State<SearchTab> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Handle bar
                       Center(
                         child: Container(
                           width: 40,
@@ -204,7 +197,6 @@ class _SearchTabState extends State<SearchTab> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Title and Clear button
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -231,15 +223,12 @@ class _SearchTabState extends State<SearchTab> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Category Section
                       _buildBottomSheetCategorySection(setModalState),
                       const SizedBox(height: 24),
 
-                      // Condition Section
                       _buildBottomSheetConditionSection(setModalState),
                       const SizedBox(height: 24),
 
-                      // Apply button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -258,7 +247,6 @@ class _SearchTabState extends State<SearchTab> {
                         ),
                       ),
 
-                      // Safe area padding
                       SizedBox(height: MediaQuery.of(context).padding.bottom),
                     ],
                   ),
@@ -414,20 +402,17 @@ class _SearchTabState extends State<SearchTab> {
     );
 
     if (_selectedCategory != null) {
-      // Clear search text and search by category
       widget.searchController.clear();
       viewModel.searchListings(
         _selectedCategory!,
         condition: _selectedCondition,
       );
     } else if (viewModel.searchQuery.isNotEmpty) {
-      // Re-run current search with new condition
       viewModel.searchListings(
         viewModel.searchQuery,
         condition: _selectedCondition,
       );
     } else {
-      // Clear search if no filters are active
       viewModel.clearSearch();
     }
   }

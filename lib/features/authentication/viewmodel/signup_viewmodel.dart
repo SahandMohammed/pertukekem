@@ -48,7 +48,6 @@ class SignupViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // First create the account with email/password
       await _authViewModel.signUp(
         firstName: firstName,
         lastName: lastName,
@@ -59,33 +58,27 @@ class SignupViewModel extends ChangeNotifier {
         storeName: storeName,
       );
 
-      // After successful signup, immediately start phone verification
       if (context.mounted) {
-        // Add a small delay to ensure Firebase Auth state is updated
         await Future.delayed(const Duration(milliseconds: 500));
         await _authViewModel.sendPhoneVerification(
           phoneNumber: phoneNumber,
           onCodeSent: (String verificationId) {
-            // Navigate to OTP screen only if no errors occurred
             Navigator.of(
               context,
             ).pushNamed('/verify-phone', arguments: verificationId);
           },
           onError: (String error) {
-            // Show error and don't navigate
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(error),
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
-            // Don't navigate to next step if there's an error
           },
         );
       }
     } catch (e) {
       debugPrint('Error during signup process: $e');
-      // Don't show snackbar here - let the UI handle it
       rethrow;
     } finally {
       _isLoading = false;
@@ -104,7 +97,6 @@ class SignupViewModel extends ChangeNotifier {
       await _authViewModel.sendPhoneVerification(
         phoneNumber: phoneNumber,
         onCodeSent: (String verificationId) {
-          // Navigate to OTP screen
           Navigator.of(
             context,
           ).pushNamed('/verify-phone', arguments: verificationId);

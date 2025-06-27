@@ -37,7 +37,6 @@ class ListingCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Book Cover Image
               Expanded(
                 flex: 3,
                 child: Container(
@@ -88,7 +87,6 @@ class ListingCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              // Book Title
               Expanded(
                 flex: 1,
                 child: Text(
@@ -102,7 +100,6 @@ class ListingCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              // Author
               Text(
                 'by ${listing.author}',
                 style: textTheme.bodySmall?.copyWith(
@@ -112,12 +109,10 @@ class ListingCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
-              // Price and Condition
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Price
                   Flexible(
                     child: Text(
                       '\$${listing.price.toStringAsFixed(2)}',
@@ -127,7 +122,6 @@ class ListingCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Condition Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -198,7 +192,6 @@ class StoreCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Store Logo or Placeholder
               Container(
                 width: 56,
                 height: 56,
@@ -221,7 +214,6 @@ class StoreCard extends StatelessWidget {
                         : _buildStorePlaceholder(colorScheme),
               ),
               const SizedBox(height: 12),
-              // Store Name
               Text(
                 store.storeName,
                 style: textTheme.titleMedium?.copyWith(
@@ -232,7 +224,6 @@ class StoreCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              // Verification Badge
               Row(
                 children: [
                   if (store.isVerified) ...[
@@ -255,7 +246,6 @@ class StoreCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              // Categories
               if (store.categories.isNotEmpty)
                 Expanded(
                   child: Wrap(
@@ -282,7 +272,6 @@ class StoreCard extends StatelessWidget {
                         }).toList(),
                   ),
                 ),
-              // Join Date
               Text(
                 'Joined ${DateFormat('MMM yyyy').format(store.createdAt)}',
                 style: textTheme.bodySmall?.copyWith(

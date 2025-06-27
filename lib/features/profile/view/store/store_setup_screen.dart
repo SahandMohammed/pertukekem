@@ -6,7 +6,6 @@ import 'store_setup_step2_images_screen.dart';
 import 'store_setup_step3_contact_screen.dart';
 import 'store_setup_step4_screen.dart';
 
-/// Main Store Setup Screen that coordinates navigation between steps
 class StoreSetupScreen extends StatefulWidget {
   const StoreSetupScreen({super.key});
 

@@ -14,7 +14,6 @@ class _StoresTabState extends State<StoresTab> {
   @override
   void initState() {
     super.initState();
-    // Load all stores when the tab is first created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<CustomerHomeViewModel>();
       if (viewModel.allStores.isEmpty && !viewModel.isLoadingAllStores) {

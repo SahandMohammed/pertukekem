@@ -5,7 +5,6 @@ import '../model/admin_listing_model.dart';
 
 class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // Users Management - Customers only (no store owners)
   Future<List<AdminUserModel>> getAllCustomers({
     int limit = 20,
     DocumentSnapshot? startAfter,
@@ -31,7 +30,6 @@ class AdminService {
     }
   }
 
-  // Get all users (for backwards compatibility)
   Future<List<AdminUserModel>> getAllUsers({
     int limit = 20,
     DocumentSnapshot? startAfter,
@@ -70,7 +68,6 @@ class AdminService {
 
   Future<List<AdminUserModel>> searchUsers(String searchTerm) async {
     try {
-      // Search by name
       final nameQuery =
           await _firestore
               .collection('users')
@@ -79,7 +76,6 @@ class AdminService {
               .limit(10)
               .get();
 
-      // Search by email
       final emailQuery =
           await _firestore
               .collection('users')
@@ -97,7 +93,6 @@ class AdminService {
       final Set<String> userIds = {};
       final List<AdminUserModel> users = [];
 
-      // Combine results and remove duplicates
       for (final doc in [...nameQuery.docs, ...emailQuery.docs]) {
         if (!userIds.contains(doc.id)) {
           userIds.add(doc.id);
@@ -113,7 +108,6 @@ class AdminService {
 
   Future<List<AdminUserModel>> searchCustomers(String searchTerm) async {
     try {
-      // Search by name
       final nameQuery =
           await _firestore
               .collection('users')
@@ -122,7 +116,6 @@ class AdminService {
               .limit(10)
               .get();
 
-      // Search by email
       final emailQuery =
           await _firestore
               .collection('users')
@@ -145,7 +138,6 @@ class AdminService {
           userIds.add(doc.id);
           final user = AdminUserModel.fromMap(doc.data());
           if (user.isCustomer) {
-            // Only include customers
             customers.add(user);
           }
         }
@@ -157,7 +149,6 @@ class AdminService {
     }
   }
 
-  // Stores Management
   Future<List<AdminStoreModel>> getAllStores({
     int limit = 20,
     DocumentSnapshot? startAfter,
@@ -178,7 +169,6 @@ class AdminService {
       for (final doc in querySnapshot.docs) {
         final storeData = doc.data() as Map<String, dynamic>;
 
-        // Get owner information
         final ownerDoc =
             await _firestore
                 .collection('users')
@@ -188,7 +178,6 @@ class AdminService {
         if (ownerDoc.exists) {
           final ownerData = ownerDoc.data()!;
 
-          // Get total listings count
           final listingsCount =
               await _firestore
                   .collection('listings')
@@ -222,13 +211,11 @@ class AdminService {
     try {
       final batch = _firestore.batch();
 
-      // Update store owner's blocked status
       batch.update(_firestore.collection('users').doc(ownerId), {
         'isBlocked': isBlocked,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // If blocking, also deactivate all store listings
       if (isBlocked) {
         final storeRef = _firestore.collection('stores').doc(storeId);
         final listingsQuery =
@@ -267,7 +254,6 @@ class AdminService {
       for (final doc in query.docs) {
         final storeData = doc.data();
 
-        // Get owner information
         final ownerDoc =
             await _firestore
                 .collection('users')
@@ -277,7 +263,6 @@ class AdminService {
         if (ownerDoc.exists) {
           final ownerData = ownerDoc.data()!;
 
-          // Get total listings count
           final listingsCount =
               await _firestore
                   .collection('listings')
@@ -303,7 +288,6 @@ class AdminService {
     }
   }
 
-  // Listings Management
   Future<List<AdminListingModel>> getAllListings({
     int limit = 20,
     DocumentSnapshot? startAfter,
@@ -324,7 +308,6 @@ class AdminService {
       for (final doc in querySnapshot.docs) {
         final listingData = doc.data() as Map<String, dynamic>;
 
-        // Get seller information
         String sellerName = 'Unknown';
         String sellerId = '';
 
@@ -339,7 +322,6 @@ class AdminService {
                 sellerName = sellerData['storeName'] ?? 'Unknown Store';
                 sellerId = sellerData['storeId'] ?? '';
               } else {
-                // Get user data for individual sellers
                 final userDoc =
                     await _firestore
                         .collection('users')
@@ -359,7 +341,6 @@ class AdminService {
               }
             }
           } catch (e) {
-            // If there's an error getting seller info, use default values
             sellerName = 'Unknown Seller';
             sellerId = sellerRef.id;
           }
@@ -393,7 +374,6 @@ class AdminService {
 
   Future<List<AdminListingModel>> searchListings(String searchTerm) async {
     try {
-      // Search by title
       final titleQuery =
           await _firestore
               .collection('listings')
@@ -402,7 +382,6 @@ class AdminService {
               .limit(10)
               .get();
 
-      // Search by author
       final authorQuery =
           await _firestore
               .collection('listings')
@@ -414,14 +393,12 @@ class AdminService {
       final Set<String> listingIds = {};
       final List<AdminListingModel> listings = [];
 
-      // Combine results and remove duplicates
       for (final doc in [...titleQuery.docs, ...authorQuery.docs]) {
         if (!listingIds.contains(doc.id)) {
           listingIds.add(doc.id);
 
           final listingData = doc.data();
 
-          // Get seller information
           String sellerName = 'Unknown';
           String sellerId = '';
 
@@ -436,7 +413,6 @@ class AdminService {
                   sellerName = sellerData['storeName'] ?? 'Unknown Store';
                   sellerId = sellerData['storeId'] ?? '';
                 } else {
-                  // Get user data for individual sellers
                   final userDoc =
                       await _firestore
                           .collection('users')
@@ -456,7 +432,6 @@ class AdminService {
                 }
               }
             } catch (e) {
-              // If there's an error getting seller info, use default values
               sellerName = 'Unknown Seller';
               sellerId = sellerRef.id;
             }
@@ -478,7 +453,6 @@ class AdminService {
     }
   }
 
-  // Statistics
   Future<Map<String, int>> getStatistics() async {
     try {
       final futures = await Future.wait([
@@ -492,7 +466,6 @@ class AdminService {
             .get(), // Blocked users
       ]);
 
-      // Count active listings manually (includes listings without status field)
       final allListingsSnapshot = await _firestore.collection('listings').get();
       int activeListingsCount = 0;
 
@@ -500,7 +473,6 @@ class AdminService {
         final data = doc.data();
         final status = data['status'] as String?;
 
-        // Count as active if status is null, empty, 'active', or not 'removed'/'inactive'/'sold'
         if (status == null ||
             status.isEmpty ||
             status == 'active' ||
@@ -521,7 +493,6 @@ class AdminService {
         } else if (user.isStoreOwner) {
           storeOwnerCount++;
         }
-        // Note: Admin users are not counted in either category
       }
       return {
         'totalUsers': allUsersSnapshot.size, // Total users

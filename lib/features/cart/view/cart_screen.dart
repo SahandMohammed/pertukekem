@@ -20,7 +20,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    // Initialize animation controller
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -29,7 +28,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    // Initialize cart when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CartService>().initializeCart();
       _fadeController.forward();
@@ -212,7 +210,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Book cover with enhanced styling
                 Hero(
                   tag: 'cart_item_${item.id}',
                   child: Container(
@@ -253,7 +250,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Book details with improved layout
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,7 +374,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Summary header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -427,7 +422,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                 ],
               ),
               const SizedBox(height: 24),
-              // Checkout button
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -458,7 +452,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(height: 12),
-              // Continue shopping link
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: TextButton.styleFrom(
@@ -477,7 +470,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
   }
 
   void _proceedToCheckout(BuildContext context, Cart cart) {
-    // Navigate to checkout screen
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => CheckoutScreen(cart: cart)),

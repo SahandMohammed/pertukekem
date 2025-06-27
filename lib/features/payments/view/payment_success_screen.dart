@@ -49,7 +49,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
       CurvedAnimation(parent: _successController, curve: Curves.elasticOut),
     );
 
-    // Start animations
     _successController.forward();
     Future.delayed(const Duration(milliseconds: 300), () {
       _slideController.forward();
@@ -75,7 +74,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              // Header
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
@@ -89,7 +87,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
               const SizedBox(height: 20),
 
-              // Success Animation
               ScaleTransition(
                 scale: _scaleAnimation,
                 child: Container(
@@ -109,7 +106,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
               const SizedBox(height: 24),
 
-              // Success Message
               SlideTransition(
                 position: _slideAnimation,
                 child: Column(
@@ -138,7 +134,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
               const SizedBox(height: 32),
 
-              // Purchase Details Card
               SlideTransition(
                 position: _slideAnimation,
                 child: Container(
@@ -160,7 +155,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                   ),
                   child: Column(
                     children: [
-                      // Book Info
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -237,7 +231,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
                       const SizedBox(height: 24),
 
-                      // Transaction Details
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -274,12 +267,10 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
               const SizedBox(height: 32),
 
-              // Action Buttons
               SlideTransition(
                 position: _slideAnimation,
                 child: Column(
                   children: [
-                    // Download/Access eBook Button
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -299,7 +290,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
                     const SizedBox(height: 16),
 
-                    // View Receipt Button
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -319,7 +309,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
                     const SizedBox(height: 16),
 
-                    // Continue Shopping Button
                     TextButton(
                       onPressed:
                           () => Navigator.of(
@@ -407,7 +396,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
   }
 
   void _accessEbook() {
-    // TODO: Implement eBook access/download functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('eBook access functionality will be implemented.'),
@@ -419,7 +407,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
   }
 
   void _viewReceipt() {
-    // TODO: Implement receipt viewing functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text(

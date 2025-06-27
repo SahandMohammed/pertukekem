@@ -11,7 +11,6 @@ class PaymentCardService {
   final String _usersCollection = 'users';
   final String _cardsSubcollection = 'payment_cards';
 
-  // Get user's cards collection reference
   CollectionReference _getUserCardsCollection(String userId) {
     return _firestore
         .collection(_usersCollection)
@@ -19,12 +18,10 @@ class PaymentCardService {
         .collection(_cardsSubcollection);
   }
 
-  // Get user document reference
   DocumentReference _getUserDocumentReference(String userId) {
     return _firestore.collection(_usersCollection).doc(userId);
   }
 
-  // Save a new payment card
   Future<String> savePaymentCard({
     required String userId,
     required String cardNumber,
@@ -35,20 +32,16 @@ class PaymentCardService {
     bool setAsDefault = false,
   }) async {
     try {
-      // Ensure user document exists
       await _ensureUserDocumentExists(userId);
 
-      // Extract last 4 digits and determine card type
       final lastFourDigits = cardNumber
           .replaceAll(' ', '')
           .substring(cardNumber.replaceAll(' ', '').length - 4);
       final cardType = PaymentCard.determineCardType(cardNumber);
 
-      // If this is set as default, unset other default cards
       if (setAsDefault) {
         await _unsetDefaultCards(userId);
       } else {
-        // If this is the first card, make it default
         final existingCards = await getUserPaymentCards(userId);
         setAsDefault = existingCards.isEmpty;
       }
@@ -77,7 +70,6 @@ class PaymentCardService {
     }
   }
 
-  // Get all payment cards for a user
   Future<List<PaymentCard>> getUserPaymentCards(String userId) async {
     try {
       final querySnapshot =
@@ -95,7 +87,6 @@ class PaymentCardService {
     }
   }
 
-  // Get user's default payment card
   Future<PaymentCard?> getUserDefaultCard(String userId) async {
     try {
       final querySnapshot =
@@ -113,7 +104,6 @@ class PaymentCardService {
     }
   }
 
-  // Get payment card by ID
   Future<PaymentCard?> getPaymentCardById(String userId, String cardId) async {
     try {
       final doc = await _getUserCardsCollection(userId).doc(cardId).get();
@@ -128,13 +118,10 @@ class PaymentCardService {
     }
   }
 
-  // Set a card as default
   Future<void> setCardAsDefault(String cardId, String userId) async {
     try {
-      // First unset all other default cards for this user
       await _unsetDefaultCards(userId);
 
-      // Then set this card as default
       await _getUserCardsCollection(
         userId,
       ).doc(cardId).update({'isDefault': true});
@@ -146,15 +133,12 @@ class PaymentCardService {
     }
   }
 
-  // Update last used date for a card
   Future<void> updateCardLastUsed(String cardId) async {
-    // This method needs userId parameter in the new structure
     throw Exception(
       'updateCardLastUsed requires userId parameter. Use updateCardLastUsedWithUserId instead.',
     );
   }
 
-  // Update last used date for a card with userId
   Future<void> updateCardLastUsedWithUserId(
     String userId,
     String cardId,
@@ -171,7 +155,6 @@ class PaymentCardService {
     }
   }
 
-  // Delete a payment card
   Future<void> deletePaymentCard(String cardId, String userId) async {
     try {
       final card = await getPaymentCardById(userId, cardId);
@@ -179,7 +162,6 @@ class PaymentCardService {
         throw Exception('Card not found');
       }
 
-      // If this was the default card, set another card as default
       if (card.isDefault) {
         final otherCards = await getUserPaymentCards(userId);
         final remainingCards = otherCards.where((c) => c.id != cardId).toList();
@@ -198,24 +180,20 @@ class PaymentCardService {
     }
   }
 
-  // Alias method for compatibility
   Future<List<PaymentCard>> getCardsByUserId(String userId) async {
     return getUserPaymentCards(userId);
   }
 
-  // Set default card - alias for compatibility
   Future<void> setDefaultCard(String userId, String cardId) async {
     return setCardAsDefault(cardId, userId);
   }
 
-  // Delete card - alias for compatibility - deprecated
   Future<void> deleteCard(String cardId) async {
     throw Exception(
       'deleteCard requires userId parameter. Use deletePaymentCard instead.',
     );
   }
 
-  // Private method to unset all default cards for a user
   Future<void> _unsetDefaultCards(String userId) async {
     try {
       final querySnapshot =
@@ -235,7 +213,6 @@ class PaymentCardService {
     }
   }
 
-  // Check if a card already exists (by last 4 digits and expiry)
   Future<bool> cardExists({
     required String userId,
     required String lastFourDigits,
@@ -258,10 +235,8 @@ class PaymentCardService {
     }
   }
 
-  // Get card statistics for admin (requires collection group query)
   Future<Map<String, dynamic>> getCardStatistics() async {
     try {
-      // Use collection group query to get all cards across all users
       final allCardsQuery =
           await _firestore.collectionGroup(_cardsSubcollection).get();
 
@@ -270,16 +245,13 @@ class PaymentCardService {
               .map((doc) => PaymentCard.fromFirestore(doc))
               .toList();
 
-      // Group by card type
       final cardTypeCount = <String, int>{};
       for (final card in cards) {
         cardTypeCount[card.cardType] = (cardTypeCount[card.cardType] ?? 0) + 1;
       }
 
-      // Count expired cards
       final expiredCards = cards.where((card) => card.isExpired).length;
 
-      // Get cards added in last 30 days
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
       final recentCards =
           cards.where((card) => card.createdAt.isAfter(thirtyDaysAgo)).length;
@@ -297,7 +269,6 @@ class PaymentCardService {
     }
   }
 
-  // Remove expired cards for a user
   Future<void> removeExpiredCards(String userId) async {
     try {
       final userCards = await getUserPaymentCards(userId);
@@ -319,12 +290,10 @@ class PaymentCardService {
     }
   }
 
-  // Ensure user document exists
   Future<void> _ensureUserDocumentExists(String userId) async {
     try {
       final userDoc = await _getUserDocumentReference(userId).get();
       if (!userDoc.exists) {
-        // Create user document with minimal data
         await _getUserDocumentReference(userId).set({
           'id': userId,
           'createdAt': Timestamp.fromDate(DateTime.now()),

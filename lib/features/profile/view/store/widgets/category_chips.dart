@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Widget for selecting store categories using filter chips
 class CategoryChips extends StatelessWidget {
   final List<String> selectedCategories;
   final Function(List<String>) onCategoriesChanged;

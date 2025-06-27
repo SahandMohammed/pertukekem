@@ -12,7 +12,6 @@ class CheckoutService {
   final LibraryService _libraryService = LibraryService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Process the entire cart checkout with payment simulation
   Future<List<CheckoutResult>> processCartCheckout({
     required Cart cart,
     required String buyerId,
@@ -24,11 +23,9 @@ class CheckoutService {
     final results = <CheckoutResult>[];
     final transactionId = 'TXN${DateTime.now().millisecondsSinceEpoch}';
 
-    // Simulate payment processing delay
     await Future.delayed(const Duration(seconds: 2));
 
     try {
-      // Process payment simulation
       final paymentResult = await _simulatePayment(
         amount: cart.totalAmount,
         paymentMethod: paymentMethod,
@@ -39,7 +36,6 @@ class CheckoutService {
         throw Exception(paymentResult.errorMessage ?? 'Payment failed');
       }
 
-      // Process each cart item as separate order
       for (final cartItem in cart.items) {
         try {
           final orderResult = await _processCartItem(
@@ -54,7 +50,6 @@ class CheckoutService {
 
           results.add(orderResult);
         } catch (e) {
-          // Add failed result for this item
           results.add(
             CheckoutResult(
               success: false,
@@ -76,7 +71,6 @@ class CheckoutService {
     }
   }
 
-  /// Process individual cart item - create orders only for physical books
   Future<CheckoutResult> _processCartItem({
     required CartItem cartItem,
     required String buyerId,
@@ -89,7 +83,6 @@ class CheckoutService {
     try {
       String? orderId;
 
-      // Only create orders for physical books
       if (cartItem.listing.bookType == 'physical') {
         final sellerRef = cartItem.listing.sellerRef;
         final listingRef = _firestore
@@ -106,7 +99,6 @@ class CheckoutService {
         );
       }
 
-      // Create transaction record for all purchases (both physical and ebooks)
       await _transactionService.createTransaction(
         transactionId: transactionId,
         buyerId: buyerId,
@@ -118,7 +110,6 @@ class CheckoutService {
         orderId: orderId, // Will be null for ebooks
       );
 
-      // Add ebooks to buyer's library immediately
       if (cartItem.listing.bookType == 'ebook') {
         await _libraryService.addBookToLibrary(
           userId: buyerId,
@@ -129,7 +120,6 @@ class CheckoutService {
         );
       }
 
-      // Reduce available quantity in listing
       await _reduceListingQuantity(cartItem.listing.id!, cartItem.quantity);
 
       return CheckoutResult(
@@ -156,17 +146,14 @@ class CheckoutService {
     }
   }
 
-  /// Simulate payment processing for different payment methods
   Future<PaymentSimulationResult> _simulatePayment({
     required double amount,
     required String paymentMethod,
     Map<String, String>? cardInfo,
   }) async {
-    // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 1500));
 
     if (paymentMethod == 'cod') {
-      // Cash on delivery always succeeds
       return PaymentSimulationResult(
         success: true,
         transactionId: 'COD_${DateTime.now().millisecondsSinceEpoch}',
@@ -174,7 +161,6 @@ class CheckoutService {
       );
     }
 
-    // Card payment simulation
     if (cardInfo == null) {
       return PaymentSimulationResult(
         success: false,
@@ -182,12 +168,10 @@ class CheckoutService {
       );
     }
 
-    // Simulate various payment scenarios
     final random = Random();
     final successRate = 0.9; // 90% success rate for simulation
 
     if (random.nextDouble() > successRate) {
-      // Simulate random failures for demo purposes
       final failureReasons = [
         'Insufficient funds',
         'Card declined',
@@ -200,13 +184,10 @@ class CheckoutService {
         errorMessage: failureReasons[random.nextInt(failureReasons.length)],
       );
     } // Validate card number format (basic validation)
-    // Handle both new card entry and stored card scenarios
     final cardNumber = cardInfo['cardNumber']?.replaceAll(' ', '') ?? '';
     final lastFourDigits = cardInfo['lastFourDigits'] ?? '';
 
-    // For stored cards, we only have last 4 digits, so check that instead
     if (cardNumber.isNotEmpty) {
-      // New card validation
       if (cardNumber.length < 16) {
         return PaymentSimulationResult(
           success: false,
@@ -214,7 +195,6 @@ class CheckoutService {
         );
       }
     } else if (lastFourDigits.isNotEmpty) {
-      // Stored card validation - just check if we have the last 4 digits
       if (lastFourDigits.length != 4) {
         return PaymentSimulationResult(
           success: false,
@@ -222,14 +202,12 @@ class CheckoutService {
         );
       }
     } else {
-      // No card information provided
       return PaymentSimulationResult(
         success: false,
         errorMessage: 'Invalid card number',
       );
     }
 
-    // Validate expiry date
     final expiry = cardInfo['expiry'] ?? '';
     if (expiry.length < 5 || !expiry.contains('/')) {
       return PaymentSimulationResult(
@@ -240,7 +218,6 @@ class CheckoutService {
     final cvv = cardInfo['cvv'] ?? '';
     final isStoredCard = cardInfo['cardId']?.isNotEmpty ?? false;
 
-    // For new cards, CVV is required. For stored cards, it's optional in this simulation
     if (!isStoredCard && cvv.length < 3) {
       return PaymentSimulationResult(
         success: false,
@@ -260,7 +237,6 @@ class CheckoutService {
     );
   }
 
-  /// Reduce the available quantity of a listing after successful purchase
   Future<void> _reduceListingQuantity(
     String listingId,
     int quantityPurchased,
@@ -271,12 +247,10 @@ class CheckoutService {
       });
     } catch (e) {
       print('Error reducing listing quantity: $e');
-      // Non-critical error, continue with checkout
     }
   }
 }
 
-/// Result of payment simulation
 class PaymentSimulationResult {
   final bool success;
   final String? transactionId;

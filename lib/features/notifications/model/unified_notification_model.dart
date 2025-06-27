@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum NotificationType {
-  // Store notifications
   newOrder,
   orderCancelled,
   orderUpdate,
@@ -9,7 +8,6 @@ enum NotificationType {
   review,
   system,
 
-  // Customer notifications
   orderConfirmed,
   orderShipped,
   orderDelivered,
@@ -32,13 +30,10 @@ class UnifiedNotification {
   final bool isRead;
   final Timestamp createdAt;
 
-  // Store-specific fields
   final String? storeId;
 
-  // Customer-specific fields
   final String? customerId;
 
-  // Shared metadata
   final Map<String, dynamic>? metadata;
   final String? imageUrl;
   final String? actionUrl;
@@ -135,7 +130,6 @@ class UnifiedNotification {
     );
   }
 
-  // Helper method to get notification icon based on type
   String get iconPath {
     switch (type) {
       case NotificationType.newOrder:
@@ -164,7 +158,6 @@ class UnifiedNotification {
     }
   }
 
-  // Helper method to get notification color based on type
   int get colorValue {
     switch (type) {
       case NotificationType.newOrder:

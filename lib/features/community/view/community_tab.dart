@@ -26,7 +26,6 @@ class _CommunityTabState extends State<CommunityTab> {
   }
 
   void _initializeUsedBooksStream() {
-    // Get used books from all users (community marketplace)
     _usedBooksStream = _listingService.watchAllListings(
       condition: 'used',
       sellerType: 'user', // Only show books from individual users, not stores
@@ -43,7 +42,6 @@ class _CommunityTabState extends State<CommunityTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               _buildHeader(),
               const SizedBox(
                 height: 24,
@@ -51,23 +49,18 @@ class _CommunityTabState extends State<CommunityTab> {
               _buildUsedBooksMarketplace(),
               const SizedBox(height: 24),
 
-              // My Listings Section (NEW)
               _buildMyListingsSection(),
               const SizedBox(height: 24),
 
-              // Community Features Placeholder
               _buildCommunityFeatures(),
               const SizedBox(height: 24),
 
-              // Book Clubs Section
               _buildBookClubsSection(),
               const SizedBox(height: 24),
 
-              // Reading Challenges Section
               _buildReadingChallengesSection(),
               const SizedBox(height: 24),
 
-              // Community Reviews Section
               _buildCommunityReviewsSection(),
             ],
           ),
@@ -241,7 +234,6 @@ class _CommunityTabState extends State<CommunityTab> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to all book clubs
               },
               child: const Text('See all'),
             ),
@@ -303,7 +295,6 @@ class _CommunityTabState extends State<CommunityTab> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to all challenges
               },
               child: const Text('Join'),
             ),
@@ -365,7 +356,6 @@ class _CommunityTabState extends State<CommunityTab> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to all reviews
               },
               child: const Text('See all'),
             ),
@@ -437,7 +427,6 @@ class _CommunityTabState extends State<CommunityTab> {
             ),
             TextButton.icon(
               onPressed: () {
-                // Navigate to add listing screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -659,7 +648,6 @@ class _CommunityTabState extends State<CommunityTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Book Cover with Used Badge
             Stack(
               children: [
                 Container(
@@ -695,7 +683,6 @@ class _CommunityTabState extends State<CommunityTab> {
                             ),
                   ),
                 ),
-                // Used Badge
                 Positioned(
                   top: 8,
                   left: 8,
@@ -742,7 +729,6 @@ class _CommunityTabState extends State<CommunityTab> {
                 ),
               ],
             ),
-            // Book Details
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -819,7 +805,6 @@ class _CommunityTabState extends State<CommunityTab> {
   Widget _buildAddListingFAB() {
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    // Only show FAB if user is logged in
     if (currentUser == null) {
       return const SizedBox.shrink();
     }
@@ -848,7 +833,6 @@ class _CommunityTabState extends State<CommunityTab> {
   Widget _buildMyListingsSection() {
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    // Only show for logged-in users
     if (currentUser == null) {
       return const SizedBox.shrink();
     }
@@ -1049,7 +1033,6 @@ class _CommunityTabState extends State<CommunityTab> {
   }
 
   Widget _buildMyListingsList(List<Listing> myListings) {
-    // Show only first 3 listings, with option to see more
     final displayListings = myListings.take(3).toList();
 
     return Column(
@@ -1103,7 +1086,6 @@ class _CommunityTabState extends State<CommunityTab> {
       ),
       child: Row(
         children: [
-          // Book Cover
           Container(
             width: 60,
             height: 80,
@@ -1131,7 +1113,6 @@ class _CommunityTabState extends State<CommunityTab> {
           ),
           const SizedBox(width: 16),
 
-          // Book Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1192,7 +1173,6 @@ class _CommunityTabState extends State<CommunityTab> {
             ),
           ),
 
-          // Action Button
           Column(
             children: [
               if (isActive) ...[
@@ -1343,5 +1323,4 @@ class _CommunityTabState extends State<CommunityTab> {
     }
   }
 
-  // ...existing code...
 }

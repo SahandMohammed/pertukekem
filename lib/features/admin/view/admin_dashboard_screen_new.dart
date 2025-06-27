@@ -23,7 +23,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
 
-    // Load initial data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final adminViewModel = context.read<AdminViewModel>();
       adminViewModel.loadStatistics();
@@ -61,7 +60,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         ),
         body: Column(
           children: [
-            // Statistics Section
             Container(
               color: Theme.of(context).colorScheme.primary,
               child: Consumer<AdminViewModel>(
@@ -121,7 +119,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 },
               ),
             ),
-            // Tab Content
             Expanded(
               child: TabBarView(
                 controller: _tabController,

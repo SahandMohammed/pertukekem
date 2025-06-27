@@ -5,9 +5,6 @@ import '../model/store_model.dart';
 class CustomerHomeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Get recently listed items from stores only (sorted by creation date)
-  /// Note: This query requires a composite index in Firestore:
-  /// Collection: listings, Fields: sellerType (Ascending), createdAt (Descending)
   Future<List<Listing>> getRecentlyListedItems({int limit = 10}) async {
     try {
       print('DEBUG: Fetching recent listings from stores only...');
@@ -34,7 +31,6 @@ class CustomerHomeService {
             );
           }).toList();
 
-      // Debug logging
       for (final listing in listings) {
         final listingDate = listing.createdAt?.toDate();
         print('DEBUG: Store Listing ${listing.id}: ${listing.title}');
@@ -51,10 +47,8 @@ class CustomerHomeService {
     }
   }
 
-  /// Get recently joined stores (from last 30 days, sorted by creation date)
   Future<List<StoreModel>> getRecentlyJoinedStores({int limit = 10}) async {
     try {
-      // Calculate the date 30 days ago
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
       final thirtyDaysAgoTimestamp = Timestamp.fromDate(thirtyDaysAgo);
 
@@ -78,7 +72,6 @@ class CustomerHomeService {
     }
   }
 
-  /// Search listings by title, author, or category using case-insensitive local filtering
   Future<List<Listing>> searchListings(
     String query, {
     int limit = 20,
@@ -89,12 +82,9 @@ class CustomerHomeService {
 
       print('DEBUG: Searching for query: "$query"');
 
-      // Convert query to lowercase for case-insensitive search
       final lowerQuery = query.toLowerCase();
       print('DEBUG: Using lowercase query: "$lowerQuery"');
 
-      // Fetch all listings and filter locally for true case-insensitive search
-      // This is more efficient than multiple Firestore queries and provides better results
       final allListingsSnapshot =
           await _firestore
               .collection('listings')
@@ -115,17 +105,14 @@ class CustomerHomeService {
         final description =
             (data['description'] as String? ?? '').toLowerCase();
 
-        // Get categories and convert to lowercase
         final categories =
             (data['category'] as List<dynamic>? ?? [])
                 .map((cat) => cat.toString().toLowerCase())
                 .toList();
 
-        // Get condition field
         final bookCondition =
             (data['condition'] as String? ?? '').toLowerCase();
 
-        // Check if query matches any searchable field (case-insensitive)
         final bool queryMatches =
             title.contains(lowerQuery) ||
             author.contains(lowerQuery) ||
@@ -133,7 +120,6 @@ class CustomerHomeService {
             description.contains(lowerQuery) ||
             categories.any((cat) => cat.contains(lowerQuery));
 
-        // Check condition filter if specified
         final bool conditionMatches =
             condition == null || bookCondition == condition.toLowerCase();
 
@@ -147,38 +133,31 @@ class CustomerHomeService {
         }
       }
 
-      // Sort results by relevance (exact matches first, then partial matches)
       matchingResults.sort((a, b) {
         final aTitle = a.title.toLowerCase();
         final bTitle = b.title.toLowerCase();
         final aAuthor = a.author.toLowerCase();
         final bAuthor = b.author.toLowerCase();
 
-        // Exact title matches first
         if (aTitle == lowerQuery && bTitle != lowerQuery) return -1;
         if (bTitle == lowerQuery && aTitle != lowerQuery) return 1;
 
-        // Exact author matches next
         if (aAuthor == lowerQuery && bAuthor != lowerQuery) return -1;
         if (bAuthor == lowerQuery && aAuthor != lowerQuery) return 1;
 
-        // Title starts with query
         if (aTitle.startsWith(lowerQuery) && !bTitle.startsWith(lowerQuery))
           return -1;
         if (bTitle.startsWith(lowerQuery) && !aTitle.startsWith(lowerQuery))
           return 1;
 
-        // Author starts with query
         if (aAuthor.startsWith(lowerQuery) && !bAuthor.startsWith(lowerQuery))
           return -1;
         if (bAuthor.startsWith(lowerQuery) && !aAuthor.startsWith(lowerQuery))
           return 1;
 
-        // Default alphabetical by title
         return aTitle.compareTo(bTitle);
       });
 
-      // Limit results
       final limitedResults = matchingResults.take(limit).toList();
 
       print('DEBUG: Total search results: ${limitedResults.length}');
@@ -193,7 +172,6 @@ class CustomerHomeService {
     }
   }
 
-  /// Get all listings with optional filters
   Stream<List<Listing>> getAllListings({
     String? condition,
     String? category,
@@ -227,7 +205,6 @@ class CustomerHomeService {
     }
   }
 
-  /// Get all stores
   Future<List<StoreModel>> getAllStores({int limit = 50}) async {
     try {
       final querySnapshot =

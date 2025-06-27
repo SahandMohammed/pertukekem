@@ -18,7 +18,6 @@ class _PhoneVerificationFlowScreenState
   @override
   void initState() {
     super.initState();
-    // Automatically trigger phone verification when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _triggerPhoneVerification();
     });

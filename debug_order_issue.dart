@@ -1,22 +1,17 @@
-// Debug script to help identify the order reference mismatch issue
-// This is a standalone debug file to analyze the issue
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
-  // Initialize Firebase (in actual implementation)
   final auth = FirebaseAuth.instance;
   final firestore = FirebaseFirestore.instance;
 
   print('=== ORDER REFERENCE MISMATCH DEBUG ===');
 
-  // Simulate the order creation flow
   print('\n1. CHECKING ORDER CREATION FLOW:');
   print('   - During checkout, sellerRef comes from listing.sellerRef');
   print('   - This should be /stores/{userId} for store owners');
 
-  // Simulate the order querying flow
   print('\n2. CHECKING ORDER QUERYING FLOW:');
   print('   - getSellerOrders() gets user.storeId from user document');
   print('   - Creates storeRef as /stores/{storeId}');
@@ -35,7 +30,6 @@ void main() async {
   print('   - Ensure consistency between order creation and querying');
 }
 
-// Potential debugging functions that could be added to OrderService
 class OrderDebugHelper {
   static Future<void> debugOrderReferences() async {
     final firestore = FirebaseFirestore.instance;
@@ -46,7 +40,6 @@ class OrderDebugHelper {
 
     print('=== DEBUGGING ORDER REFERENCES ===');
 
-    // 1. Check user document
     final userDoc =
         await firestore.collection('users').doc(currentUser.uid).get();
     if (userDoc.exists) {
@@ -57,7 +50,6 @@ class OrderDebugHelper {
       print('StoreId == UID: ${storeId == currentUser.uid}');
     }
 
-    // 2. Check all orders for this user
     final ordersSnapshot = await firestore.collection('orders').get();
     print('\nAnalyzing all orders:');
 
@@ -70,19 +62,16 @@ class OrderDebugHelper {
       print('  - sellerRef: ${sellerRef.path}');
       print('  - buyerRef: ${buyerRef.path}');
 
-      // Check if this order belongs to current user as seller
       if (sellerRef.path == 'stores/${currentUser.uid}' ||
           sellerRef.path == 'users/${currentUser.uid}') {
         print('  - This order belongs to current user as SELLER');
       }
 
-      // Check if this order belongs to current user as buyer
       if (buyerRef.path == 'users/${currentUser.uid}') {
         print('  - This order belongs to current user as BUYER');
       }
     }
 
-    // 3. Check what the current query would return
     final userStoreId = userDoc.data()?['storeId'];
     if (userStoreId != null) {
       final storeRef = firestore.collection('stores').doc(userStoreId);
@@ -109,7 +98,6 @@ class OrderDebugHelper {
 
     print('\n=== DEBUGGING LISTING REFERENCES ===');
 
-    // Check all listings for this user
     final listingsSnapshot = await firestore.collection('listings').get();
 
     for (final doc in listingsSnapshot.docs) {

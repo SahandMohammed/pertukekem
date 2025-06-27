@@ -16,38 +16,31 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthViewModel>(
       builder: (context, authViewModel, _) {
-        // Show login screen if no user is authenticated
         if (authViewModel.firebaseUser == null) {
           return const LoginScreen();
         }
 
-        // Show loading while fetching user data
         if (authViewModel.isLoading || authViewModel.user == null) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // Check email verification status
         if (!authViewModel.user!.isEmailVerified) {
           return const VerifyEmailScreen();
         }
 
-        // Check phone verification status
         if (!authViewModel.isPhoneVerified) {
           return const PhoneVerificationFlowScreen();
         }
 
-        // Check if user is blocked
         if (authViewModel.user!.isBlocked) {
           return const BlockedUserScreen();
         }
 
-        // Only show dashboard if user is fully verified// Check user role and redirect accordingly
         if (authViewModel.user!.roles.contains('admin')) {
           return const AdminDashboardScreen();
         } else if (authViewModel.user!.roles.contains('store')) {
-          // Check if the store user needs to complete setup
           final storeId = authViewModel.user!.storeId;
           if (storeId == null || storeId.isEmpty) {
             return const StoreSetupScreen();

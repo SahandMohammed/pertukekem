@@ -99,7 +99,6 @@ class AdminStoreCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Store Statistics
             Row(
               children: [
                 _buildStatItem(

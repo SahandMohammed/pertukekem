@@ -37,7 +37,6 @@ class _ProfileTabState extends State<ProfileTab> {
     super.initState();
     _loadUserProfile();
 
-    // Listen to saved books changes
     SavedBooksNotifier().addListener(_onSavedBooksChanged);
   }
 
@@ -48,7 +47,6 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   void _onSavedBooksChanged() {
-    // Refresh stats when saved books change
     _refreshStats();
   }
 
@@ -111,7 +109,6 @@ class _ProfileTabState extends State<ProfileTab> {
         });
       }
     } catch (e) {
-      // Silently handle errors for stats refresh
       debugPrint('Error refreshing stats: $e');
     }
   }
@@ -133,7 +130,6 @@ class _ProfileTabState extends State<ProfileTab> {
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              // TODO: Navigate to settings
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Settings (Coming Soon)'),
@@ -187,11 +183,9 @@ class _ProfileTabState extends State<ProfileTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Profile Header with User Card
                       _buildUserProfileCard(),
                       const SizedBox(height: 24),
 
-                      // Quick Stats
                       Text(
                         'Quick Stats',
                         style: textTheme.titleMedium?.copyWith(
@@ -211,7 +205,6 @@ class _ProfileTabState extends State<ProfileTab> {
                                   ),
                                 );
 
-                                // Refresh stats when returning from saved books screen
                                 if (mounted) {
                                   _refreshStats();
                                 }
@@ -241,7 +234,6 @@ class _ProfileTabState extends State<ProfileTab> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Menu Options
                       Text(
                         'Account',
                         style: textTheme.titleMedium?.copyWith(
@@ -296,7 +288,6 @@ class _ProfileTabState extends State<ProfileTab> {
                               ),
                             );
 
-                            // Refresh stats when returning from saved books screen
                             if (mounted) {
                               _refreshStats();
                             }
@@ -423,7 +414,6 @@ class _ProfileTabState extends State<ProfileTab> {
                       ]),
                       const SizedBox(height: 16),
 
-                      // Support & Info
                       Text(
                         'Support & Information',
                         style: textTheme.titleMedium?.copyWith(
@@ -511,7 +501,6 @@ class _ProfileTabState extends State<ProfileTab> {
           children: [
             Row(
               children: [
-                // Profile Picture
                 Hero(
                   tag: 'profile_picture',
                   child: Container(
@@ -715,7 +704,6 @@ class _ProfileTabState extends State<ProfileTab> {
                           ),
                         );
 
-                        // Refresh profile data if edit was successful
                         if (result == true) {
                           _loadUserProfile();
                         }
@@ -743,7 +731,6 @@ class _ProfileTabState extends State<ProfileTab> {
               ],
             ),
             const SizedBox(height: 16),
-            // Additional Info Row
             Row(
               children: [
                 Icon(

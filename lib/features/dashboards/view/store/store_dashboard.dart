@@ -42,7 +42,6 @@ class _StoreDashboardState extends State<StoreDashboard> {
             body: IndexedStack(
               index: _selectedIndex,
               children: [
-                // Home Tab
                 Scaffold(
                   appBar: AppBar(
                     title: Text('Welcome, $storeName'),
@@ -92,9 +91,7 @@ class _StoreDashboardState extends State<StoreDashboard> {
                   ),
                   body: const DashboardHomeScreen(),
                 ),
-                // Listings Tab
                 const ManageListingsScreen(),
-                // Orders Tab
                 const ManageOrdersScreen(), // Profile Tab
                 const ProfileScreen(),
               ],

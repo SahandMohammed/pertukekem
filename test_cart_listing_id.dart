@@ -10,7 +10,6 @@ void main() {
 void testCartItemListingId() {
   print('🧪 Testing Cart Item Listing ID Fix');
 
-  // Create a sample listing with correct ID
   final listing = Listing(
     id: 'BOOK-001', // This is our custom sequential ID
     sellerRef: FirebaseFirestore.instance
@@ -29,7 +28,6 @@ void testCartItemListingId() {
 
   print('✅ Created listing with ID: ${listing.id}');
 
-  // Create a cart item
   final cartItem = CartItem(
     id: 'cart-item-123', // This is the cart item's auto-generated ID
     userId: 'test-user',
@@ -41,18 +39,15 @@ void testCartItemListingId() {
   print('✅ Created cart item with cart ID: ${cartItem.id}');
   print('✅ Cart item listing ID: ${cartItem.listing.id}');
 
-  // Simulate storing to Firestore (convert to map)
   final cartItemMap = cartItem.toMap();
   print('✅ Converted to map for storage');
 
-  // Simulate loading from Firestore (convert from map)
   final loadedCartItem = CartItem.fromMap(cartItemMap, 'cart-item-123');
 
   print('✅ Loaded cart item from map');
   print('📋 Original listing ID: ${listing.id}');
   print('📋 Loaded cart item listing ID: ${loadedCartItem.listing.id}');
 
-  // Verify the fix
   if (loadedCartItem.listing.id == 'BOOK-001') {
     print('🎉 SUCCESS: Listing ID is correctly preserved as BOOK-001');
     print(

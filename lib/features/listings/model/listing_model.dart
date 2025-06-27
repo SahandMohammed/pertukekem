@@ -115,7 +115,6 @@ class Listing {
     };
   }
 
-  /// Create a copy of this Listing with the given fields updated
   Listing copyWith({
     String? id,
     DocumentReference? sellerRef,

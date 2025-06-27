@@ -50,7 +50,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
           _transactions = await _transactionService.getTransactionsByStatus(
             _selectedFilter,
           );
-          // Filter by store seller ID
           _transactions =
               _transactions
                   .where((t) => t.sellerId == authViewModel.user!.storeId)
@@ -83,7 +82,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
         transactionId: _searchController.text,
       );
 
-      // Filter by store seller ID
       setState(() {
         _transactions =
             transactions
@@ -106,7 +104,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final user = authViewModel.user;
 
-    // Check if user has a store
     if (user?.storeId == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Store Transactions')),
@@ -130,12 +127,10 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
       ),
       body: Column(
         children: [
-          // Search and filter section
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // Search bar
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -156,7 +151,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Status filter
                 Row(
                   children: [
                     const Text('Filter: '),
@@ -208,7 +202,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
             ),
           ),
 
-          // Transactions list
           Expanded(child: _buildTransactionsList()),
         ],
       ),
@@ -304,7 +297,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with transaction ID and status
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -345,7 +337,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
 
             const SizedBox(height: 12),
 
-            // Transaction details
             _buildDetailRow('Item', transaction.listingTitle),
             _buildDetailRow(
               'Amount',
@@ -364,7 +355,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
 
             const SizedBox(height: 12),
 
-            // Customer info (if available)
             if (transaction.paymentDetails != null &&
                 transaction.paymentDetails!.containsKey('email'))
               _buildDetailRow(
@@ -374,7 +364,6 @@ class _StoreTransactionsScreenState extends State<StoreTransactionsScreen> {
 
             const SizedBox(height: 8),
 
-            // Earnings highlight for completed transactions
             if (transaction.status == 'completed')
               Container(
                 width: double.infinity,

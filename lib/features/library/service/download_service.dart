@@ -7,7 +7,6 @@ import 'package:path/path.dart' as path;
 class DownloadService {
   static const int _chunkSize = 8192; // 8KB chunks for progress tracking
 
-  /// Download an ebook file from URL and save to local storage
   Future<String> downloadEbook({
     required String downloadUrl,
     required String bookId,
@@ -15,23 +14,19 @@ class DownloadService {
     Function(double progress)? onProgress,
   }) async {
     try {
-      // Get the app's documents directory
       final appDir = await getApplicationDocumentsDirectory();
       final booksDir = Directory(path.join(appDir.path, 'books'));
 
-      // Create books directory if it doesn't exist
       if (!await booksDir.exists()) {
         await booksDir.create(recursive: true);
       }
 
-      // Create file path with book ID to avoid conflicts
       final fileExtension = path.extension(fileName);
       final localFileName =
           '${bookId}_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
       final filePath = path.join(booksDir.path, localFileName);
       final file = File(filePath);
 
-      // Start download
       final response = await http.get(
         Uri.parse(downloadUrl),
         headers: {'Accept': '*/*', 'User-Agent': 'Pertukekem App'},
@@ -44,7 +39,6 @@ class DownloadService {
       final bytes = response.bodyBytes;
       final totalBytes = bytes.length;
 
-      // Write file in chunks to track progress
       await file.create();
       final sink = file.openWrite();
 
@@ -58,7 +52,6 @@ class DownloadService {
           sink.add(chunk);
           bytesWritten += chunk.length;
 
-          // Report progress
           if (onProgress != null) {
             final progress = bytesWritten / totalBytes;
             onProgress(progress);
@@ -75,7 +68,6 @@ class DownloadService {
     }
   }
 
-  /// Check if a file exists locally
   Future<bool> isFileDownloaded(String? localFilePath) async {
     if (localFilePath == null || localFilePath.isEmpty) {
       return false;
@@ -85,7 +77,6 @@ class DownloadService {
     return await file.exists();
   }
 
-  /// Get file size in MB
   Future<double> getFileSize(String filePath) async {
     try {
       final file = File(filePath);
@@ -99,7 +90,6 @@ class DownloadService {
     return 0.0;
   }
 
-  /// Delete downloaded file
   Future<void> deleteFile(String filePath) async {
     try {
       final file = File(filePath);
@@ -112,13 +102,11 @@ class DownloadService {
     }
   }
 
-  /// Get all downloaded books directory
   Future<Directory> getBooksDirectory() async {
     final appDir = await getApplicationDocumentsDirectory();
     return Directory(path.join(appDir.path, 'books'));
   }
 
-  /// Clear all downloaded books
   Future<void> clearAllDownloads() async {
     try {
       final booksDir = await getBooksDirectory();
@@ -131,7 +119,6 @@ class DownloadService {
     }
   }
 
-  /// Get total storage used by downloaded books
   Future<double> getTotalStorageUsed() async {
     try {
       final booksDir = await getBooksDirectory();

@@ -4,7 +4,6 @@ import '../viewmodel/ai_chat_viewmodel.dart';
 import 'widgets/chat_message_bubble.dart';
 import 'widgets/quick_suggestion_chips.dart';
 
-/// AI Chat screen for bookstore assistance
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
 
@@ -21,7 +20,6 @@ class _AIChatScreenState extends State<AIChatScreen>
   void initState() {
     super.initState();
 
-    // Initialize chat session
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AIChatViewModel>().initializeChatSession();
     });
@@ -50,7 +48,6 @@ class _AIChatScreenState extends State<AIChatScreen>
       context.read<AIChatViewModel>().sendMessage(message);
       _messageController.clear();
 
-      // Auto-scroll to bottom after a short delay to ensure message is added
       Future.delayed(const Duration(milliseconds: 100), () {
         _scrollToBottom();
       });
@@ -69,7 +66,6 @@ class _AIChatScreenState extends State<AIChatScreen>
       appBar: _buildAppBar(),
       body: Consumer<AIChatViewModel>(
         builder: (context, viewModel, child) {
-          // Auto-scroll when new messages are added
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (viewModel.messages.isNotEmpty) {
               _scrollToBottom();
@@ -95,7 +91,6 @@ class _AIChatScreenState extends State<AIChatScreen>
           );
         },
       ),
-      // Removed floating action button
     );
   }
 
@@ -143,7 +138,6 @@ class _AIChatScreenState extends State<AIChatScreen>
           ),
         ],
       ),
-      // Removed actions with refresh button
     );
   }
 

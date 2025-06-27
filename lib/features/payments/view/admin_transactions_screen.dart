@@ -97,7 +97,6 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
 
-    // Check if user is admin
     if (authViewModel.user == null ||
         !authViewModel.user!.roles.contains('admin')) {
       return Scaffold(
@@ -116,12 +115,10 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
       ),
       body: Column(
         children: [
-          // Search and filter section
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // Search bar
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -142,7 +139,6 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Status filter
                 Row(
                   children: [
                     const Text('Status: '),
@@ -188,7 +184,6 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
             ),
           ),
 
-          // Transactions list
           Expanded(child: _buildTransactionsList()),
         ],
       ),
@@ -279,7 +274,6 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with transaction ID and status
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -320,7 +314,6 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
 
             const SizedBox(height: 12),
 
-            // Transaction details
             _buildDetailRow('Book', transaction.listingTitle),
             _buildDetailRow(
               'Amount',
@@ -339,7 +332,6 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
 
             const SizedBox(height: 12),
 
-            // Action buttons for admin
             Row(
               children: [
                 if (transaction.status == 'pending') ...[
@@ -462,7 +454,6 @@ class _AdminTransactionsScreenState extends State<AdminTransactionsScreen> {
         ),
       );
 
-      // Reload transactions
       await _loadTransactions();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

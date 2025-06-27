@@ -5,7 +5,6 @@ import '../../viewmodel/store_setup_viewmodel.dart';
 import 'widgets/business_hours_picker.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Step 4: Branding & Hours
 class StoreSetupStep4Screen extends StatefulWidget {
   final VoidCallback onBack;
 
@@ -77,7 +76,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
             children: [
               Column(
                 children: [
-                  // Progress indicator
                   Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -125,13 +123,11 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                     ),
                   ),
 
-                  // Content
                   Expanded(
                     child: FadeTransition(
                       opacity: _fadeAnimation,
                       child: CustomScrollView(
                         slivers: [
-                          // Live preview
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -144,7 +140,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                             ),
                           ),
 
-                          // Form content
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -169,7 +164,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                                     ),
                                     const SizedBox(height: 24),
 
-                                    // Business Hours Section
                                     Row(
                                       children: [
                                         Icon(
@@ -202,7 +196,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                                     ),
                                     const SizedBox(height: 32),
 
-                                    // Social Media Section
                                     Row(
                                       children: [
                                         Icon(
@@ -229,7 +222,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // Facebook
                                     FormBuilderTextField(
                                       name: 'facebook',
                                       decoration: InputDecoration(
@@ -257,7 +249,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // Instagram
                                     FormBuilderTextField(
                                       name: 'instagram',
                                       decoration: InputDecoration(
@@ -285,7 +276,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // Twitter
                                     FormBuilderTextField(
                                       name: 'twitter',
                                       decoration: InputDecoration(
@@ -313,7 +303,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // Website
                                     FormBuilderTextField(
                                       name: 'website',
                                       decoration: InputDecoration(
@@ -344,7 +333,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                             ),
                           ),
 
-                          // Bottom padding for floating button
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 100),
                           ),
@@ -355,14 +343,12 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                 ],
               ),
 
-              // Sticky CTA buttons
               Positioned(
                 left: 16,
                 right: 16,
                 bottom: MediaQuery.of(context).padding.bottom + 16,
                 child: Row(
                   children: [
-                    // Back button
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
@@ -384,7 +370,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Create Store button
                     Expanded(
                       flex: 2,
                       child: FilledButton(
@@ -429,7 +414,6 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
                 ),
               ),
 
-              // Loading overlay
               if (viewModel.isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),
@@ -469,10 +453,8 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
 
   Future<void> _createStore(StoreSetupViewmodel viewModel) async {
     try {
-      // Save form data first
       _formKey.currentState?.save();
 
-      // Debug: Print business hours before creating store
       debugPrint(
         '🕐 Business Hours before store creation: ${viewModel.businessHours}',
       );
@@ -480,14 +462,10 @@ class _StoreSetupStep4ScreenState extends State<StoreSetupStep4Screen>
         '📱 Social Media before store creation: ${viewModel.socialMedia}',
       );
 
-      // Use createStoreFromForm which handles image uploads and all form data
       await viewModel.createStoreFromForm(context: context);
       if (mounted && viewModel.error == null) {
-        // Navigate to store dashboard by resetting navigation stack
-        // This allows AuthWrapper to re-evaluate and show StoreDashboard
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
 
-        // Show success message after a brief delay to ensure navigation completes
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

@@ -1,4 +1,3 @@
-/// Model for chat messages in the AI chat feature
 class ChatMessage {
   final String id;
   final String content;

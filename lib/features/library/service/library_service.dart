@@ -11,7 +11,6 @@ class LibraryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Add a book to user's library after purchase
   Future<void> addBookToLibrary({
     required String userId,
     required Listing listing,
@@ -43,11 +42,9 @@ class LibraryService {
         .doc(libraryBook.id)
         .set(libraryBook.toMap());
 
-    // Notify listeners that a book has been added to the library
     LibraryNotifier().notifyBookAddedToLibrary();
   }
 
-  // Get user's library books
   Future<List<LibraryBook>> getUserLibrary({
     String? bookType,
     int? limit,
@@ -75,12 +72,10 @@ class LibraryService {
     return snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList();
   }
 
-  // Get recently purchased books
   Future<List<LibraryBook>> getRecentlyPurchased({int limit = 5}) async {
     return getUserLibrary(limit: limit);
   }
 
-  // Get books currently reading (ebooks with progress)
   Future<List<LibraryBook>> getCurrentlyReading({int limit = 5}) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -102,17 +97,14 @@ class LibraryService {
     return snapshot.docs.map((doc) => LibraryBook.fromFirestore(doc)).toList();
   }
 
-  // Get ebooks only
   Future<List<LibraryBook>> getEbooks({int? limit}) async {
     return getUserLibrary(bookType: 'ebook', limit: limit);
   }
 
-  // Get physical books only
   Future<List<LibraryBook>> getPhysicalBooks({int? limit}) async {
     return getUserLibrary(bookType: 'physical', limit: limit);
   }
 
-  // Check if user owns a specific book
   Future<bool> userOwnsBook(String bookId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -131,7 +123,6 @@ class LibraryService {
     return snapshot.docs.isNotEmpty;
   }
 
-  // Get specific library book
   Future<LibraryBook?> getLibraryBook(String bookId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -153,7 +144,6 @@ class LibraryService {
     return null;
   }
 
-  // Update reading progress
   Future<void> updateReadingProgress({
     required String libraryBookId,
     required int currentPage,
@@ -181,7 +171,6 @@ class LibraryService {
         .update(updateData);
   }
 
-  // Mark book as downloaded
   Future<void> markAsDownloaded({
     required String libraryBookId,
     required String localFilePath,
@@ -199,7 +188,6 @@ class LibraryService {
         .update({'isDownloaded': true, 'localFilePath': localFilePath});
   }
 
-  // Remove download information and file
   Future<void> removeDownload(String libraryBookId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -207,7 +195,6 @@ class LibraryService {
     }
 
     try {
-      // Get the book details first to get the local file path
       final bookDoc =
           await _firestore
               .collection('users')
@@ -219,7 +206,6 @@ class LibraryService {
       if (bookDoc.exists) {
         final book = LibraryBook.fromFirestore(bookDoc);
 
-        // Delete the physical file if it exists
         if (book.localFilePath != null && book.localFilePath!.isNotEmpty) {
           final file = File(book.localFilePath!);
           if (await file.exists()) {
@@ -228,7 +214,6 @@ class LibraryService {
         }
       }
 
-      // Update the database
       await _firestore
           .collection('users')
           .doc(currentUser.uid)
@@ -239,14 +224,12 @@ class LibraryService {
             'localFilePath': FieldValue.delete(),
           });
 
-      // Notify listeners that the library has changed
       LibraryNotifier().notifyLibraryChanged();
     } catch (e) {
       throw Exception('Failed to remove download: $e');
     }
   }
 
-  // Get library statistics
   Future<LibraryStats> getLibraryStats() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -291,15 +274,12 @@ class LibraryService {
     );
   }
 
-  // Search in user's library
   Future<List<LibraryBook>> searchLibrary(String query) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
       throw Exception('User not authenticated');
     }
 
-    // Get all user's books first, then filter locally
-    // Firestore doesn't support advanced text search natively
     final allBooks = await getUserLibrary();
 
     final lowercaseQuery = query.toLowerCase();
@@ -310,7 +290,6 @@ class LibraryService {
     }).toList();
   }
 
-  // Remove book from library (if needed)
   Future<void> removeFromLibrary(String libraryBookId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -325,7 +304,6 @@ class LibraryService {
         .delete();
   }
 
-  // Stream user's library for real-time updates
   Stream<List<LibraryBook>> streamUserLibrary({String? bookType}) {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -348,7 +326,6 @@ class LibraryService {
     );
   }
 
-  // Download book from Firebase Storage
   Future<String> downloadBook({
     required String libraryBookId,
     required String downloadUrl,
@@ -361,70 +338,56 @@ class LibraryService {
     }
 
     try {
-      // Get the application documents directory
       final appDir = await getApplicationDocumentsDirectory();
       final booksDir = Directory('${appDir.path}/books');
 
-      // Create books directory if it doesn't exist
       if (!await booksDir.exists()) {
         await booksDir.create(recursive: true);
       }
 
-      // Create the file path
       final filePath = '${booksDir.path}/$fileName';
       final file = File(filePath);
 
-      // Start the request
       final request = http.Request('GET', Uri.parse(downloadUrl));
       final response = await request.send();
       if (response.statusCode == 200) {
-        // Get the content length to track progress
         final contentLength = response.contentLength;
         var downloadedBytes = 0;
 
         print('Starting download - Content Length: $contentLength bytes');
 
-        // Create a sink to write the file
         final sink = file.openWrite();
 
         try {
-          // Listen to the response stream and track progress
           await for (final chunk in response.stream) {
             sink.add(chunk);
             downloadedBytes += chunk.length;
 
-            // Calculate and report progress without artificial delays
             if (contentLength != null && contentLength > 0) {
               final progress = downloadedBytes / contentLength;
               onProgress(progress.clamp(0.0, 1.0));
             } else {
-              // If content length is unknown, show estimated progress
               final estimatedProgress = (downloadedBytes / (1024 * 1024 * 5))
                   .clamp(0.0, 0.95);
               onProgress(estimatedProgress);
             }
           }
 
-          // Close the sink
           await sink.close();
 
           print('Download completed - Total bytes: $downloadedBytes');
 
-          // Report 100% completion
           onProgress(1.0);
 
-          // Update the database with the local file path
           await markAsDownloaded(
             libraryBookId: libraryBookId,
             localFilePath: filePath,
           );
 
-          // Notify listeners that the library has changed
           LibraryNotifier().notifyLibraryChanged();
 
           return filePath;
         } catch (e) {
-          // Clean up the file if download fails
           await sink.close();
           if (await file.exists()) {
             await file.delete();

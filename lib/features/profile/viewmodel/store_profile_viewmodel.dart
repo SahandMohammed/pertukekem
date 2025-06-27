@@ -37,12 +37,10 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
   List<AddressModel> get addresses => _addresses;
   StoreModel? get storeData => _storeData;
 
-  // Set the AuthViewModel reference
   void setAuthViewModel(AuthViewModel authViewModel) {
     _authViewModel = authViewModel;
   }
 
-  // Helper method to safely notify listeners
   void _safeNotifyListeners() {
     if (!_isDisposed) {
       notifyListeners();
@@ -87,7 +85,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     _safeNotifyListeners();
   }
 
-  // Load addresses from user document
   Future<void> loadAddresses(UserModel user) async {
     if (_isDisposed) return;
 
@@ -95,7 +92,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       _setLoading(true);
       _setError(null);
 
-      // Convert the addresses list to AddressModel objects
       _addresses =
           user.addresses
               .map(
@@ -105,7 +101,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
               )
               .toList();
 
-      // Sort addresses with default address first
       _addresses.sort((a, b) {
         if (a.isDefault && !b.isDefault) return -1;
         if (!a.isDefault && b.isDefault) return 1;
@@ -123,7 +118,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Add a new address
   Future<String?> addAddress(UserModel user, AddressModel address) async {
     try {
       _setLoading(true);
@@ -134,7 +128,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         throw Exception('User not authenticated');
       }
 
-      // Generate a unique ID for the address
       final addressId = _firestore.collection('temp').doc().id;
       final addressWithId = address.copyWith(
         id: addressId,
@@ -142,29 +135,24 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         updatedAt: DateTime.now(),
       );
 
-      // Get current addresses
       final currentAddresses = List<Map<String, dynamic>>.from(user.addresses);
 
-      // If this is set as default, make sure no other address is default
       if (addressWithId.isDefault) {
         for (int i = 0; i < currentAddresses.length; i++) {
           currentAddresses[i]['isDefault'] = false;
         }
       }
 
-      // Add the new address
       currentAddresses.add(addressWithId.toMap()); // Update the user document
       await _firestore.collection('users').doc(userId).update({
         'addresses': currentAddresses,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
         await _authViewModel!.refreshUserData();
       }
 
-      // Update local list
       _addresses.add(addressWithId);
       _sortAddresses();
 
@@ -179,7 +167,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update an existing address
   Future<String?> updateAddress(UserModel user, AddressModel address) async {
     try {
       _setLoading(true);
@@ -190,10 +177,8 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         throw Exception('User not authenticated');
       }
 
-      // Get current addresses
       final currentAddresses = List<Map<String, dynamic>>.from(user.addresses);
 
-      // Find and update the address
       final index = currentAddresses.indexWhere(
         (addr) => addr['id'] == address.id,
       );
@@ -201,7 +186,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         throw Exception('Address not found');
       }
 
-      // If this is set as default, make sure no other address is default
       if (address.isDefault) {
         for (int i = 0; i < currentAddresses.length; i++) {
           if (i != index) {
@@ -210,7 +194,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         }
       }
 
-      // Update the address with new timestamp
       final updatedAddress = address.copyWith(updatedAt: DateTime.now());
       currentAddresses[index] =
           updatedAddress.toMap(); // Update the user document
@@ -219,12 +202,10 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
         await _authViewModel!.refreshUserData();
       }
 
-      // Update local list
       final localIndex = _addresses.indexWhere((addr) => addr.id == address.id);
       if (localIndex != -1) {
         _addresses[localIndex] = updatedAddress;
@@ -242,7 +223,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Delete an address
   Future<String?> deleteAddress(UserModel user, String addressId) async {
     try {
       _setLoading(true);
@@ -253,10 +233,8 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         throw Exception('User not authenticated');
       }
 
-      // Get current addresses
       final currentAddresses = List<Map<String, dynamic>>.from(user.addresses);
 
-      // Remove the address
       currentAddresses.removeWhere(
         (addr) => addr['id'] == addressId,
       ); // Update the user document
@@ -265,12 +243,10 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
         await _authViewModel!.refreshUserData();
       }
 
-      // Update local list
       _addresses.removeWhere((addr) => addr.id == addressId);
 
       return null; // Success
@@ -284,7 +260,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Set an address as default
   Future<String?> setDefaultAddress(UserModel user, String addressId) async {
     try {
       _setLoading(true);
@@ -295,10 +270,8 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         throw Exception('User not authenticated');
       }
 
-      // Get current addresses
       final currentAddresses = List<Map<String, dynamic>>.from(user.addresses);
 
-      // Update all addresses to remove default status, then set the selected one as default
       for (int i = 0; i < currentAddresses.length; i++) {
         currentAddresses[i]['isDefault'] =
             currentAddresses[i]['id'] == addressId;
@@ -312,12 +285,10 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
         await _authViewModel!.refreshUserData();
       }
 
-      // Update local list
       for (int i = 0; i < _addresses.length; i++) {
         _addresses[i] = _addresses[i].copyWith(
           isDefault: _addresses[i].id == addressId,
@@ -340,7 +311,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Get the default address
   AddressModel? getDefaultAddress() {
     try {
       return _addresses.firstWhere((address) => address.isDefault);
@@ -349,7 +319,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Helper method to sort addresses
   void _sortAddresses() {
     if (_isDisposed) return;
 
@@ -365,7 +334,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     });
   }
 
-  // Pick image from camera or gallery
   Future<File?> pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -386,7 +354,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Upload profile picture to Firebase Storage
   Future<String?> uploadProfilePicture(File imageFile) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -404,7 +371,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       final String fileName =
           'stores/${currentUser.uid}/profilePicture.jpg'; // Changed to stores folder structure
 
-      // Create reference to Firebase Storage
       final Reference ref = _storage.ref().child(fileName); // Set metadata
       final SettableMetadata metadata = SettableMetadata(
         contentType: 'image/jpeg',
@@ -417,13 +383,11 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       ); // Upload file with progress tracking
       final UploadTask uploadTask = ref.putFile(imageFile, metadata);
 
-      // Listen to upload progress
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
         final progress = snapshot.bytesTransferred / snapshot.totalBytes;
         _setUploadProgress(progress);
       });
 
-      // Wait for upload to complete
       final TaskSnapshot taskSnapshot = await uploadTask;
       final String downloadUrl = await taskSnapshot.ref.getDownloadURL();
 
@@ -441,7 +405,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update user's profile picture in Firestore
   Future<String?> updateProfilePicture(File imageFile) async {
     try {
       _setLoading(true);
@@ -452,7 +415,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         throw Exception('User not authenticated');
       }
 
-      // Upload image to Firebase Storage
       final String? downloadUrl = await uploadProfilePicture(imageFile);
       if (downloadUrl == null) {
         throw Exception('Failed to upload image');
@@ -464,7 +426,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       _storeProfilePicture = downloadUrl;
       _safeNotifyListeners(); // Notify UI immediately after state change
 
-      // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
         await _authViewModel!.refreshUserData();
       }
@@ -496,7 +457,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         '🗑️ [ViewModel] Current profile picture: $_storeProfilePicture',
       );
 
-      // Get current profile picture URL before deleting
       final currentProfilePicture =
           _storeProfilePicture; // Remove from stores collection in Firestore
       debugPrint('🗑️ [ViewModel] Updating Firestore...');
@@ -507,7 +467,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       });
       debugPrint('🗑️ [ViewModel] Firestore update completed');
 
-      // Delete the actual file from Firebase Storage if it exists
       if (currentProfilePicture != null && currentProfilePicture.isNotEmpty) {
         try {
           debugPrint('🗑️ [ViewModel] Deleting file from Storage...');
@@ -517,7 +476,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
             '🗑️ [ViewModel] Profile picture file deleted from Storage',
           );
         } catch (storageError) {
-          // Log but don't fail the operation if file doesn't exist
           debugPrint(
             '🗑️ [ViewModel] Error deleting file from Storage: $storageError',
           );
@@ -527,7 +485,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       _storeProfilePicture = null;
       _safeNotifyListeners(); // Notify UI immediately after state change
 
-      // Refresh AuthViewModel to get updated user data
       if (_authViewModel != null) {
         debugPrint('🗑️ [ViewModel] Refreshing AuthViewModel...');
         await _authViewModel!.refreshUserData();
@@ -546,7 +503,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Fetch store profile picture from Firestore
   Future<void> fetchStoreProfilePicture() async {
     if (_isDisposed) return;
 
@@ -572,7 +528,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Fetch store data for the current user
   Future<StoreModel?> fetchStoreData() async {
     if (_isDisposed) return null;
 
@@ -611,7 +566,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update store profile information
   Future<bool> updateStoreProfile({
     required String storeName,
     required String description,
@@ -631,7 +585,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       _setUpdatingStore(true);
       _setError(null);
 
-      // Prepare update data
       final updateData = <String, dynamic>{
         'storeName': storeName,
         'description': description,
@@ -640,7 +593,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // Add optional fields if provided
       if (businessHours != null) {
         updateData['businessHours'] = businessHours;
       }
@@ -654,16 +606,13 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
       } // Update store document
       await _firestore.collection('stores').doc(userId).update(updateData);
 
-      // Update user document with store name
       await _firestore.collection('users').doc(userId).update({
         'storeName': storeName,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Refresh local store data first
       await fetchStoreData();
 
-      // Update auth viewmodel if available (this will trigger user data refresh)
       if (_authViewModel != null) {
         await _authViewModel!.refreshUserData();
       }
@@ -679,7 +628,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update user profile information (for store owners)
   Future<bool> updateUserProfile({
     required String firstName,
     required String lastName,
@@ -712,7 +660,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update local store data immediately (for optimistic UI updates)
   void updateLocalStoreData({
     String? storeName,
     String? description,
@@ -722,9 +669,7 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     Map<String, dynamic>? businessHours,
     Map<String, dynamic>? socialMedia,
   }) {
-    // Create or update the local store data for immediate UI reflection
     if (_storeData != null) {
-      // Update existing data
       _storeData = _storeData!.copyWith(
         storeName: storeName ?? _storeData!.storeName,
         description: description ?? _storeData!.description,
@@ -736,7 +681,6 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         updatedAt: DateTime.now(),
       );
     } else {
-      // Create new StoreModel with minimal required fields
       final userId = _auth.currentUser?.uid ?? '';
       _storeData = StoreModel(
         storeId: '',
@@ -760,10 +704,8 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing ProfileViewModel state...');
 
-    // Clear auth reference
     _authViewModel = null;
 
-    // Clear all state
     _addresses.clear();
     _error = null;
     _isLoading = false;
@@ -774,10 +716,8 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     _storeProfilePicture = null;
     _storeData = null;
 
-    // Mark as disposed
     _isDisposed = true;
 
-    // Notify listeners one last time
     _safeNotifyListeners();
 
     debugPrint('✅ ProfileViewModel state cleared');

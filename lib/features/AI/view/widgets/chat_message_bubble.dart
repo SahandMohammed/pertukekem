@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../model/chat_message_model.dart';
 
-/// Widget for displaying individual chat messages
 class ChatMessageBubble extends StatelessWidget {
   final ChatMessage message;
 

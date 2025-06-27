@@ -78,7 +78,6 @@ class AddressSelectionCard extends StatelessWidget {
   }
 
   Future<void> _navigateToManageAddresses(BuildContext context) async {
-    // Same implementation as EmptyAddressCard
     final result = await Navigator.push(
       context,
       MaterialPageRoute(

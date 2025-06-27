@@ -21,13 +21,11 @@ class _ManageListingsScreenState extends State<ManageListingsScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Load listings when the screen is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<ManageListingsViewModel>(
         context,
         listen: false,
       );
-      // Load listings if not already loaded
       if (viewModel.listings.isEmpty && !viewModel.isLoading) {
         debugPrint('🔧 ManageListingsScreen: Loading listings...');
         viewModel.loadListings();
@@ -117,7 +115,6 @@ class _ManageListingsScreenState extends State<ManageListingsScreen>
                   color: colorScheme.onSurfaceVariant,
                 ),
                 onPressed: () {
-                  // TODO: Implement filtering
                 },
               ),
             ],

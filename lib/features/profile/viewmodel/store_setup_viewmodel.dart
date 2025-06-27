@@ -29,11 +29,9 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   Map<String, String> _socialMedia = {};
 
   StoreSetupViewmodel() {
-    // Initialize business hours with default values
     _businessHours = _getDefaultBusinessHours();
   }
 
-  // Helper method to create default business hours
   static Map<String, dynamic> _getDefaultBusinessHours() {
     const daysOfWeek = [
       'monday',
@@ -56,7 +54,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     return defaultHours;
   }
 
-  // Getters
   bool get isLoading => _isLoading;
   StoreModel? get store => _store;
   String? get error => _error;
@@ -70,20 +67,16 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   File? get bannerFile => _bannerFile;
   Map<String, dynamic> get businessHours => _businessHours;
   Map<String, String> get socialMedia => _socialMedia;
-  // Safe notification method to avoid setState during build
   void _safeNotifyListeners() {
-    // Check if we're currently in a build context
     try {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         notifyListeners();
       });
     } catch (e) {
-      // If addPostFrameCallback fails, just notify immediately
       notifyListeners();
     }
   }
 
-  // Setters with safe notifications
   void setCurrentStep(int step) {
     if (_currentStep != step) {
       _currentStep = step;
@@ -141,7 +134,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     _safeNotifyListeners();
   }
 
-  // Image selection methods
   Future<void> selectLogo() async {
     try {
       final picker = ImagePicker();
@@ -180,7 +172,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Validation methods
   bool isStepValid(int step) {
     switch (step) {
       case 0: // Basics - Step 1
@@ -200,7 +191,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     return isStepValid(0); // Only step 1 (basics) is required
   }
 
-  // Check if store name is available
   Future<bool> checkStoreNameAvailability(String name) async {
     if (name.isEmpty || name.length < 3) return false;
 
@@ -232,13 +222,11 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
       _error = null;
       notifyListeners();
 
-      // Use the user's auth UID as the store document ID
       final userId = _auth.currentUser!.uid;
       final storeRef = _firestore.collection('stores').doc(userId);
 
       final now = DateTime.now();
 
-      // Create store model
       final newStore = StoreModel(
         storeId: userId, // Use the user's auth UID as the store ID
         ownerId: userId,
@@ -252,16 +240,13 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
         categories: categories ?? [],
       );
 
-      // Save to Firestore
       await storeRef.set(newStore.toMap());
 
-      // Update the user document with the storeId
       await _firestore.collection('users').doc(userId).update({
         'storeId': userId, // Store ID is now the same as user ID
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Refresh the AuthViewModel to get updated user data
       if (context != null) {
         final authViewModel = Provider.of<AuthViewModel>(
           context,
@@ -280,7 +265,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Create a new store with complete form data
   Future<void> createStoreFromForm({BuildContext? context}) async {
     if (_auth.currentUser == null) {
       _error = 'No authenticated user found';
@@ -317,7 +301,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
       }
       final now = DateTime.now();
 
-      // Debug: Print current state before creating store
       debugPrint('🏪 Creating store with data:');
       debugPrint('  storeName: $_storeName');
       debugPrint('  businessHours: $_businessHours');
@@ -325,7 +308,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
       debugPrint('  socialMedia: $_socialMedia');
       debugPrint('  socialMedia.isEmpty: ${_socialMedia.isEmpty}');
 
-      // Create store model
       final newStore = StoreModel(
         storeId: userId,
         ownerId: userId,
@@ -345,13 +327,11 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
                 : Map<String, dynamic>.from(_socialMedia),
       );
 
-      // Create store and update user in batch
       await _storeService.createStoreWithUserUpdate(
         storeData: newStore.toMap(),
         userId: userId,
       );
 
-      // Refresh the AuthViewModel to get updated user data
       if (context != null) {
         final authViewModel = Provider.of<AuthViewModel>(
           context,
@@ -370,7 +350,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Fetch store details by storeId
   Future<void> fetchStoreById(String storeId) async {
     if (storeId.isEmpty) {
       _error = 'Store ID is empty';
@@ -399,7 +378,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Get store for current user
   Future<void> fetchCurrentUserStore() async {
     if (_auth.currentUser == null) {
       _error = 'No authenticated user found';
@@ -412,7 +390,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
       _error = null;
       notifyListeners();
 
-      // Get user document to find storeId
       final userDoc =
           await _firestore
               .collection('users')
@@ -436,7 +413,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
         return;
       }
 
-      // Fetch the store document
       await fetchStoreById(storeId);
     } catch (e) {
       _error = 'Failed to fetch user\'s store: $e';
@@ -446,7 +422,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update store information
   Future<void> updateStore(StoreModel updatedStore) async {
     if (_auth.currentUser == null) {
       _error = 'No authenticated user found';
@@ -459,10 +434,8 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
       _error = null;
       notifyListeners();
 
-      // Update the updatedAt field
       final storeToUpdate = updatedStore.copyWith(updatedAt: DateTime.now());
 
-      // Update in Firestore
       await _firestore
           .collection('stores')
           .doc(updatedStore.storeId)
@@ -481,7 +454,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing StoreSetupViewmodel state...');
 
-    // Clear all state
     _store = null;
     _error = null;
     _isLoading = false;
@@ -496,7 +468,6 @@ class StoreSetupViewmodel extends ChangeNotifier implements StateClearable {
     _businessHours = _getDefaultBusinessHours();
     _socialMedia = {};
 
-    // Notify listeners
     notifyListeners();
 
     debugPrint('✅ StoreSetupViewmodel state cleared');

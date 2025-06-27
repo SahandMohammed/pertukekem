@@ -10,27 +10,21 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   final CustomerHomeService _homeService = CustomerHomeService();
   final LibraryService _libraryService = LibraryService();
 
-  // Recently listed items
   List<Listing> _recentlyListedItems = [];
   List<Listing> get recentlyListedItems => _recentlyListedItems;
 
-  // Recently joined stores
   List<StoreModel> _recentlyJoinedStores = [];
   List<StoreModel> get recentlyJoinedStores => _recentlyJoinedStores;
 
-  // All stores
   List<StoreModel> _allStores = [];
   List<StoreModel> get allStores => _allStores;
 
-  // Search results
   List<Listing> _searchResults = [];
   List<Listing> get searchResults => _searchResults;
 
-  // Currently reading books
   List<LibraryBook> _currentlyReadingBooks = [];
   List<LibraryBook> get currentlyReadingBooks => _currentlyReadingBooks;
 
-  // Loading states
   bool _isLoadingRecentItems = false;
   bool get isLoadingRecentItems => _isLoadingRecentItems;
 
@@ -46,15 +40,12 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   bool _isLoadingCurrentlyReading = false;
   bool get isLoadingCurrentlyReading => _isLoadingCurrentlyReading;
 
-  // Error states
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // Search query
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
-  /// Load recently listed items from stores only (excludes user listings)
   Future<void> loadRecentlyListedItems() async {
     _isLoadingRecentItems = true;
     _errorMessage = null;
@@ -73,7 +64,6 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Load recently joined stores
   Future<void> loadRecentlyJoinedStores() async {
     _isLoadingRecentStores = true;
     _errorMessage = null;
@@ -92,7 +82,6 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Load all stores
   Future<void> loadAllStores() async {
     _isLoadingAllStores = true;
     _errorMessage = null;
@@ -109,7 +98,6 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Search for listings
   Future<void> searchListings(String query, {String? condition}) async {
     _searchQuery = query.trim();
 
@@ -137,14 +125,12 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Clear search results
   void clearSearch() {
     _searchQuery = '';
     _searchResults = [];
     notifyListeners();
   }
 
-  /// Load currently reading books
   Future<void> loadCurrentlyReadingBooks() async {
     _isLoadingCurrentlyReading = true;
     _errorMessage = null;
@@ -163,7 +149,6 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Refresh all data
   Future<void> refreshAll() async {
     await Future.wait([
       loadRecentlyListedItems(),
@@ -172,7 +157,6 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
     ]);
   }
 
-  /// Clear error message
   void clearError() {
     _errorMessage = null;
     notifyListeners();
@@ -182,25 +166,21 @@ class CustomerHomeViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing CustomerHomeViewModel state...');
 
-    // Clear all lists
     _recentlyListedItems.clear();
     _recentlyJoinedStores.clear();
     _allStores.clear();
     _searchResults.clear();
     _currentlyReadingBooks.clear();
 
-    // Reset loading states
     _isLoadingRecentItems = false;
     _isLoadingRecentStores = false;
     _isLoadingAllStores = false;
     _isSearching = false;
     _isLoadingCurrentlyReading = false;
 
-    // Clear error and search query
     _errorMessage = null;
     _searchQuery = '';
 
-    // Notify listeners
     notifyListeners();
 
     debugPrint('✅ CustomerHomeViewModel state cleared');

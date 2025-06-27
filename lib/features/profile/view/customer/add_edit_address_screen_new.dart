@@ -28,19 +28,16 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
   int _currentStep = 0;
   final int _totalSteps = 3;
 
-  // Form controllers
   late final TextEditingController _nameController;
   late final TextEditingController _streetController;
   late final TextEditingController _postalCodeController;
   late final TextEditingController _additionalInfoController;
 
-  // State variables
   bool _isDefault = false;
   String? _selectedCountry = 'Iraq';
   String? _selectedState;
   String? _selectedCity;
 
-  // Iraq location data with better organization
   final List<String> _countries = ['Iraq'];
 
   final Map<String, List<String>> _states = {
@@ -184,7 +181,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
   void initState() {
     super.initState();
 
-    // Initialize animations
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -210,7 +206,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
       ),
     );
 
-    // Initialize text controllers
     _nameController = TextEditingController(text: widget.address?.name);
     _streetController = TextEditingController(
       text: widget.address?.streetAddress,
@@ -226,7 +221,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
     _selectedState = widget.address?.state;
     _selectedCity = widget.address?.city;
 
-    // Start animations
     _animationController.forward();
     _updateProgress();
   }
@@ -320,13 +314,10 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
             scale: _scaleAnimation,
             child: Column(
               children: [
-                // Modern Header with Progress
                 _buildModernHeader(theme, isEditing),
 
-                // Step Progress Indicator
                 _buildStepProgress(theme),
 
-                // Content Area
                 Expanded(
                   child: Form(
                     key: _formKey,
@@ -342,7 +333,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
                   ),
                 ),
 
-                // Navigation Bar
                 _buildNavigationBar(theme, viewModel, isEditing),
               ],
             ),
@@ -451,7 +441,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
       ),
       child: Column(
         children: [
-          // Progress bar
           AnimatedBuilder(
             animation: _progressAnimation,
             builder: (context, child) {
@@ -480,7 +469,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
             },
           ),
           const SizedBox(height: 16),
-          // Step indicators
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(_totalSteps, (index) {
@@ -658,7 +646,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
             value: _selectedCountry,
             items: _countries,
             onChanged: (value) {
-              // Iraq only, no change needed
             },
           ),
           const SizedBox(height: 24),
@@ -744,7 +731,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
           ),
           const SizedBox(height: 32),
 
-          // Address preview card
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -836,7 +822,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
 
           const SizedBox(height: 24),
 
-          // Default address toggle
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -1123,7 +1108,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
       ),
       child: Row(
         children: [
-          // Previous Button
           if (_currentStep > 0)
             Expanded(
               child: OutlinedButton(
@@ -1156,7 +1140,6 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
 
           if (_currentStep > 0) const SizedBox(width: 16),
 
-          // Next/Save Button
           Expanded(
             flex: _currentStep == 0 ? 1 : 1,
             child: ElevatedButton(
@@ -1220,12 +1203,10 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
 
   void _handleNextOrSave() {
     if (_currentStep < _totalSteps - 1) {
-      // Validate current step before proceeding
       if (_validateCurrentStep()) {
         _nextStep();
       }
     } else {
-      // Save the address
       _saveAddress();
     }
   }

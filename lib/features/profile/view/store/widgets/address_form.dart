@@ -4,7 +4,6 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:provider/provider.dart';
 import '../../../viewmodel/store_setup_viewmodel.dart';
 
-/// Widget for collecting store address information
 class AddressForm extends StatefulWidget {
   final GlobalKey<FormBuilderState> formKey;
   final Map<String, dynamic>? initialAddress;
@@ -19,7 +18,6 @@ class _AddressFormState extends State<AddressForm> {
   String? selectedState;
   List<String> availableCities = [];
 
-  // Iraq states and their cities
   static const Map<String, List<String>> iraqStatesAndCities = {
     'Baghdad': ['Baghdad', 'Abu Ghraib', 'Taji', 'Mahmudiyah', 'Tarmiyah'],
     'Basra': ['Basra', 'Zubair', 'Umm Qasr', 'Qurna', 'Abu Al-Khaseeb'],
@@ -63,7 +61,6 @@ class _AddressFormState extends State<AddressForm> {
       }
     }
 
-    // Trigger initial update to set the country value
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateStoreAddress();
     });
@@ -76,21 +73,17 @@ class _AddressFormState extends State<AddressForm> {
       availableCities = state != null ? iraqStatesAndCities[state]! : [];
     });
 
-    // Clear city selection when state changes
     widget.formKey.currentState?.fields['city']?.didChange(null);
 
-    // Update store address in real-time
     _updateStoreAddress();
   }
 
   void _updateStoreAddress() {
-    // Get current form values
     widget.formKey.currentState?.save();
     final formData = widget.formKey.currentState?.value;
 
     if (formData != null) {
       debugPrint('📝 Updating store address in real-time: $formData');
-      // Update the viewmodel with current form data
       context.read<StoreSetupViewmodel>().setStoreAddress(
         Map<String, dynamic>.from(formData),
       );
@@ -259,7 +252,6 @@ class _AddressFormState extends State<AddressForm> {
 
           const SizedBox(height: 16),
 
-          // Additional Info (Optional)
           FormBuilderTextField(
             name: 'additionalInfo',
             maxLines: 2,

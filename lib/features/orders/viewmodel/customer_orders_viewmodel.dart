@@ -20,11 +20,9 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // Filter options
   String _selectedStatus = 'all';
   String get selectedStatus => _selectedStatus;
 
-  // Filtered orders based on status
   List<Order> get filteredOrders {
     if (_selectedStatus == 'all') {
       return _orders;
@@ -34,7 +32,6 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
         .toList();
   }
 
-  // Order statistics
   int get totalOrders => _orders.length;
   int get pendingOrders =>
       _orders.where((order) => order.status == OrderStatus.pending).length;
@@ -48,10 +45,7 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
       .fold(0.0, (sum, order) => sum + order.totalAmount);
   bool _disposed = false;
   CustomerOrdersViewModel() {
-    // Don't auto-load orders in constructor to avoid unnecessary calls
-    // loadOrders() will be called when the UI is ready
 
-    // Listen for external order updates (e.g., from store management)
     _syncSubscription = _syncService.orderUpdates.listen(
       (event) {
         if (_disposed) return;
@@ -60,8 +54,6 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
           print(
             '📢 Received order update notification: ${event.orderId} -> ${event.newStatus}',
           );
-          // The real-time stream should automatically pick up this change,
-          // but we can add additional logic here if needed
         } else if (event is BulkOrderUpdateEvent) {
           print(
             '📢 Received bulk order update notification: ${event.orderIds.length} orders',
@@ -84,7 +76,6 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
 
       print('📱 Starting real-time orders stream...');
 
-      // Cancel existing subscription if any
       await _ordersSubscription
           ?.cancel(); // Start listening to orders stream for real-time updates
       _ordersSubscription = _orderService.getBuyerOrders().listen(
@@ -97,13 +88,11 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
             print(
               '📋 Order IDs: ${_orders.map((o) => o.id.substring(0, 8)).join(', ')}',
             );
-            // Show the latest status for debugging
             print(
               '📊 Order statuses: ${_orders.map((o) => '${o.id.substring(0, 8)}:${o.status.name}').join(', ')}',
             );
           }
 
-          // Orders are already sorted by createdAt desc from the query
           _setLoading(false);
         },
         onError: (error) {
@@ -131,7 +120,6 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     print('🔄 Refreshing orders...');
 
     try {
-      // Simply restart the stream to get fresh data
       await loadOrders();
       if (!_disposed) {
         print('✅ Order refresh completed');
@@ -165,7 +153,6 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Static utility methods for status handling (to avoid creating instances)
   static Color getOrderStatusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
@@ -217,25 +204,19 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Get order status color
   Color getStatusColor(OrderStatus status) => getOrderStatusColor(status);
 
-  // Get order status icon
   IconData getStatusIcon(OrderStatus status) => getOrderStatusIcon(status);
 
-  // Get user-friendly status text
   String getStatusText(OrderStatus status) => getOrderStatusText(status);
-  // Debug method to check if data is coming from cache or server
   Future<void> debugOrderSource() async {
     if (_disposed) return;
 
     try {
       print('=== ORDER DEBUG INFO ===');
 
-      // Check collection status first
       await _orderService.checkOrdersCollectionStatus();
 
-      // Check cached orders count
       final ordersStream = _orderService.getBuyerOrders();
       await for (final ordersList in ordersStream.take(1)) {
         print('Cached orders count: ${ordersList.length}');
@@ -245,7 +226,6 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
         break;
       }
 
-      // Check server orders count
       final serverOrders = await _orderService.getBuyerOrdersFromServer();
       print('Server orders count: ${serverOrders.length}');
       if (serverOrders.isNotEmpty) {
@@ -271,19 +251,16 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing CustomerOrdersViewModel state...');
 
-    // Cancel any active subscriptions
     _ordersSubscription?.cancel();
     _ordersSubscription = null;
     _syncSubscription?.cancel();
     _syncSubscription = null;
 
-    // Clear all state
     _orders.clear();
     _isLoading = false;
     _errorMessage = null;
     _selectedStatus = 'all';
 
-    // Notify listeners only if not disposed
     if (!_disposed) {
       notifyListeners();
     }
@@ -291,7 +268,6 @@ class CustomerOrdersViewModel extends ChangeNotifier implements StateClearable {
     debugPrint('✅ CustomerOrdersViewModel state cleared');
   }
 
-  /// Force reconnect the orders stream (for debugging/troubleshooting)
   Future<void> reconnectStream() async {
     if (_disposed) return;
 

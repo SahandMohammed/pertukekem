@@ -19,7 +19,6 @@ class PaymentCardDemo extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Demo Header
             Card(
               color: Colors.amber.shade50,
               child: Padding(
@@ -56,7 +55,6 @@ class PaymentCardDemo extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Quick Actions
             Text(
               'Quick Actions',
               style: Theme.of(
@@ -65,7 +63,6 @@ class PaymentCardDemo extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Add Test Cards Section
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -93,7 +90,6 @@ class PaymentCardDemo extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // Test Card Examples
                     ..._buildTestCardExamples(context),
 
                     const SizedBox(height: 16),
@@ -115,7 +111,6 @@ class PaymentCardDemo extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Card Statistics
             Consumer<PaymentCardViewModel>(
               builder: (context, cardViewModel, child) {
                 return Card(
@@ -207,7 +202,6 @@ class PaymentCardDemo extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Features Showcase
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),

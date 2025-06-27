@@ -9,20 +9,17 @@ import '../services/admin_service.dart';
 class AdminViewModel extends ChangeNotifier implements StateClearable {
   final AdminService _adminService = AdminService();
 
-  // Loading states
   bool _isLoading = false;
   bool _isLoadingUsers = false;
   bool _isLoadingStores = false;
   bool _isLoadingListings = false;
   bool _isLoadingStats = false;
 
-  // Data
   List<AdminUserModel> _users = [];
   List<AdminStoreModel> _stores = [];
   List<AdminListingModel> _listings = [];
   Map<String, int> _statistics = {};
 
-  // Pagination
   DocumentSnapshot? _lastUserDoc;
   DocumentSnapshot? _lastStoreDoc;
   DocumentSnapshot? _lastListingDoc;
@@ -30,17 +27,14 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
   bool _hasMoreStores = true;
   bool _hasMoreListings = true;
 
-  // Search
   List<AdminUserModel> _searchedUsers = [];
   List<AdminStoreModel> _searchedStores = [];
   List<AdminListingModel> _searchedListings = [];
   bool _isSearchMode = false;
   String _currentSearchTerm = '';
 
-  // Error handling
   String? _errorMessage;
 
-  // Getters
   bool get isLoading => _isLoading;
   bool get isLoadingUsers => _isLoadingUsers;
   bool get isLoadingStores => _isLoadingStores;
@@ -101,7 +95,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
   }
 
-  // Statistics
   Future<void> loadStatistics() async {
     if (_isLoadingStats) return;
 
@@ -119,7 +112,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Customers Management (users without stores)
   Future<void> loadUsers({bool refresh = false}) async {
     if (_isLoadingUsers) return;
 
@@ -141,8 +133,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
 
       if (users.isNotEmpty) {
         _users.addAll(users);
-        // Note: We can't get the last document easily with our current model
-        // This is a limitation we'll accept for now
         _hasMoreUsers = users.length == 20; // Assume no more if less than limit
       } else {
         _hasMoreUsers = false;
@@ -161,7 +151,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     try {
       await _adminService.toggleUserBlock(userId, isBlocked);
 
-      // Update local data
       final userIndex = _users.indexWhere((user) => user.userId == userId);
       if (userIndex != -1) {
         _users[userIndex] = AdminUserModel(
@@ -182,7 +171,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
         );
       }
 
-      // Update search results if in search mode
       if (_isSearchMode) {
         final searchUserIndex = _searchedUsers.indexWhere(
           (user) => user.userId == userId,
@@ -239,7 +227,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Stores Management
   Future<void> loadStores({bool refresh = false}) async {
     if (_isLoadingStores) return;
 
@@ -283,7 +270,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     try {
       await _adminService.toggleStoreBlock(storeId, ownerId, isBlocked);
 
-      // Update local data
       final storeIndex = _stores.indexWhere(
         (store) => store.storeId == storeId,
       );
@@ -306,7 +292,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
         );
       }
 
-      // Update search results if in search mode
       if (_isSearchMode) {
         final searchStoreIndex = _searchedStores.indexWhere(
           (store) => store.storeId == storeId,
@@ -363,7 +348,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Listings Management
   Future<void> loadListings({bool refresh = false}) async {
     if (_isLoadingListings) return;
 
@@ -403,7 +387,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
     try {
       await _adminService.removeListing(listingId);
 
-      // Update local data
       final listingIndex = _listings.indexWhere(
         (listing) => listing.id == listingId,
       );
@@ -425,7 +408,6 @@ class AdminViewModel extends ChangeNotifier implements StateClearable {
         );
       }
 
-      // Update search results if in search mode
       if (_isSearchMode) {
         final searchListingIndex = _searchedListings.indexWhere(
           (listing) => listing.id == listingId,

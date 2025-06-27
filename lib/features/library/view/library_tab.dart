@@ -21,13 +21,11 @@ class _LibraryTabState extends State<LibraryTab> {
   void initState() {
     super.initState();
 
-    // Load library data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<LibraryViewModel>();
       viewModel.refreshAll();
     });
 
-    // Listen to library changes for immediate UI updates
     _libraryNotifier.addListener(_onLibraryChanged);
   }
 
@@ -39,12 +37,10 @@ class _LibraryTabState extends State<LibraryTab> {
   }
 
   void _onLibraryChanged() {
-    // Prevent multiple rapid rebuilds
     if (!_isRefreshing && mounted) {
       _isRefreshing = true;
       setState(() {});
 
-      // Reset refresh flag after a short delay
       Future.delayed(const Duration(milliseconds: 100), () {
         _isRefreshing = false;
       });
@@ -195,7 +191,6 @@ class _LibraryTabState extends State<LibraryTab> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Book Cover
               Container(
                 width: 80,
                 height: 120,
@@ -250,7 +245,6 @@ class _LibraryTabState extends State<LibraryTab> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Book Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +269,6 @@ class _LibraryTabState extends State<LibraryTab> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    // Book Type Badge - Always E-Book now
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,

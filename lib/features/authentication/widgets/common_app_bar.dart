@@ -16,7 +16,6 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.account_circle),
           onSelected: (value) async {
             if (value == 'logout') {
-              // Show confirmation dialog
               final shouldLogout = await showDialog<bool>(
                 context: context,
                 builder:

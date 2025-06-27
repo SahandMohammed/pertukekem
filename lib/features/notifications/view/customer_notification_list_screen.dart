@@ -24,7 +24,6 @@ class _CustomerNotificationListScreenState
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
 
-    // Initialize notification viewmodel if not already done
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CustomerNotificationViewModel>().initialize();
     });
@@ -261,7 +260,6 @@ class _CustomerNotificationListScreenState
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Notification icon
               Container(
                 width: 40,
                 height: 40,
@@ -276,7 +274,6 @@ class _CustomerNotificationListScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              // Notification content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,7 +324,6 @@ class _CustomerNotificationListScreenState
                   ],
                 ),
               ),
-              // More options
               PopupMenuButton<String>(
                 icon: Icon(
                   Icons.more_vert,

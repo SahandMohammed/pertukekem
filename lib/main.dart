@@ -26,12 +26,9 @@ import 'core/router/app_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Set background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // Initialize FCM Service
   await FCMService().initialize();
 
   await AIService.instance.initialize(useVertexBackend: false);
@@ -39,7 +36,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // Create ViewModels
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => StoreSetupViewmodel()),
         ChangeNotifierProvider(create: (_) => ManageListingsViewModel()),
@@ -57,7 +53,6 @@ void main() async {
       ],
       child: Consumer<AuthViewModel>(
         builder: (context, authViewModel, child) {
-          // Register all StateClearable ViewModels with AuthViewModel
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _registerStateClearables(context, authViewModel);
           });
@@ -73,7 +68,6 @@ void _registerStateClearables(
   BuildContext context,
   AuthViewModel authViewModel,
 ) {
-  // Register all ViewModels that implement StateClearable
   final storeViewModel = context.read<StoreSetupViewmodel>();
   final manageListingsViewModel = context.read<ManageListingsViewModel>();
   final customerHomeViewModel = context.read<CustomerHomeViewModel>();
@@ -87,7 +81,6 @@ void _registerStateClearables(
   final adminViewModel = context.read<AdminViewModel>();
   final bookRequestViewModel = context.read<BookRequestViewModel>();
 
-  // Register clearState methods with AuthViewModel
   authViewModel.registerStateClearable(storeViewModel.clearState);
   authViewModel.registerStateClearable(manageListingsViewModel.clearState);
   authViewModel.registerStateClearable(customerHomeViewModel.clearState);

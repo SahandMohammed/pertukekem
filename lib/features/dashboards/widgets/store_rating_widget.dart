@@ -27,12 +27,10 @@ class _StoreRatingWidgetState extends State<StoreRatingWidget> {
     super.initState();
     _viewModel = Provider.of<StoreRatingViewModel>(context, listen: false);
 
-    // Defer initialization to avoid calling setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewModel.initialize(widget.storeId);
     });
 
-    // Listen for comment changes
     _commentController.addListener(() {
       _viewModel.updateComment(_commentController.text);
     });
@@ -48,7 +46,6 @@ class _StoreRatingWidgetState extends State<StoreRatingWidget> {
   Widget build(BuildContext context) {
     return Consumer<StoreRatingViewModel>(
       builder: (context, viewModel, child) {
-        // Update comment controller when viewModel comment changes
         if (_commentController.text != viewModel.comment) {
           _commentController.text = viewModel.comment;
           _commentController.selection = TextSelection.fromPosition(
@@ -179,7 +176,6 @@ class _StoreRatingWidgetState extends State<StoreRatingWidget> {
             ),
             const SizedBox(height: 16),
 
-            // Rating bar
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -218,7 +214,6 @@ class _StoreRatingWidgetState extends State<StoreRatingWidget> {
 
             const SizedBox(height: 16),
 
-            // Comment field
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -247,7 +242,6 @@ class _StoreRatingWidgetState extends State<StoreRatingWidget> {
 
             const SizedBox(height: 20),
 
-            // Action buttons
             Row(
               children: [
                 if (viewModel.hasUserRated) ...[

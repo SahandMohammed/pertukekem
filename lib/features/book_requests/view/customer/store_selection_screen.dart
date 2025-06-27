@@ -141,14 +141,12 @@ class _StoreSelectionScreenState extends State<StoreSelectionScreen> {
             );
           }
 
-          // Initialize filtered stores if not already done
           if (_filteredStores.isEmpty && _searchController.text.isEmpty) {
             _filteredStores = viewModel.availableStores;
           }
 
           return Column(
             children: [
-              // Search Bar
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: TextField(
@@ -198,7 +196,6 @@ class _StoreSelectionScreenState extends State<StoreSelectionScreen> {
                 ),
               ),
 
-              // Results count
               if (_searchController.text.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -216,7 +213,6 @@ class _StoreSelectionScreenState extends State<StoreSelectionScreen> {
 
               const SizedBox(height: 8),
 
-              // Store List
               Expanded(
                 child:
                     _filteredStores.isEmpty && _searchController.text.isNotEmpty
@@ -360,7 +356,6 @@ class _StoreSelectionScreenState extends State<StoreSelectionScreen> {
                                   setState(() {
                                     _selectedStore = store;
                                   });
-                                  // Auto-return after short delay for better UX
                                   Future.delayed(
                                     const Duration(milliseconds: 300),
                                     () {

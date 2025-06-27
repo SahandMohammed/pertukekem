@@ -15,7 +15,6 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
   @override
   void initState() {
     super.initState();
-    // Load cards when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PaymentCardViewModel>(context, listen: false).loadCards();
     });
@@ -27,7 +26,6 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
       MaterialPageRoute(builder: (context) => const AddCardScreen()),
     );
 
-    // If card was added successfully, reload cards
     if (result == true && mounted) {
       Provider.of<PaymentCardViewModel>(context, listen: false).loadCards();
     }
@@ -224,7 +222,6 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Card header with type and actions
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -290,7 +287,6 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Card number (masked)
             Text(
               '**** **** **** ${card.lastFourDigits}',
               style: const TextStyle(
@@ -302,7 +298,6 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Card holder and expiry
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -354,7 +349,6 @@ class _UserCardsScreenState extends State<UserCardsScreen> {
             ),
             const SizedBox(height: 8),
 
-            // Status indicators
             Row(
               children: [
                 if (card.isDefault) ...[

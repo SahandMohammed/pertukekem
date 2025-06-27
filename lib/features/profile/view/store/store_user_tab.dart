@@ -28,7 +28,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    // ProfileViewModel is provided by the parent dashboard; only provide UserProfileViewModel here
     return ChangeNotifierProvider(
       create: (_) => UserProfileViewModel(),
       child: Scaffold(
@@ -54,11 +53,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Header with User Card
               _buildUserProfileCard(context, user, textTheme, colorScheme),
               const SizedBox(height: 24),
 
-              // Quick Stats
               Text(
                 'Business Stats',
                 style: textTheme.titleMedium?.copyWith(
@@ -93,7 +90,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Menu Options - Account
               Text(
                 'Account',
                 style: textTheme.titleMedium?.copyWith(
@@ -107,7 +103,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: 'Edit Store Profile',
                   subtitle: 'Update store information and settings',
                   onTap: () async {
-                    // Show loading indicator
                     showDialog(
                       context: context,
                       barrierDismissible: false,
@@ -117,7 +112,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
 
                     try {
-                      // Fetch store data from the ProfileViewModel
                       final profileViewModel = Provider.of<ProfileViewModel>(
                         context,
                         listen: false,
@@ -138,11 +132,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                           ),
                         );
-                        // Refresh profile data if edit was successful
                         if (result == true && context.mounted) {
                           setState(() {}); // Force rebuild after edit
 
-                          // Show success message (data should already be updated via optimistic updates)
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Row(
@@ -160,14 +152,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           );
 
-                          // Optional: Light refresh in background to ensure server consistency
-                          // (Remove the aggressive immediate refresh that might override optimistic updates)
                           Future.delayed(const Duration(seconds: 2), () async {
                             if (context.mounted) {
-                              // Background server sync for consistency
                               await authViewModel.refreshUserData();
                               await profileViewModel.fetchStoreData();
-                              // Completed background refresh
                             }
                           });
                         }
@@ -224,7 +212,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
 
                       if (result == true && context.mounted) {
-                        // Refresh the AuthViewModel to get updated user data
                         final authViewModel = Provider.of<AuthViewModel>(
                           context,
                           listen: false,
@@ -279,7 +266,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ]),
               const SizedBox(height: 16),
 
-              // Business section
               Text(
                 'Business',
                 style: textTheme.titleMedium?.copyWith(
@@ -329,7 +315,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ]),
               const SizedBox(height: 16),
 
-              // Support & Info
               Text(
                 'Support & Information',
                 style: textTheme.titleMedium?.copyWith(
@@ -409,11 +394,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Row(
               children: [
-                // Profile Picture and User Info - wrapped in a single Consumer2
                 Expanded(
                   child: Consumer2<ProfileViewModel, AuthViewModel>(
                     builder: (context, profileViewModel, authViewModel, child) {
-                      // Always prefer storeData from ProfileViewModel if available
                       final currentUser = authViewModel.user ?? user;
                       final storeData = profileViewModel.storeData;
                       final storeName =
@@ -436,7 +419,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       return Row(
                         children: [
-                          // Profile Picture
                           Hero(
                             tag: 'store_profile_picture',
                             child: Container(
@@ -582,7 +564,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          // User Information
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,7 +638,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                 ),
-                // Camera button
                 Consumer<ProfileViewModel>(
                   builder: (context, profileViewModel, child) {
                     return Container(
@@ -895,7 +875,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Handle bar
                         Container(
                           width: 40,
                           height: 4,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Custom loading indicator widget for consistent loading states
 class LoadingIndicator extends StatelessWidget {
   final double? size;
   final Color? color;
@@ -49,7 +48,6 @@ class LoadingIndicator extends StatelessWidget {
   }
 }
 
-/// Full screen loading overlay
 class LoadingOverlay extends StatelessWidget {
   final String? message;
   final Color? backgroundColor;

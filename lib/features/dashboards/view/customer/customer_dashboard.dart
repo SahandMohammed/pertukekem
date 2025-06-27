@@ -55,14 +55,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         body: IndexedStack(
           index: _selectedIndex,
           children: [
-            // Home Tab - Comprehensive Bookstore Screen
             _buildBookstoreHome(),
-            // Orders Tab - Customer Orders (previously index 2, now index 1)
             const CustomerOrdersTab(),
-            // Library Tab - User's Library (previously index 3, now index 2)
             const LibraryTab(), // Community Tab - Community Features (new at index 3)
             const CommunityTab(),
-            // Profile Tab (now at index 4)
             const ProfileTab(),
           ],
         ),
@@ -162,7 +158,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           ),
           child: Row(
             children: [
-              // Circular Avatar with Profile Picture or Placeholder
               Container(
                 width: 48,
                 height: 48,
@@ -244,7 +239,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ),
               ),
               const SizedBox(width: 12),
-              // Welcome Text with real user name
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +259,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   ],
                 ),
               ),
-              // Notification Icon
               Consumer<CustomerNotificationViewModel>(
                 builder: (context, notificationViewModel, child) {
                   final unreadCount = notificationViewModel.unreadCount;
@@ -334,7 +327,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 },
               ),
               const SizedBox(width: 8),
-              // Shopping Cart Icon
               GestureDetector(
                 onTap: () {
                   Navigator.pushNamed(context, '/cart');
@@ -392,7 +384,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ),
               ),
               const SizedBox(width: 8),
-              // AI Chat Icon
               GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -432,7 +423,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Widget _buildSearchBar() {
     return GestureDetector(
       onTap: () {
-        // Navigate to search screen when search bar is tapped
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -514,7 +504,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   Widget _buildStoreCard(dynamic store) {
     return GestureDetector(
       onTap: () {
-        // Navigate to store profile screen on tap with Provider wrapper
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -549,7 +538,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Store Logo/Avatar
               Container(
                 width: 50,
                 height: 50,
@@ -618,7 +606,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ),
               ),
               const SizedBox(height: 12),
-              // Store Name
               Text(
                 store.storeName ?? 'Store Name',
                 style: const TextStyle(
@@ -630,7 +617,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 overflow: TextOverflow.ellipsis,
               ),
               const Spacer(),
-              // Rating
               Row(
                 children: [
                   Icon(Icons.star, color: Colors.orange.shade400, size: 16),
@@ -721,7 +707,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Book Cover with Badge
             Stack(
               children: [
                 Container(
@@ -757,7 +742,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                             ),
                   ),
                 ),
-                // NEW Badge
                 Positioned(
                   top: 8,
                   left: 8,
@@ -782,7 +766,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ),
               ],
             ),
-            // Book Details
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -842,7 +825,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   onPressed:
                       viewModel.currentlyReadingBooks.isNotEmpty
                           ? () {
-                            // Navigate to library tab (now at index 2)
                             setState(() {
                               _selectedIndex = 2;
                             });
@@ -987,7 +969,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 
     return GestureDetector(
       onTap: () {
-        // Navigate to ebook reader
         if (book.downloadUrl != null && book.downloadUrl!.isNotEmpty) {
           Navigator.push(
             context,
@@ -1020,7 +1001,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Book Cover
             Stack(
               children: [
                 Container(
@@ -1056,7 +1036,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                             ),
                   ),
                 ),
-                // Reading progress overlay
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -1102,7 +1081,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 ),
               ],
             ),
-            // Book Details
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(

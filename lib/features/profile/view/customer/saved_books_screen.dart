@@ -98,7 +98,6 @@ class _SavedBooksScreenState extends State<SavedBooksScreen> {
 
   Future<void> _navigateToBookDetails(LibraryBook book) async {
     try {
-      // Try to fetch the original listing
       final listingDoc =
           await FirebaseFirestore.instance
               .collection('listings')
@@ -113,7 +112,6 @@ class _SavedBooksScreenState extends State<SavedBooksScreen> {
           ),
         );
       } else {
-        // Listing not found, show message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('This book listing is no longer available'),
@@ -240,7 +238,6 @@ class _SavedBooksScreenState extends State<SavedBooksScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Book cover
               Container(
                 width: 60,
                 height: 80,
@@ -284,7 +281,6 @@ class _SavedBooksScreenState extends State<SavedBooksScreen> {
               ),
               const SizedBox(width: 16),
 
-              // Book details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,7 +342,6 @@ class _SavedBooksScreenState extends State<SavedBooksScreen> {
                 ),
               ),
 
-              // Actions
               PopupMenuButton<String>(
                 onSelected: (action) {
                   switch (action) {

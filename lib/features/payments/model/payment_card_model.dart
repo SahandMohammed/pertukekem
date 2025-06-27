@@ -11,7 +11,6 @@ class PaymentCard {
   final bool isDefault;
   final DateTime createdAt;
   final DateTime? lastUsedAt;
-  // Note: We never store the full card number or CVV for security
 
   PaymentCard({
     required this.id,
@@ -26,7 +25,6 @@ class PaymentCard {
     this.lastUsedAt,
   });
 
-  // Factory constructor to create PaymentCard from Firestore document
   factory PaymentCard.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return PaymentCard(
@@ -46,7 +44,6 @@ class PaymentCard {
     );
   }
 
-  // Convert PaymentCard to Map for Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
@@ -61,17 +58,14 @@ class PaymentCard {
     };
   }
 
-  // Get masked card number for display
   String get maskedCardNumber {
     return '**** **** **** $lastFourDigits';
   }
 
-  // Get formatted expiry date
   String get formattedExpiry {
     return '$expiryMonth/$expiryYear';
   }
 
-  // Check if card is expired
   bool get isExpired {
     final now = DateTime.now();
     final expiryDate = DateTime(
@@ -81,7 +75,6 @@ class PaymentCard {
     return now.isAfter(expiryDate);
   }
 
-  // Check if card is expiring soon (within 30 days)
   bool get isExpiringSoon {
     final now = DateTime.now();
     final expiryDate = DateTime(
@@ -92,7 +85,6 @@ class PaymentCard {
     return expiryDate.isBefore(thirtyDaysFromNow) && !isExpired;
   }
 
-  // Copy with method for updating card
   PaymentCard copyWith({
     String? id,
     String? userId,
@@ -119,7 +111,6 @@ class PaymentCard {
     );
   }
 
-  // Determine card type from card number
   static String determineCardType(String cardNumber) {
     cardNumber = cardNumber.replaceAll(' ', '');
 

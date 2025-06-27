@@ -10,7 +10,6 @@ class CustomerOrdersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use the globally provided CustomerOrdersViewModel instead of creating a new one
     return const _CustomerOrdersContent();
   }
 }
@@ -26,10 +25,8 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
   @override
   void initState() {
     super.initState();
-    // Start listening to orders when this tab is accessed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<CustomerOrdersViewModel>();
-      // Always start the real-time stream when the tab is opened
       viewModel.loadOrders();
     });
   }
@@ -390,7 +387,6 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // TODO: Navigate to rate/review
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Review feature coming soon!'),
@@ -417,7 +413,6 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // TODO: Implement cancel order
                         _showCancelOrderDialog(context, order);
                       },
                       style: ElevatedButton.styleFrom(
@@ -485,8 +480,6 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
-                // Switch to search tab
-                // TODO: Implement navigation to search tab
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade600,
@@ -591,7 +584,6 @@ class _CustomerOrdersContentState extends State<_CustomerOrdersContent> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  // TODO: Implement order cancellation
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Order cancellation coming soon!'),

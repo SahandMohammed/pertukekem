@@ -36,7 +36,6 @@ class DashboardService {
       throw Exception('User not authenticated');
     }
 
-    // Get user's store reference
     final userDoc =
         await _firestore.collection('users').doc(currentUser.uid).get();
 
@@ -51,7 +50,6 @@ class DashboardService {
 
     final storeRef = _firestore.collection('stores').doc(storeId);
 
-    // Get orders data
     final ordersSnapshot =
         await _firestore
             .collection('orders')
@@ -79,7 +77,6 @@ class DashboardService {
           );
         }).toList();
 
-    // Get listings data
     final listingsSnapshot =
         await _firestore
             .collection('listings')
@@ -88,7 +85,6 @@ class DashboardService {
 
     final listings = listingsSnapshot.docs.length;
 
-    // Calculate metrics
     final totalOrders = orders.length;
     final pendingOrders =
         orders
@@ -107,7 +103,6 @@ class DashboardService {
         .where((o) => o.status == order_model.OrderStatus.delivered)
         .fold(0.0, (sum, order) => sum + order.totalAmount);
 
-    // Calculate monthly revenue (current month)
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
     final monthlyRevenue = orders
@@ -118,10 +113,8 @@ class DashboardService {
         )
         .fold(0.0, (sum, order) => sum + order.totalAmount);
 
-    // Get recent orders (last 5)
     final recentOrders = orders.take(5).toList();
 
-    // For now, assume all listings are active (you might want to add a status field)
     final activeListings = listings;
     final soldListings =
         orders

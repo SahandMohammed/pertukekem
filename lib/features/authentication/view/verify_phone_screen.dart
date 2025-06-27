@@ -30,13 +30,11 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       try {
         if (widget.isLogin) {
-          // For login, use the phone login verification method
           await viewModel.verifyPhoneLogin(
             widget.verificationId,
             _otpController.text.trim(),
           );
         } else {
-          // For signup, use the existing phone verification method
           await viewModel.verifyPhoneNumber(
             widget.verificationId,
             _otpController.text.trim(),
@@ -45,27 +43,21 @@ class _VerifyPhoneScreenState extends State<VerifyPhoneScreen> {
 
         if (mounted) {
           if (widget.isLogin) {
-            // For login, navigate to main app (auth wrapper will handle verification checks)
             Navigator.of(
               context,
             ).pushNamedAndRemoveUntil('/', (route) => false);
           } else {
-            // For signup, check if email verification is needed
             if (viewModel.user != null && !viewModel.user!.isEmailVerified) {
-              // Navigate to email verification screen
               Navigator.of(
                 context,
               ).pushNamedAndRemoveUntil('/verify-email', (route) => false);
             } else {
-              // Check if the user is a store owner and needs to complete setup
               if (viewModel.user != null &&
                   viewModel.user!.roles.contains('store')) {
-                // Navigate to store setup
                 Navigator.of(
                   context,
                 ).pushNamedAndRemoveUntil('/store-setup', (route) => false);
               } else {
-                // Default case - navigate to main app
                 Navigator.of(
                   context,
                 ).pushNamedAndRemoveUntil('/', (route) => false);

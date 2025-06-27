@@ -8,7 +8,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
   final LibraryService _libraryService = LibraryService();
   final LibraryNotifier _libraryNotifier = LibraryNotifier();
 
-  // Constructor to set up listeners
   LibraryViewModel() {
     _libraryNotifier.addListener(_onLibraryChanged);
   }
@@ -19,15 +18,12 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     super.dispose();
   }
 
-  // Handle library change notifications
   void _onLibraryChanged() {
     if (kDebugMode) {
       print('LibraryViewModel: Library changed, refreshing data');
     }
-    // Only refresh if not currently loading to prevent multiple concurrent refreshes
     if (!_isLoadingLibrary && !_isLoadingStats && !_isLoadingCurrentlyReading) {
       Future.delayed(const Duration(milliseconds: 300), () {
-        // Small delay to batch rapid changes
         if (!_isLoadingLibrary) {
           refreshAll();
         }
@@ -35,7 +31,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // State variables
   List<LibraryBook> _allBooks = [];
   List<LibraryBook> _ebooks = [];
   List<LibraryBook> _physicalBooks = [];
@@ -43,19 +38,15 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
   List<LibraryBook> _recentlyPurchased = [];
   LibraryStats? _stats;
 
-  // Loading states
   bool _isLoadingLibrary = false;
   bool _isLoadingStats = false;
   bool _isLoadingCurrentlyReading = false;
 
-  // Error states
   String? _errorMessage;
 
-  // Filter and search
   String _searchQuery = '';
   String _currentFilter = 'all'; // 'all', 'ebooks', 'physical'
 
-  // Getters
   List<LibraryBook> get allBooks => _allBooks;
   List<LibraryBook> get ebooks => _ebooks;
   List<LibraryBook> get physicalBooks => _physicalBooks;
@@ -71,7 +62,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
   String get searchQuery => _searchQuery;
   String get currentFilter => _currentFilter;
 
-  // Get filtered books based on current filter
   List<LibraryBook> get filteredBooks {
     List<LibraryBook> books;
     switch (_currentFilter) {
@@ -96,7 +86,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }).toList();
   }
 
-  // Load user's complete library
   Future<void> loadLibrary() async {
     _isLoadingLibrary = true;
     _errorMessage = null;
@@ -116,7 +105,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Load currently reading books
   Future<void> loadCurrentlyReading() async {
     _isLoadingCurrentlyReading = true;
     notifyListeners();
@@ -132,7 +120,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Load library statistics
   Future<void> loadStats() async {
     _isLoadingStats = true;
     notifyListeners();
@@ -148,7 +135,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Check if user owns a book
   Future<bool> checkBookOwnership(String bookId) async {
     try {
       return await _libraryService.userOwnsBook(bookId);
@@ -158,7 +144,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Get specific library book
   Future<LibraryBook?> getLibraryBook(String bookId) async {
     try {
       return await _libraryService.getLibraryBook(bookId);
@@ -168,7 +153,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update reading progress
   Future<void> updateReadingProgress({
     required String libraryBookId,
     required int currentPage,
@@ -181,7 +165,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
         isCompleted: isCompleted,
       );
 
-      // Reload data to reflect changes
       await loadCurrentlyReading();
       await loadLibrary();
     } catch (e) {
@@ -191,7 +174,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Mark book as downloaded
   Future<void> markBookAsDownloaded({
     required String libraryBookId,
     required String localFilePath,
@@ -202,7 +184,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
         localFilePath: localFilePath,
       );
 
-      // Reload library to reflect changes
       await loadLibrary();
     } catch (e) {
       _errorMessage = 'Failed to mark book as downloaded: $e';
@@ -211,12 +192,10 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Remove download
   Future<void> removeDownload(String libraryBookId) async {
     try {
       await _libraryService.removeDownload(libraryBookId);
 
-      // Reload library to reflect changes
       await loadLibrary();
     } catch (e) {
       _errorMessage = 'Failed to remove download: $e';
@@ -225,7 +204,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Download book
   Future<String> downloadBook({
     required String libraryBookId,
     required String downloadUrl,
@@ -240,7 +218,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
         onProgress: onProgress,
       );
 
-      // Reload library to reflect changes
       await loadLibrary();
 
       return filePath;
@@ -252,30 +229,25 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Set search query
   void setSearchQuery(String query) {
     _searchQuery = query;
     notifyListeners();
   }
 
-  // Set filter
   void setFilter(String filter) {
     _currentFilter = filter;
     notifyListeners();
   }
 
-  // Clear search
   void clearSearch() {
     _searchQuery = '';
     notifyListeners();
   }
 
-  // Refresh all data
   Future<void> refreshAll() async {
     await Future.wait([loadLibrary(), loadCurrentlyReading(), loadStats()]);
   }
 
-  // Add book to library (called after purchase)
   Future<void> addBookToLibrary({
     required String userId,
     required dynamic listing, // Listing
@@ -292,7 +264,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
         transactionId: transactionId,
       );
 
-      // Reload library after adding book
       await loadLibrary();
       await loadStats();
     } catch (e) {
@@ -302,7 +273,6 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Clear error message
   void clearError() {
     _errorMessage = null;
     notifyListeners();
@@ -310,25 +280,20 @@ class LibraryViewModel extends ChangeNotifier implements StateClearable {
 
   @override
   Future<void> clearState() async {
-    // Clear all book lists
     _allBooks.clear();
     _ebooks.clear();
     _physicalBooks.clear();
     _currentlyReading.clear();
     _recentlyPurchased.clear();
 
-    // Clear stats
     _stats = null;
 
-    // Reset loading states
     _isLoadingLibrary = false;
     _isLoadingStats = false;
     _isLoadingCurrentlyReading = false;
 
-    // Clear error state
     _errorMessage = null;
 
-    // Reset filter and search
     _searchQuery = '';
     _currentFilter = 'all';
 

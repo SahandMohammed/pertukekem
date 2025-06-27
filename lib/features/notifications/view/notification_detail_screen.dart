@@ -28,7 +28,6 @@ class NotificationDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -110,7 +109,6 @@ class NotificationDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Message Card
             Card(
               elevation: 1,
               shape: RoundedRectangleBorder(
@@ -143,7 +141,6 @@ class NotificationDetailScreen extends StatelessWidget {
               ),
             ),
 
-            // Metadata Card (if available)
             if (notification.metadata != null &&
                 notification.metadata!.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -175,7 +172,6 @@ class NotificationDetailScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Action Button (if actionUrl is available)
             if (notification.actionUrl != null)
               SizedBox(
                 width: double.infinity,
@@ -362,8 +358,6 @@ class NotificationDetailScreen extends StatelessWidget {
   }
 
   void _handleAction(BuildContext context) {
-    // Here you would handle navigation based on the actionUrl
-    // For now, we'll just show a message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Action: ${notification.actionUrl}'),

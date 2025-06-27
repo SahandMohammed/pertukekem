@@ -17,7 +17,6 @@ class BlockedUserScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Blocked icon
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -29,7 +28,6 @@ class BlockedUserScreen extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // Title
               Text(
                 'Account Blocked',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -41,7 +39,6 @@ class BlockedUserScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Description
               Text(
                 'Your account has been temporarily suspended. This may be due to a violation of our terms of service or community guidelines.',
                 style: Theme.of(
@@ -52,7 +49,6 @@ class BlockedUserScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Contact info card
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -79,7 +75,6 @@ class BlockedUserScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          // Email contact
                           Column(
                             children: [
                               Icon(Icons.email, color: colorScheme.primary),
@@ -99,7 +94,6 @@ class BlockedUserScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          // Phone contact
                           Column(
                             children: [
                               Icon(Icons.phone, color: colorScheme.primary),
@@ -128,7 +122,6 @@ class BlockedUserScreen extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // Sign out button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -158,7 +151,6 @@ class BlockedUserScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // Additional info
               Text(
                 'You will be redirected to the login screen after signing out.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(

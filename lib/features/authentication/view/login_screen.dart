@@ -65,12 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
           String? errorCode;
 
           if (e.toString().contains('[firebase_auth/')) {
-            // Extract error code from Firebase error message
             errorCode = e.toString().split('[firebase_auth/')[1].split(']')[0];
             errorMessage = _getFirebaseAuthErrorMessage(errorCode);
           }
 
-          // Handle verification errors by navigating to appropriate screens
           if (errorCode == 'requires-email-verification') {
             Navigator.of(context).pushNamed('/verify-email');
             return;
@@ -113,7 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
-                // Book icon to indicate this is a bookstore app
                 const Icon(
                   Icons.menu_book_rounded,
                   size: 64,

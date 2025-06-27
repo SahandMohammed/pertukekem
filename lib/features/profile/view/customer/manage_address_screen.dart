@@ -285,7 +285,6 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with name and default badge
                 Row(
                   children: [
                     Container(
@@ -409,7 +408,6 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Address details
                 Text(
                   address.streetAddress,
                   style: theme.textTheme.bodyMedium?.copyWith(

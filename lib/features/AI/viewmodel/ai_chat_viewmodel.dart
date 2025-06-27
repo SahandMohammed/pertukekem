@@ -3,20 +3,17 @@ import 'package:pertukekem/core/interfaces/state_clearable.dart';
 import '../service/ai_service.dart';
 import '../model/chat_message_model.dart';
 
-/// ViewModel for managing AI chat functionality
 class AIChatViewModel extends ChangeNotifier implements StateClearable {
   final AIService _aiService = AIService.instance;
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   String? _error;
 
-  // Getters
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasMessages => _messages.isNotEmpty;
 
-  /// Initialize the AI chat session
   Future<void> initializeChatSession() async {
     try {
       await _aiService.initialize();
@@ -29,7 +26,6 @@ class AIChatViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Add welcome message when chat starts
   void _addWelcomeMessage() {
     final welcomeMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -51,13 +47,11 @@ What would you like to explore today?''',
     _messages.add(welcomeMessage);
   }
 
-  /// Send a message to the AI and get response
   Future<void> sendMessage(String content) async {
     if (content.trim().isEmpty) return;
 
     _error = null;
 
-    // Add user message
     final userMessage = ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       content: content.trim(),
@@ -67,7 +61,6 @@ What would you like to explore today?''',
 
     _messages.add(userMessage);
 
-    // Add loading message
     final loadingMessage = ChatMessage(
       id: '${DateTime.now().millisecondsSinceEpoch}_loading',
       content: '',
@@ -81,13 +74,10 @@ What would you like to explore today?''',
     notifyListeners();
 
     try {
-      // Get AI response
       final response = await _aiService.generateBookstoreContent(content);
 
-      // Remove loading message
       _messages.removeWhere((msg) => msg.id.endsWith('_loading'));
 
-      // Add AI response
       final aiMessage = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         content: response,
@@ -97,12 +87,10 @@ What would you like to explore today?''',
 
       _messages.add(aiMessage);
     } catch (e) {
-      // Remove loading message
       _messages.removeWhere((msg) => msg.id.endsWith('_loading'));
 
       _error = 'Failed to get response: $e';
 
-      // Add error message
       final errorMessage = ChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         content: 'Sorry, I encountered an error. Please try again.',
@@ -117,7 +105,6 @@ What would you like to explore today?''',
     }
   }
 
-  /// Clear all messages and end chat session
   void clearChat() {
     _messages.clear();
     _error = null;
@@ -126,7 +113,6 @@ What would you like to explore today?''',
     notifyListeners();
   }
 
-  /// Start a new chat session
   void startNewChat() {
     clearChat();
     _aiService.startBookstoreFocusedChat();
@@ -134,7 +120,6 @@ What would you like to explore today?''',
     notifyListeners();
   }
 
-  /// Get quick suggestion prompts
   List<String> getQuickSuggestions() {
     return [
       'Recommend some fantasy books',

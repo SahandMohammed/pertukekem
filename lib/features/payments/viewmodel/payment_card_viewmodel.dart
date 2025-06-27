@@ -19,7 +19,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
 
   String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
-  // Load all cards for the current user
   Future<void> loadCards() async {
     if (currentUserId == null) {
       _error = 'User not authenticated';
@@ -42,7 +41,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Add a new card
   Future<bool> addCard({
     required String cardNumber,
     required String cardHolderName,
@@ -61,7 +59,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     _error = null;
 
     try {
-      // Check if card already exists
       final lastFourDigits = cardNumber
           .replaceAll(' ', '')
           .substring(cardNumber.replaceAll(' ', '').length - 4);
@@ -88,7 +85,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
         setAsDefault: setAsDefault,
       );
 
-      // Reload cards to update the UI
       await loadCards();
       return true;
     } catch (e) {
@@ -99,7 +95,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Set a card as default
   Future<bool> setCardAsDefault(String cardId) async {
     if (currentUserId == null) {
       _error = 'User not authenticated';
@@ -122,7 +117,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Delete a card
   Future<bool> deleteCard(String cardId) async {
     if (currentUserId == null) {
       _error = 'User not authenticated';
@@ -145,7 +139,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Get default card
   Future<PaymentCard?> getDefaultCard() async {
     if (currentUserId == null) return null;
 
@@ -157,31 +150,26 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Update card last used
   Future<void> updateCardLastUsed(String cardId) async {
     if (currentUserId == null) return;
 
     try {
       await _cardService.updateCardLastUsedWithUserId(currentUserId!, cardId);
-      // Optionally reload cards if you want to show last used date
     } catch (e) {
       debugPrint('Error updating card last used: $e');
     }
   }
 
-  // Clear error
   void clearError() {
     _error = null;
     notifyListeners();
   }
 
-  // Private method to set loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
     Future.microtask(() => notifyListeners());
   }
 
-  // Validate card number format (basic simulation validation)
   static bool isValidCardNumber(String cardNumber) {
     final cleanNumber = cardNumber.replaceAll(' ', '');
     return cleanNumber.length >= 13 &&
@@ -189,7 +177,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
         RegExp(r'^\d+$').hasMatch(cleanNumber);
   }
 
-  // Validate expiry date
   static bool isValidExpiryDate(String month, String year) {
     try {
       final monthInt = int.parse(month);
@@ -208,7 +195,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Format card number with spaces
   static String formatCardNumber(String cardNumber) {
     final cleanNumber = cardNumber.replaceAll(' ', '');
     String formatted = '';
@@ -223,7 +209,6 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
     return formatted;
   }
 
-  // Get card type from number
   static String getCardType(String cardNumber) {
     return PaymentCard.determineCardType(cardNumber);
   }
@@ -232,13 +217,11 @@ class PaymentCardViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing PaymentCardViewModel state...');
 
-    // Clear all state
     _cards.clear();
     _defaultCard = null;
     _error = null;
     _isLoading = false;
 
-    // Notify listeners
     notifyListeners();
 
     debugPrint('✅ PaymentCardViewModel state cleared');

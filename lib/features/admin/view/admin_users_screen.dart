@@ -21,7 +21,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
 
-    // Load initial data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final adminViewModel = context.read<AdminViewModel>();
       if (adminViewModel.users.isEmpty) {
@@ -65,7 +64,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       builder: (context, adminViewModel, child) {
         return Column(
           children: [
-            // Search Bar
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: AdminSearchBar(
@@ -79,7 +77,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ),
 
-            // Error Message
             if (adminViewModel.errorMessage != null)
               Container(
                 width: double.infinity,

@@ -52,7 +52,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   void _onFieldChanged() {
-    // Trigger rebuild to update the card preview
     setState(() {});
   }
 
@@ -108,19 +107,15 @@ class _AddCardScreenState extends State<AddCardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Card Preview
                   _buildCardPreview(),
                   const SizedBox(height: 32),
 
-                  // Card Number Field
                   _buildCardNumberField(),
                   const SizedBox(height: 16),
 
-                  // Card Holder Name Field
                   _buildCardHolderField(),
                   const SizedBox(height: 16),
 
-                  // Expiry and CVV Row
                   Row(
                     children: [
                       Expanded(child: _buildExpiryMonthField()),
@@ -132,15 +127,12 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Set as Default Switch
                   _buildDefaultSwitch(),
                   const SizedBox(height: 32),
 
-                  // Save Button
                   _buildSaveButton(cardViewModel),
                   const SizedBox(height: 16),
 
-                  // Disclaimer
                   _buildDisclaimer(),
                 ],
               ),
@@ -173,7 +165,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Card Type and Logo
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -191,7 +182,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
           const Spacer(),
 
-          // Card Number
           Text(
             _formatCardNumberForDisplay(_cardNumberController.text),
             style: const TextStyle(
@@ -204,7 +194,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
           const SizedBox(height: 20),
 
-          // Card Holder and Expiry
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -484,12 +473,10 @@ class _AddCardScreenState extends State<AddCardScreen> {
     final formatted = PaymentCardViewModel.formatCardNumber(cardNumber);
     final parts = formatted.split(' ');
 
-    // Fill remaining parts with asterisks
     while (parts.length < 4) {
       parts.add('****');
     }
 
-    // Ensure each part is 4 characters
     for (int i = 0; i < parts.length; i++) {
       if (parts[i].length < 4) {
         parts[i] = parts[i].padRight(4, '*');
@@ -516,7 +503,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 }
 
-// Custom input formatter for card number
 class _CardNumberInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(

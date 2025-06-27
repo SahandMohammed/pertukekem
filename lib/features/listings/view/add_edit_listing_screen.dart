@@ -27,12 +27,10 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   final int _totalSteps = 4;
   int _currentStep = 0;
 
-  // Book type selection
   String _selectedBookType = 'physical'; // 'physical' or 'ebook'
   File? _ebookFile;
   bool _isEbookUploading = false;
 
-  // Form controllers
   late TextEditingController _titleController;
   late TextEditingController _authorController;
   late TextEditingController _isbnController;
@@ -42,13 +40,11 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   late TextEditingController _publisherController;
   late TextEditingController _pageCountController;
 
-  // Dropdown values
   String _selectedCondition = 'new';
   String? _selectedLanguage;
   String? _selectedFormat;
   DateTime? _selectedYear;
 
-  // Options
   final List<String> _conditionOptions = ['new', 'used'];
   final List<String> _languageOptions = ['English', 'Kurdish', 'Arabic'];
   final List<String> _formatOptions = [
@@ -59,12 +55,10 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     'Audio Book',
   ];
 
-  // Image handling
   File? _imageFile;
   String? _networkImageUrl;
   bool _isImageUploading = false;
 
-  // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -72,7 +66,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   void initState() {
     super.initState();
 
-    // Initialize form controllers
     _titleController = TextEditingController(text: widget.listing?.title);
     _authorController = TextEditingController(text: widget.listing?.author);
     _isbnController = TextEditingController(text: widget.listing?.isbn);
@@ -99,7 +92,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     _selectedYear =
         widget.listing?.year != null ? DateTime(widget.listing!.year!) : null;
 
-    // Initialize tab controller for multi-step form
     _tabController = TabController(length: _totalSteps, vsync: this);
     _tabController.addListener(() {
       setState(() {
@@ -107,7 +99,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       });
     });
 
-    // Initialize animation controller
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -227,7 +218,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       if (result != null && result.files.single.path != null) {
         File file = File(result.files.single.path!);
 
-        // Check file size (limit to 50MB)
         int fileSizeInBytes = await file.length();
         double fileSizeInMB = fileSizeInBytes / (1024 * 1024);
 
@@ -268,7 +258,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
         return null;
       }
 
-      // Get file extension to determine content type
       String fileName = ebookFile.path.split('/').last;
       String extension = fileName.split('.').last.toLowerCase();
 
@@ -309,7 +298,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
       firebase_storage.UploadTask uploadTask = ref.putFile(ebookFile, metadata);
 
-      // Listen to upload progress
       uploadTask.snapshotEvents.listen((
         firebase_storage.TaskSnapshot snapshot,
       ) {
@@ -336,7 +324,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Additional validation for eBook files
       if (_selectedBookType == 'ebook' &&
           _ebookFile == null &&
           (widget.listing?.ebookUrl == null ||
@@ -365,7 +352,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             }
           }
 
-          // Upload eBook file if this is an eBook listing and a new file is selected
           if (_selectedBookType == 'ebook' && _ebookFile != null) {
             ebookFileUrl = await _uploadEbookFile(_ebookFile!);
             if (ebookFileUrl == null) {
@@ -385,14 +371,12 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                   ? int.tryParse(_pageCountController.text)
                   : null;
 
-          // Determine seller type and reference
           final storeDoc =
               await FirebaseFirestore.instance
                   .collection('stores')
                   .doc(currentUser.uid)
                   .get();
 
-          // Use the appropriate collection based on seller type
           final String sellerType = storeDoc.exists ? 'store' : 'user';
           final DocumentReference sellerRef = FirebaseFirestore.instance
               .collection(sellerType == 'store' ? 'stores' : 'users')
@@ -422,7 +406,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             format: _selectedFormat,
             bookType: _selectedBookType,
             ebookUrl: ebookFileUrl,
-            // Keep existing createdAt for updates, let service handle timestamps
             createdAt: widget.listing?.createdAt,
             updatedAt: widget.listing?.updatedAt,
           );
@@ -430,14 +413,12 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             await viewModel.updateListing(listing);
             if (mounted) {
               _showSuccessSnackBar('Listing updated successfully!');
-              // Return success result to trigger refresh
               Navigator.of(context).pop('updated');
             }
           } else {
             await viewModel.addListing(listing);
             if (mounted) {
               _showSuccessSnackBar('Listing added successfully!');
-              // Return success result to trigger refresh
               Navigator.of(context).pop('added');
             }
           }
@@ -499,11 +480,9 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
   }
 
   void _nextStep() {
-    // Get all validation errors for current step
     final errors = _getValidationErrors(_currentStep);
 
     if (errors.isNotEmpty) {
-      // Show all errors in a single snackbar
       final errorMessage =
           errors.length == 1
               ? errors.first
@@ -513,7 +492,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
       return;
     }
 
-    // If validation passes, proceed to next step
     if (_currentStep < _totalSteps - 1) {
       _tabController.animateTo(_currentStep + 1);
     }
@@ -525,14 +503,11 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     }
   }
 
-  // Validation methods for each step
   bool _isStepValid(int stepIndex) {
     switch (stepIndex) {
       case 0:
-        // Book type step - always valid since we have default selection
         return true;
       case 1:
-        // Book cover step
         bool hasImage =
             _imageFile != null ||
             (_networkImageUrl != null && _networkImageUrl!.isNotEmpty);
@@ -543,7 +518,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                 widget.listing!.ebookUrl!.isNotEmpty);
         return hasImage && hasEbookFile;
       case 2:
-        // Book details step
         return _titleController.text.trim().isNotEmpty &&
             _authorController.text.trim().isNotEmpty &&
             _isbnController.text.trim().isNotEmpty &&
@@ -555,7 +529,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                 (int.tryParse(_pageCountController.text.trim()) != null &&
                     int.parse(_pageCountController.text.trim()) > 0));
       case 3:
-        // Pricing & category step
         bool hasValidPrice =
             _priceController.text.trim().isNotEmpty &&
             double.tryParse(_priceController.text.trim()) != null &&
@@ -573,13 +546,11 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     }
   }
 
-  // Get all validation errors for a specific step
   List<String> _getValidationErrors(int stepIndex) {
     List<String> errors = [];
 
     switch (stepIndex) {
       case 1:
-        // Book cover step
         if (_imageFile == null &&
             (_networkImageUrl == null || _networkImageUrl!.isEmpty)) {
           errors.add('Please add a book cover image');
@@ -592,7 +563,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
         }
         break;
       case 2:
-        // Book details step
         if (_titleController.text.trim().isEmpty) {
           errors.add('Book title is required');
         }
@@ -616,7 +586,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
         }
         break;
       case 3:
-        // Pricing & Category step
         if (_priceController.text.trim().isEmpty) {
           errors.add('Price is required');
         } else {
@@ -673,7 +642,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
           key: _formKey,
           child: Column(
             children: [
-              // Step indicator
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -681,14 +649,12 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                 ),
                 child: Stack(
                   children: [
-                    // Progress line background
                     Positioned(
                       top: 15, // Half the height of the circle (32/2 - 1)
                       left: 16, // Start from first circle center
                       right: 16, // End at last circle center
                       child: Container(height: 2, color: Colors.grey.shade300),
                     ),
-                    // Active progress line
                     if (_currentStep > 0)
                       Positioned(
                         top: 15,
@@ -703,7 +669,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                           color: theme.colorScheme.primary,
                         ),
                       ),
-                    // Step nodes
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: List<Widget>.generate(_totalSteps, (index) {
@@ -758,7 +723,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                 ),
               ),
 
-              // Step title
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -964,7 +928,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             ),
             const SizedBox(height: 32),
 
-            // Physical Book Option
             GestureDetector(
               onTap: () => setState(() => _selectedBookType = 'physical'),
               child: Container(
@@ -1047,7 +1010,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
             const SizedBox(height: 16),
 
-            // eBook Option
             GestureDetector(
               onTap: () => setState(() => _selectedBookType = 'ebook'),
               child: Container(
@@ -1130,7 +1092,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
 
             const SizedBox(height: 32),
 
-            // Information container
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1229,7 +1190,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             ),
             const SizedBox(height: 32),
 
-            // Book Cover Section
             Text(
               'Book Cover Image',
               style: Theme.of(
@@ -1744,7 +1704,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
     );
   }
 
-  // Book Details step
   Widget _buildBookDetailsStep() {
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -1824,7 +1783,6 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
             ),
             const SizedBox(height: 16),
 
-            // Year input using date picker
             InkWell(
               onTap: () async {
                 final now = DateTime.now();
@@ -2077,10 +2035,8 @@ class _AddEditListingScreenState extends State<AddEditListingScreen>
                 : currentText.split(',').map((e) => e.trim()).toList();
 
         if (currentCategories.contains(category)) {
-          // Remove category if already selected
           currentCategories.remove(category);
         } else {
-          // Add category if not selected
           currentCategories.add(category);
         }
 

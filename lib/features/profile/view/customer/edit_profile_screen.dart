@@ -38,25 +38,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.text = widget.userProfile.phoneNumber;
     _originalPhoneNumber = widget.userProfile.phoneNumber;
 
-    // Add listeners to detect changes
     _firstNameController.addListener(_onFieldChanged);
     _lastNameController.addListener(_onFieldChanged);
     _phoneController.addListener(_onFieldChanged);
 
-    // Add phone number formatting listener
     _phoneController.addListener(_formatPhoneNumber);
   }
 
   void _formatPhoneNumber() {
     final text = _phoneController.text;
     if (text.isNotEmpty && !text.startsWith('+')) {
-      // Remove any non-digit characters first
       var cleaned = text.replaceAll(RegExp(r'[^\d]'), '');
 
-      // Format the number based on length
       String formatted = '';
       if (cleaned.length <= 10) {
-        // Handle 10-digit numbers: 770 000 0000
         if (cleaned.length >= 1) {
           formatted += cleaned.substring(
             0,
@@ -72,7 +67,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           }
         }
       } else if (cleaned.length == 11 && cleaned.startsWith('0')) {
-        // Handle 11-digit numbers starting with 0: 0770 000 0000
         formatted += cleaned.substring(0, 4); // 0770
         if (cleaned.length > 4) {
           formatted += ' ${cleaned.substring(4, 7)}'; // 000
@@ -81,11 +75,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           }
         }
       } else {
-        // For other cases, just use the cleaned number
         formatted = cleaned;
       }
 
-      // Only update if the formatted text is different and avoid infinite loop
       if (formatted != text) {
         _phoneController.removeListener(_formatPhoneNumber);
         _phoneController.value = TextEditingValue(
@@ -131,24 +123,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    // Check if phone number has changed and needs verification
     final newPhoneNumber = _phoneController.text.trim();
     final phoneChanged = newPhoneNumber != _originalPhoneNumber;
 
     if (phoneChanged && !_isOtpSent) {
-      // Phone number changed but OTP not sent yet
       _showErrorSnackBar('Please verify your new phone number first');
       await _initiatePhoneVerification();
       return;
     }
 
     if (phoneChanged && _isOtpSent) {
-      // Phone number changed and OTP sent, but not verified yet
       _showErrorSnackBar('Please verify the OTP before saving');
       return;
     }
 
-    // Save other profile information (phone number already updated during verification)
     final success = await userProfileViewModel.updateUserProfile(
       userId: userId,
       firstName: _firstNameController.text.trim(),
@@ -158,7 +146,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (!mounted) return;
     if (success) {
-      // Refresh auth viewmodel to get updated data from Firestore
       await authViewModel.refreshUserData();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -608,7 +595,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Header Section
                           Center(
                             child: Column(
                               children: [
@@ -633,7 +619,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const SizedBox(height: 40),
 
-                          // Profile Picture Section
                           Center(
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
@@ -736,7 +721,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const SizedBox(height: 48),
 
-                          // Personal Information Section
                           _buildSectionCard(
                             context,
                             title: 'Personal Information',
@@ -863,7 +847,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Account Information Section
                           _buildSectionCard(
                             context,
                             title: 'Account Information',
@@ -919,7 +902,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const SizedBox(height: 40),
 
-                          // Save Changes Button
                           SizedBox(
                             width: double.infinity,
                             height: 56,
@@ -1037,7 +1019,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     UserProfileViewModel viewModel,
     ColorScheme colorScheme,
   ) {
-    // Show temp image if available, otherwise show current profile picture
     final imageUrl =
         viewModel.tempProfilePictureUrl ?? widget.userProfile.profilePicture;
 
@@ -1266,7 +1247,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    // Validate phone number format
     final phoneRegex = RegExp(r'^\+?[\d\s\-\(\)]{10,}$');
     if (!phoneRegex.hasMatch(newPhoneNumber)) {
       _showErrorSnackBar('Please enter a valid phone number');
@@ -1296,7 +1276,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             _isOtpSent = false;
           });
 
-          // Handle specific errors for phone verification
           String errorMessage = error;
           if (error.contains('invalid-phone-number')) {
             errorMessage =
@@ -1338,7 +1317,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      // Use the new updatePhoneNumber method for existing users
       await authViewModel.updatePhoneNumber(_verificationId!, otp);
 
       setState(() {
@@ -1351,14 +1329,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _otpController.clear();
       _showSuccessSnackBar('Phone number verified and updated successfully');
 
-      // Refresh user data
       await authViewModel.refreshUserData();
     } catch (e) {
       setState(() {
         _isPhoneVerificationInProgress = false;
       });
 
-      // Handle specific Firebase Auth errors
       String errorMessage = 'Failed to verify OTP';
       if (e.toString().contains('invalid-verification-code')) {
         errorMessage = 'Invalid OTP code. Please check and try again.';

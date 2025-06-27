@@ -11,7 +11,6 @@ class AdminFloatingButton extends StatelessWidget {
       builder: (context, authViewModel, child) {
         final user = authViewModel.user;
 
-        // Only show admin button for admin users
         if (user == null || !user.isAdmin) {
           return const SizedBox.shrink();
         }

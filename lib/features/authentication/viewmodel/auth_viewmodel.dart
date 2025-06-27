@@ -14,7 +14,6 @@ class AuthViewModel extends ChangeNotifier {
   bool _isLoading = false;
   int? _resendToken;
 
-  // List of state clearable functions that need cleanup
   final List<Function> _stateClearables = [];
 
   User? get firebaseUser => _firebaseUser;
@@ -27,12 +26,10 @@ class AuthViewModel extends ChangeNotifier {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
 
-  /// Register a function that needs to be called during state cleanup
   void registerStateClearable(Function clearStateFunction) {
     _stateClearables.add(clearStateFunction);
   }
 
-  /// Unregister a state clearable function
   void unregisterStateClearable(Function clearStateFunction) {
     _stateClearables.remove(clearStateFunction);
   }
@@ -40,10 +37,8 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
     _firebaseUser = firebaseUser;
     if (firebaseUser != null) {
-      // Fetch user data from Firestore
       await _fetchUserData();
 
-      // Trigger FCM token storage when user logs in
       await _fcmService.onUserLogin();
     } else {
       _user = null;
@@ -67,12 +62,10 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // Public method to refresh user data
   Future<void> refreshUserData() async {
     await _fetchUserData();
   }
 
-  // Update local user data immediately (for optimistic UI updates)
   void updateLocalUserData({
     String? firstName,
     String? lastName,
@@ -108,13 +101,11 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Ensure phone number is in E.164 format
       String formattedPhone = phoneNumber;
       if (!phoneNumber.startsWith('+')) {
         formattedPhone = '+$phoneNumber';
       }
 
-      // FIRST: Check if email is already in use
       final existingEmailQuery =
           await _firestore
               .collection('users')
@@ -129,7 +120,6 @@ class AuthViewModel extends ChangeNotifier {
         );
       }
 
-      // SECOND: Check if phone number is already in use by another verified user
       final existingPhoneQuery =
           await _firestore
               .collection('users')
@@ -146,14 +136,12 @@ class AuthViewModel extends ChangeNotifier {
         );
       }
 
-      // THIRD: Create user with email and password only after all validations pass
       userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (userCredential.user != null) {
-        // Create user document in Firestore
         final userData = UserModel(
           userId: userCredential.user!.uid,
           firstName: firstName,
@@ -178,19 +166,15 @@ class AuthViewModel extends ChangeNotifier {
             .doc(userCredential.user!.uid)
             .set(userData.toMap());
 
-        // Send email verification
         await userCredential.user!.sendEmailVerification();
 
-        // Set the firebase user so phone verification can access it
         _firebaseUser = userCredential.user;
 
-        // Return to allow phone verification to be started from signup screen
         return;
       }
     } catch (e) {
       debugPrint('Error during sign up: $e');
 
-      // If user creation failed and we have a user credential, clean up
       if (userCredential != null && userCredential.user != null) {
         try {
           await userCredential.user!.delete();
@@ -212,17 +196,14 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Sign in user
       await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-      // Fetch user data to check verification status
       if (_firebaseUser != null) {
         final doc =
             await _firestore.collection('users').doc(_firebaseUser!.uid).get();
         if (doc.exists) {
           final userData = UserModel.fromMap(doc.data()!);
 
-          // Check email verification first
           if (!userData.isEmailVerified) {
             throw FirebaseAuthException(
               code: 'requires-email-verification',
@@ -231,7 +212,6 @@ class AuthViewModel extends ChangeNotifier {
             );
           }
 
-          // Then check phone verification
           if (!userData.isPhoneVerified) {
             throw FirebaseAuthException(
               code: 'requires-phone-verification',
@@ -240,7 +220,6 @@ class AuthViewModel extends ChangeNotifier {
             );
           }
 
-          // If both verified, update last login timestamp
           await _firestore.collection('users').doc(_firebaseUser!.uid).update({
             'lastLoginAt': FieldValue.serverTimestamp(),
           });
@@ -256,7 +235,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       _isLoading = true;
@@ -264,11 +242,9 @@ class AuthViewModel extends ChangeNotifier {
 
       final emailLower = email.toLowerCase().trim();
 
-      // DEBUG: Skip Firestore check temporarily to test Firebase Auth directly
       bool skipFirestoreCheck = true; // Set to true for debugging
 
       if (!skipFirestoreCheck) {
-        // First check if user exists in our Firestore database using emailLowercase
         QuerySnapshot userQuery =
             await _firestore
                 .collection('users')
@@ -276,7 +252,6 @@ class AuthViewModel extends ChangeNotifier {
                 .limit(1)
                 .get();
 
-        // If not found by emailLowercase, try by email field (for backward compatibility)
         if (userQuery.docs.isEmpty) {
           userQuery =
               await _firestore
@@ -286,7 +261,6 @@ class AuthViewModel extends ChangeNotifier {
                   .get();
         }
 
-        // If still not found, try case-insensitive search on email field
         if (userQuery.docs.isEmpty) {
           userQuery =
               await _firestore
@@ -326,7 +300,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Login with phone number - sends OTP
   Future<void> loginWithPhoneNumber({
     required String phoneNumber,
     required Function(String) onCodeSent,
@@ -336,13 +309,11 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Ensure phone number is in E.164 format
       String formattedPhone = phoneNumber;
       if (!phoneNumber.startsWith('+')) {
         formattedPhone = '+$phoneNumber';
       }
 
-      // First check if user exists in our Firestore database with this phone number
       final userQuery =
           await _firestore
               .collection('users')
@@ -415,7 +386,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Verify OTP for phone login
   Future<void> verifyPhoneLogin(String verificationId, String smsCode) async {
     try {
       _isLoading = true;
@@ -436,14 +406,11 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Helper method to sign in with phone credential
   Future<void> _loginWithPhoneCredential(PhoneAuthCredential credential) async {
     try {
-      // Sign in with phone credential
       final userCredential = await _auth.signInWithCredential(credential);
 
       if (userCredential.user != null) {
-        // Update last login timestamp
         await _firestore
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -464,7 +431,6 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
 
       debugPrint('🔄 Starting comprehensive sign out process...');
-      // 1. Clear FCM token and unsubscribe from notifications
       try {
         await _fcmService.clearTokens();
         debugPrint('✅ FCM tokens cleared');
@@ -472,7 +438,6 @@ class AuthViewModel extends ChangeNotifier {
         debugPrint('⚠️ Error clearing FCM tokens: $e');
       }
 
-      // 2. Clear state in all registered ViewModels
       for (final clearFunction in _stateClearables) {
         try {
           await clearFunction();
@@ -482,11 +447,9 @@ class AuthViewModel extends ChangeNotifier {
         }
       }
 
-      // 3. Clear local state
       _user = null;
       _resendToken = null;
 
-      // 4. Sign out from Firebase Auth (this will trigger _onAuthStateChanged)
       await _auth.signOut();
 
       debugPrint('✅ Sign out completed successfully');
@@ -517,7 +480,6 @@ class AuthViewModel extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Ensure phone number is in E.164 format
       String formattedPhone = phoneNumber;
       if (!phoneNumber.startsWith('+')) {
         formattedPhone = '+$phoneNumber';
@@ -525,8 +487,6 @@ class AuthViewModel extends ChangeNotifier {
 
       debugPrint('Initiating phone verification for: $formattedPhone');
 
-      // Check if phone number is already in use by another verified user
-      // Skip this check if we're in the signup flow (current user exists but not verified)
       final existingUserQuery =
           await _firestore
               .collection('users')
@@ -536,18 +496,15 @@ class AuthViewModel extends ChangeNotifier {
               .get();
 
       if (existingUserQuery.docs.isNotEmpty) {
-        // Check if it's the same user (current user during signup)
         if (_firebaseUser != null) {
           final existingUser = existingUserQuery.docs.first;
           if (existingUser.id != _firebaseUser!.uid) {
-            // Phone number belongs to a different user
             onError(
               'This phone number is already registered with another account',
             );
             return;
           }
         } else {
-          // No current user, so this phone number is definitely in use
           onError(
             'This phone number is already registered with another account',
           );
@@ -642,12 +599,9 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> _verifyWithCredential(PhoneAuthCredential credential) async {
     try {
       if (_firebaseUser != null) {
-        // If user is signed in, link the phone credential
         await _firebaseUser!.linkWithCredential(credential);
 
-        // Get the updated user after linking
         _firebaseUser = _auth.currentUser;
-        // Update existing user document with phone verification status
         await _firestore.collection('users').doc(_firebaseUser!.uid).update({
           'isPhoneVerified': true,
           'updatedAt': FieldValue.serverTimestamp(),
@@ -655,7 +609,6 @@ class AuthViewModel extends ChangeNotifier {
         }); // Fetch updated user data
         await _fetchUserData();
 
-        // Trigger FCM token storage after phone verification
         await _fcmService.onUserLogin();
       } else {
         throw FirebaseAuthException(
@@ -669,7 +622,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Update phone number for existing user (for profile changes)
   Future<void> updatePhoneNumber(String verificationId, String smsCode) async {
     try {
       _isLoading = true;
@@ -681,20 +633,16 @@ class AuthViewModel extends ChangeNotifier {
       );
 
       if (_firebaseUser != null) {
-        // Update the phone number using updatePhoneNumber instead of linking
         await _firebaseUser!.updatePhoneNumber(credential);
 
-        // Get the updated user after phone update
         _firebaseUser = _auth.currentUser;
 
-        // Update user document in Firestore with new phone number
         await _firestore.collection('users').doc(_firebaseUser!.uid).update({
           'phoneNumber': _firebaseUser!.phoneNumber ?? '',
           'isPhoneVerified': true,
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // Fetch updated user data
         await _fetchUserData();
 
         debugPrint(
@@ -715,7 +663,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  /// Change user password
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -726,13 +673,11 @@ class AuthViewModel extends ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
-      // Re-authenticate user
       final cred = EmailAuthProvider.credential(
         email: _firebaseUser!.email!,
         password: currentPassword,
       );
       await _firebaseUser!.reauthenticateWithCredential(cred);
-      // Update password
       await _firebaseUser!.updatePassword(newPassword);
     } catch (e) {
       debugPrint('Error changing password: $e');
@@ -743,7 +688,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // Update email verification status in Firestore
   Future<void> updateEmailVerificationStatus(bool isVerified) async {
     if (_firebaseUser == null) return;
 
@@ -753,7 +697,6 @@ class AuthViewModel extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update local user data
       if (_user != null) {
         _user = _user!.copyWith(
           isEmailVerified: isVerified,
@@ -769,7 +712,6 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // Update phone verification status in Firestore
   Future<void> updatePhoneVerificationStatus(bool isVerified) async {
     if (_firebaseUser == null) return;
 
@@ -779,7 +721,6 @@ class AuthViewModel extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update local user data
       if (_user != null) {
         _user = _user!.copyWith(
           isPhoneVerified: isVerified,
@@ -795,5 +736,4 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // End of class
 }

@@ -44,7 +44,6 @@ class _UserTransactionHistoryScreenState
           _transactions = await _transactionService.getTransactionsByStatus(
             _selectedFilter,
           );
-          // Filter by user
           _transactions =
               _transactions
                   .where(
@@ -80,7 +79,6 @@ class _UserTransactionHistoryScreenState
       ),
       body: Column(
         children: [
-          // Filter section
           Container(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -124,7 +122,6 @@ class _UserTransactionHistoryScreenState
             ),
           ),
 
-          // Transactions list
           Expanded(child: _buildTransactionsList()),
         ],
       ),
@@ -215,7 +212,6 @@ class _UserTransactionHistoryScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with status and amount
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -251,7 +247,6 @@ class _UserTransactionHistoryScreenState
               ),
               const SizedBox(height: 12),
 
-              // Transaction details
               Row(
                 children: [
                   Icon(
@@ -282,7 +277,6 @@ class _UserTransactionHistoryScreenState
               ),
               const SizedBox(height: 8),
 
-              // Payment method and date
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -311,7 +305,6 @@ class _UserTransactionHistoryScreenState
                 ],
               ),
 
-              // Transaction ID
               const SizedBox(height: 8),
               Text(
                 'ID: ${transaction.id}',

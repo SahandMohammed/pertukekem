@@ -22,7 +22,6 @@ class UserProfileViewModel extends ChangeNotifier {
   bool get isUploadingImage => _isUploadingImage;
   String? get tempProfilePictureUrl => _tempProfilePictureUrl;
 
-  /// Load user profile
   Future<void> loadUserProfile(String userId) async {
     _setLoading(true);
     _setError(null);
@@ -37,7 +36,6 @@ class UserProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Update user profile
   Future<bool> updateUserProfile({
     required String userId,
     required String firstName,
@@ -61,7 +59,6 @@ class UserProfileViewModel extends ChangeNotifier {
 
       await _userProfileService.updateUserProfile(userId, updates);
 
-      // Update local model
       if (_userProfile != null) {
         _userProfile = _userProfile!.copyWith(
           firstName: firstName.trim(),
@@ -82,7 +79,6 @@ class UserProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Stream user profile changes
   Stream<UserModel?> getUserProfileStream(String userId) {
     return _userProfileService.getUserProfileStream(userId);
   }
@@ -107,13 +103,11 @@ class UserProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Pick and upload profile picture
   Future<bool> pickAndUploadProfilePicture(String userId) async {
     try {
       _setUploadingImage(true);
       _setError(null);
 
-      // Pick image from gallery
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
@@ -127,16 +121,13 @@ class UserProfileViewModel extends ChangeNotifier {
 
       final imageFile = File(pickedFile.path);
 
-      // Upload to Firebase Storage
       final downloadUrl = await _userProfileService.uploadProfilePicture(
         userId,
         imageFile,
       );
 
-      // Update user profile in Firestore
       await _userProfileService.updateProfilePicture(userId, downloadUrl);
 
-      // Update local model
       if (_userProfile != null) {
         _userProfile = _userProfile!.copyWith(
           profilePicture: downloadUrl,
@@ -156,13 +147,11 @@ class UserProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Pick and upload profile picture from camera
   Future<bool> takeAndUploadProfilePicture(String userId) async {
     try {
       _setUploadingImage(true);
       _setError(null);
 
-      // Take photo with camera
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: ImageSource.camera,
         imageQuality: 80,
@@ -176,16 +165,13 @@ class UserProfileViewModel extends ChangeNotifier {
 
       final imageFile = File(pickedFile.path);
 
-      // Upload to Firebase Storage
       final downloadUrl = await _userProfileService.uploadProfilePicture(
         userId,
         imageFile,
       );
 
-      // Update user profile in Firestore
       await _userProfileService.updateProfilePicture(userId, downloadUrl);
 
-      // Update local model
       if (_userProfile != null) {
         _userProfile = _userProfile!.copyWith(
           profilePicture: downloadUrl,
@@ -205,7 +191,6 @@ class UserProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Remove profile picture
   Future<bool> removeProfilePicture(String userId) async {
     try {
       _setUploadingImage(true);
@@ -213,13 +198,10 @@ class UserProfileViewModel extends ChangeNotifier {
 
       final currentImageUrl = _userProfile?.profilePicture;
 
-      // Delete from Firebase Storage
       await _userProfileService.deleteProfilePicture(userId, currentImageUrl);
 
-      // Update user profile in Firestore
       await _userProfileService.updateProfilePicture(userId, null);
 
-      // Update local model
       if (_userProfile != null) {
         _userProfile = _userProfile!.copyWith(
           profilePicture: null,

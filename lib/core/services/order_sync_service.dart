@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 
-/// Service to coordinate order updates across different parts of the app
-/// This ensures that when an order status is updated in the store management,
-/// the customer orders view is immediately notified of the change.
 class OrderSyncService {
   static final OrderSyncService _instance = OrderSyncService._internal();
   factory OrderSyncService() => _instance;
@@ -12,11 +9,9 @@ class OrderSyncService {
   final StreamController<OrderUpdateEventBase> _orderUpdateController =
       StreamController<OrderUpdateEventBase>.broadcast();
 
-  /// Stream of order update events
   Stream<OrderUpdateEventBase> get orderUpdates =>
       _orderUpdateController.stream;
 
-  /// Notify that an order has been updated
   void notifyOrderUpdated(
     String orderId,
     String newStatus, {
@@ -37,7 +32,6 @@ class OrderSyncService {
     }
   }
 
-  /// Notify that multiple orders have been updated
   void notifyBulkOrdersUpdated(List<String> orderIds) {
     if (!_orderUpdateController.isClosed) {
       final event = BulkOrderUpdateEvent(
@@ -52,20 +46,17 @@ class OrderSyncService {
     }
   }
 
-  /// Dispose of the service
   void dispose() {
     _orderUpdateController.close();
   }
 }
 
-/// Base class for order update events
 abstract class OrderUpdateEventBase {
   final DateTime timestamp;
 
   OrderUpdateEventBase({required this.timestamp});
 }
 
-/// Event for when a single order is updated
 class SingleOrderUpdateEvent extends OrderUpdateEventBase {
   final String orderId;
   final String newStatus;
@@ -79,7 +70,6 @@ class SingleOrderUpdateEvent extends OrderUpdateEventBase {
   }) : super(timestamp: timestamp);
 }
 
-/// Event for when multiple orders are updated at once
 class BulkOrderUpdateEvent extends OrderUpdateEventBase {
   final List<String> orderIds;
 

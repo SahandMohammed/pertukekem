@@ -304,7 +304,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleNotificationTap(UnifiedNotification notification) {
-    // Handle different notification types
     switch (notification.type) {
       case NotificationType.newOrder:
       case NotificationType.orderUpdate:
@@ -313,30 +312,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case NotificationType.orderShipped:
       case NotificationType.orderDelivered:
       case NotificationType.orderRefunded:
-        // Navigate to orders tab - you can implement navigation logic here
         Navigator.of(context).pop(); // Close notifications screen
-        // You could use a callback or navigator to switch to orders tab
         break;
       case NotificationType.lowStock:
-        // Navigate to listings tab
         Navigator.of(context).pop();
         break;
       case NotificationType.review:
-        // Handle review notification
         break;
       case NotificationType.system:
       case NotificationType.systemUpdate:
-        // Handle system notification
         break;
       case NotificationType.newBookAvailable:
       case NotificationType.libraryUpdate:
-        // Handle book/library notifications
         break;
       case NotificationType.promotionalOffer:
-        // Handle promotional offers
         break;
       case NotificationType.paymentReminder:
-        // Handle payment reminders
         break;
     }
   }

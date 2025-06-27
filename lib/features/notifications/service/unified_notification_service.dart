@@ -18,9 +18,7 @@ class UnifiedNotificationService {
         );
   }
 
-  // CUSTOMER NOTIFICATION METHODS
 
-  /// Get customer notifications stream for the current user
   Stream<List<UnifiedNotification>> getCustomerNotificationsStream() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -35,7 +33,6 @@ class UnifiedNotificationService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  /// Get unread customer notifications count for the current user
   Stream<int> getCustomerUnreadNotificationsCount() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -50,7 +47,6 @@ class UnifiedNotificationService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Create order confirmation notification for customer
   Future<void> createOrderConfirmationNotification({
     required String customerId,
     required String orderId,
@@ -84,7 +80,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Create order shipped notification for customer
   Future<void> createOrderShippedNotification({
     required String customerId,
     required String orderId,
@@ -123,7 +118,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Create order delivered notification for customer
   Future<void> createOrderDeliveredNotification({
     required String customerId,
     required String orderId,
@@ -155,7 +149,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Create order cancellation notification for customer
   Future<void> createOrderCancellationNotification({
     required String customerId,
     required String orderId,
@@ -194,7 +187,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Create system notification for customer
   Future<void> createCustomerSystemNotification({
     required String customerId,
     required String title,
@@ -222,9 +214,7 @@ class UnifiedNotificationService {
     }
   }
 
-  // STORE NOTIFICATION METHODS
 
-  /// Get store notifications stream
   Stream<List<UnifiedNotification>> getStoreNotifications({int limit = 10}) {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -257,7 +247,6 @@ class UnifiedNotificationService {
         });
   }
 
-  /// Create notification for new order
   Future<void> createNewOrderNotification({
     required String storeId,
     required String orderId,
@@ -286,7 +275,6 @@ class UnifiedNotificationService {
 
       await _notificationsRef.add(notification);
 
-      // Also create a push notification trigger document
       await _createPushNotificationTrigger(
         storeId: storeId,
         type: 'new_order',
@@ -303,7 +291,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Create notification for order status update
   Future<void> createOrderUpdateNotification({
     required String storeId,
     required String orderId,
@@ -334,7 +321,6 @@ class UnifiedNotificationService {
 
       await _notificationsRef.add(notification);
 
-      // Create push notification trigger
       await _createPushNotificationTrigger(
         storeId: storeId,
         type: 'order_update',
@@ -352,7 +338,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Create push notification trigger document for Cloud Functions
   Future<void> _createPushNotificationTrigger({
     required String storeId,
     required String type,
@@ -376,7 +361,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Get unread count for store
   Future<int> getStoreUnreadCount() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -410,7 +394,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Get unread count stream for store - real-time updates
   Stream<int> getStoreUnreadCountStream() async* {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -422,7 +405,6 @@ class UnifiedNotificationService {
     print('🔍 Starting store unread count stream for user: ${currentUser.uid}');
 
     try {
-      // First get the storeId
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
 
@@ -441,7 +423,6 @@ class UnifiedNotificationService {
 
       print('📍 Setting up real-time stream for store: $storeId');
 
-      // Now listen to the notifications collection for real-time updates
       await for (final snapshot
           in _notificationsRef
               .where('target', isEqualTo: NotificationTarget.store.name)
@@ -460,9 +441,7 @@ class UnifiedNotificationService {
     }
   }
 
-  // SHARED METHODS
 
-  /// Mark notification as read
   Future<void> markAsRead(String notificationId) async {
     try {
       await _notificationsRef.doc(notificationId).update({'isRead': true});
@@ -472,7 +451,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Mark all notifications as read for current user
   Future<void> markAllAsRead({required NotificationTarget target}) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
@@ -487,7 +465,6 @@ class UnifiedNotificationService {
             .where('customerId', isEqualTo: currentUser.uid)
             .where('isRead', isEqualTo: false);
       } else {
-        // For store notifications, get storeId first
         final userDoc =
             await _firestore.collection('users').doc(currentUser.uid).get();
         if (!userDoc.exists) return;
@@ -514,7 +491,6 @@ class UnifiedNotificationService {
     }
   }
 
-  /// Delete a notification
   Future<void> deleteNotification(String notificationId) async {
     try {
       await _notificationsRef.doc(notificationId).delete();

@@ -35,13 +35,11 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             ? path.extension(widget.book.localFilePath!).toLowerCase()
             : '';
 
-    // Check file existence once
     _checkFileExistence();
   }
 
   @override
   void dispose() {
-    // Restore status bar
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -76,7 +74,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
       _currentPage = page;
     });
 
-    // Update reading progress in the library
     _updateReadingProgress();
   }
 
@@ -96,7 +93,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
       _showAppBar = !_showAppBar;
     });
 
-    // Toggle fullscreen mode based on app bar visibility
     if (_showAppBar) {
       _exitFullScreenMode();
     } else {
@@ -277,7 +273,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             else
               _buildUnsupportedFormat(),
 
-            // Reading progress indicator
             if (_showAppBar)
               Positioned(
                 bottom: 0,
@@ -334,12 +329,10 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
   }
 
   Widget _buildPDFReader() {
-    // Show loading while checking file existence
     if (!_fileCheckComplete) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Check if file exists
     if (!_fileExists) {
       return _buildFileNotAvailable();
     }
@@ -390,7 +383,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
             },
           ),
         ),
-        // Loading indicator
         if (_isLoading)
           Container(
             color: Colors.white,
@@ -489,7 +481,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                   title: const Text('Display Mode'),
                   subtitle: const Text('Day mode'),
                   onTap: () {
-                    // TODO: Implement display mode settings
                     Navigator.pop(context);
                   },
                 ),
@@ -498,7 +489,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                   title: const Text('Text Size'),
                   subtitle: const Text('Medium'),
                   onTap: () {
-                    // TODO: Implement text size settings
                     Navigator.pop(context);
                   },
                 ),
@@ -507,7 +497,6 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
                   title: const Text('Page Transition'),
                   subtitle: const Text('Slide'),
                   onTap: () {
-                    // TODO: Implement page transition settings
                     Navigator.pop(context);
                   },
                 ),
@@ -570,12 +559,10 @@ class _EbookReaderScreenState extends State<EbookReaderScreen> {
   }
 
   void _enterFullScreenMode() {
-    // Hide status bar for immersive reading
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   void _exitFullScreenMode() {
-    // Show status bar when controls are visible
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 }

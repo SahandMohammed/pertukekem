@@ -135,7 +135,6 @@ class UserModel {
     );
   }
 
-  // Helper methods for role checking
   bool get isAdmin => roles.contains('admin');
   bool get isStoreOwner =>
       roles.contains('store_owner') || roles.contains('store');

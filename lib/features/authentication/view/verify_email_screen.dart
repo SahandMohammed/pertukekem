@@ -50,22 +50,17 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Reload user to get latest verification status
         await user.reload();
         final updatedUser = FirebaseAuth.instance.currentUser;
 
         if (updatedUser != null && updatedUser.emailVerified) {
-          // Update user document in Firestore
           await viewModel.updateEmailVerificationStatus(true);
 
-          // Refresh user data
           await viewModel.refreshUserData();
 
           if (mounted) {
-            // Navigate based on user role and verification status
             if (viewModel.user != null) {
               if (!viewModel.isPhoneVerified) {
-                // Still need phone verification
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
@@ -74,12 +69,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     backgroundColor: Colors.green,
                   ),
                 );
-                // The auth wrapper will handle navigation to phone verification
                 Navigator.of(
                   context,
                 ).pushNamedAndRemoveUntil('/', (route) => false);
               } else {
-                // Both email and phone verified, go to main app
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Email verified successfully!'),

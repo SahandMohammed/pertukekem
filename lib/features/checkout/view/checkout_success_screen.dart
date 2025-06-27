@@ -50,7 +50,6 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
       CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
     );
 
-    // Start animations
     _slideController.forward();
     Future.delayed(const Duration(milliseconds: 300), () {
       _confettiController.forward();
@@ -86,7 +85,6 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
                   children: [
                     const SizedBox(height: 40),
 
-                    // Success Animation
                     AnimatedBuilder(
                       animation: _confettiAnimation,
                       builder: (context, child) {
@@ -120,7 +118,6 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
 
                     const SizedBox(height: 32),
 
-                    // Success Message
                     Text(
                       failedOrders.isEmpty
                           ? 'Order Confirmed!'
@@ -146,12 +143,10 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
 
                     const SizedBox(height: 40),
 
-                    // Order Summary Card
                     _buildOrderSummaryCard(),
 
                     const SizedBox(height: 24),
 
-                    // Successful Orders
                     if (successfulOrders.isNotEmpty) ...[
                       _buildOrderResultsCard(
                         title: 'Successful Orders',
@@ -161,7 +156,6 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
                       const SizedBox(height: 16),
                     ],
 
-                    // Failed Orders
                     if (failedOrders.isNotEmpty) ...[
                       _buildOrderResultsCard(
                         title: 'Failed Orders',
@@ -171,12 +165,10 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
                       const SizedBox(height: 24),
                     ],
 
-                    // Next Steps
                     _buildNextStepsCard(),
 
                     const SizedBox(height: 32),
 
-                    // Action Buttons
                     _buildActionButtons(),
                   ],
                 ),
@@ -446,7 +438,6 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
 
     return Column(
       children: [
-        // Continue Shopping Button
         SizedBox(
           width: double.infinity,
           height: 56,
@@ -481,15 +472,12 @@ class _CheckoutSuccessScreenState extends State<CheckoutSuccessScreen>
 
         const SizedBox(height: 12),
 
-        // View Orders Button
         SizedBox(
           width: double.infinity,
           height: 56,
           child: OutlinedButton(
             onPressed: () {
               Navigator.of(context).popUntil((route) => route.isFirst);
-              // Navigate to orders screen
-              // You might want to use a named route here
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: colorScheme.primary,

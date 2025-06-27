@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
-/// Real-time preview card showing store information as user fills the form
 class StorePreviewCard extends StatelessWidget {
   final String storeName;
   final String? description;
@@ -34,10 +33,8 @@ class StorePreviewCard extends StatelessWidget {
         width: double.infinity,
         child: Stack(
           children: [
-            // Banner background
             Positioned.fill(child: _buildBannerBackground(colorScheme)),
 
-            // Content overlay
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -50,7 +47,6 @@ class StorePreviewCard extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    // Logo avatar
                     Hero(
                       tag: 'store_logo_preview',
                       child: CircleAvatar(
@@ -62,7 +58,6 @@ class StorePreviewCard extends StatelessWidget {
 
                     const SizedBox(width: 12),
 
-                    // Store info
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

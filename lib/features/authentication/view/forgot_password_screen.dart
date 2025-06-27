@@ -69,7 +69,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         if (mounted) {
           String errorMessage = 'An error occurred';
 
-          // Handle other types of errors
           if (e.toString().contains('user-not-found')) {
             errorMessage =
                 'Account not found. Please check your email address or sign up for a new account';
@@ -133,7 +132,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // Success state
                 if (_emailSent) ...[
                   Icon(
                     Icons.mark_email_read_outlined,
@@ -210,7 +208,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                   ),
                 ]
-                // Initial state
                 else ...[
                   Icon(Icons.lock_reset, size: 80, color: colorScheme.primary),
                   const SizedBox(height: 24),
@@ -346,7 +343,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Help section
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(

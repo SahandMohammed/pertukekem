@@ -18,16 +18,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Add listener to format phone number input
     _phoneController.addListener(() {
       final text = _phoneController.text;
       if (text.isNotEmpty) {
-        // Remove any non-digit characters first
         var cleaned = text.replaceAll(RegExp(r'[^\d+]'), '');
 
-        // Handle international format with country code
         if (cleaned.startsWith('+')) {
-          // For international numbers, don't format, just clean
           if (cleaned != text) {
             _phoneController.value = TextEditingValue(
               text: cleaned,
@@ -35,15 +31,12 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             );
           }
         } else {
-          // Remove any leading + or country codes if present locally entered
           if (cleaned.startsWith('964')) {
             cleaned = cleaned.substring(3);
           }
 
-          // Format the number based on length
           String formatted = '';
           if (cleaned.length <= 10) {
-            // Handle 10-digit numbers: 770 000 0000
             if (cleaned.length >= 1) {
               formatted += cleaned.substring(
                 0,
@@ -59,7 +52,6 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               }
             }
           } else if (cleaned.length == 11 && cleaned.startsWith('0')) {
-            // Handle 11-digit numbers starting with 0: 0770 000 0000
             formatted += cleaned.substring(0, 4); // 0770
             if (cleaned.length > 4) {
               formatted += ' ${cleaned.substring(4, 7)}'; // 000
@@ -68,11 +60,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               }
             }
           } else {
-            // For other cases, just use the cleaned number
             formatted = cleaned;
           }
 
-          // Only update if the formatted text is different
           if (formatted != text && !text.startsWith('+')) {
             _phoneController.value = TextEditingValue(
               text: formatted,
@@ -171,9 +161,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   }
 
   bool _isValidPhoneNumber(String phone) {
-    // Remove all non-digit characters
     final digits = phone.replaceAll(RegExp(r'[^\d]'), '');
-    // Check if it has at least 10 digits (minimum for most countries)
     return digits.length >= 10 && digits.length <= 15;
   }
 

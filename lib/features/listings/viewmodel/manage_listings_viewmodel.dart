@@ -11,7 +11,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // State management
   List<Listing> _listings = [];
   StreamSubscription<List<Listing>>? _listingsSubscription;
   String _searchTerm = '';
@@ -26,18 +25,14 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   bool _isRefreshing = false;
   bool get isRefreshing => _isRefreshing;
 
-  // Navigation state management
   bool _hasReturnedFromNavigation = false;
   bool get hasReturnedFromNavigation => _hasReturnedFromNavigation;
 
-  // UI state for showing messages
   String? _successMessage;
   String? get successMessage => _successMessage;
 
-  // Getters
   List<Listing> get listings => _listings;
 
-  // Get filtered listings based on search term
   List<Listing> get filteredListings {
     if (_searchTerm.isEmpty) {
       return _listings;
@@ -57,11 +52,9 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     debugPrint('🧹 Clearing ManageListingsViewModel state...');
 
-    // Cancel subscription
     await _listingsSubscription?.cancel();
     _listingsSubscription = null;
 
-    // Clear all state
     _listings = [];
     _searchTerm = '';
     _errorMessage = null;
@@ -70,20 +63,17 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     _hasReturnedFromNavigation = false;
     _successMessage = null;
 
-    // Notify listeners
     notifyListeners();
 
     debugPrint('✅ ManageListingsViewModel state cleared');
   }
 
-  /// Load all listings for the current seller
   Future<void> loadListings() async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      // Cancel existing subscription
       await _listingsSubscription?.cancel();
 
       final currentUser = _auth.currentUser;
@@ -96,7 +86,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
 
       print('Loading seller listings for user: ${currentUser.uid}');
 
-      // Determine seller type and create seller reference
       final storeDoc =
           await _firestore.collection('stores').doc(currentUser.uid).get();
 
@@ -123,7 +112,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
               _isLoading = false;
               _errorMessage = null;
 
-              // Clear refreshing state when we get new data
               if (_isRefreshing) {
                 _isRefreshing = false;
               }
@@ -147,9 +135,7 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  /// Force refresh listings from server
   Future<void> refreshListings() async {
-    // Prevent multiple simultaneous refresh operations
     if (_isRefreshing) {
       print('⏳ Refresh already in progress, skipping...');
       return;
@@ -161,11 +147,9 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
 
     try {
-      // Cancel existing subscription and reload
       await _listingsSubscription?.cancel();
       _listingsSubscription = null;
 
-      // Reload listings
       await loadListings();
 
       print('✅ Listings refresh completed');
@@ -202,8 +186,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
     try {
       await _listingService.addListing(listing);
-      // The stream will automatically update when Firestore changes are detected
-      // Clear loading state
       _isLoading = false;
       _successMessage = 'Listing added successfully';
       print('✅ Listing added successfully');
@@ -222,8 +204,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
     try {
       await _listingService.updateListing(listing);
-      // The stream will automatically update when Firestore changes are detected
-      // Clear loading state
       _isLoading = false;
       _successMessage = 'Listing updated successfully';
       print('✅ Listing updated successfully');
@@ -242,8 +222,6 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
     try {
       await _listingService.deleteListing(listingId);
-      // The stream will automatically update when Firestore changes are detected
-      // Clear loading state
       _isLoading = false;
       _successMessage = 'Listing deleted successfully';
       print('✅ Listing deleted successfully');
@@ -257,17 +235,14 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
   } // Call this if you need to refresh the listings manually
 
   Future<void> oldRefreshListings() async {
-    // This method is deprecated - use refreshListings() instead
     await refreshListings();
   }
 
-  // Public method to reinitialize the stream (useful after auth state changes)
   void reinitializeStream() {
     debugPrint('🔄 Manually reinitializing ManageListingsViewModel stream...');
     loadListings();
   }
 
-  // Navigation and UI state management methods
   void navigateToListingDetail(BuildContext context, Listing listing) {
     Navigator.of(context).pushNamed('/listingDetail', arguments: listing);
   }
@@ -385,13 +360,11 @@ class ManageListingsViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Debug method to test stream updates
   void forceNotifyListeners() {
     print('🔔 Forcing notifyListeners call');
     notifyListeners();
   }
 
-  // Debug method to check controller state
   void debugControllerState() {
     debugPrint('🔍 Listings count: ${_listings.length}');
     debugPrint(

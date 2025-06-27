@@ -15,13 +15,11 @@ class LibraryBook {
   final String sellerId;
   final String sellerName;
 
-  // Reading progress (for ebooks)
   final int? currentPage;
   final int? totalPages;
   final DateTime? lastReadDate;
   final bool isCompleted;
 
-  // Download information (for ebooks)
   final String? downloadUrl;
   final bool isDownloaded;
   final String? localFilePath;
@@ -49,7 +47,6 @@ class LibraryBook {
     this.localFilePath,
   });
 
-  // Calculate reading progress percentage
   double get readingProgress {
     if (totalPages == null || currentPage == null || totalPages == 0) {
       return 0.0;
@@ -57,13 +54,10 @@ class LibraryBook {
     return (currentPage! / totalPages!).clamp(0.0, 1.0);
   }
 
-  // Check if this is an ebook
   bool get isEbook => bookType.toLowerCase() == 'ebook';
 
-  // Check if this is a physical book
   bool get isPhysicalBook => bookType.toLowerCase() == 'physical';
 
-  // Factory constructor from Firestore document
   factory LibraryBook.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return LibraryBook(
@@ -91,7 +85,6 @@ class LibraryBook {
     );
   }
 
-  // Convert to map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -117,7 +110,6 @@ class LibraryBook {
     };
   }
 
-  // Copy with method for updates
   LibraryBook copyWith({
     String? id,
     String? userId,

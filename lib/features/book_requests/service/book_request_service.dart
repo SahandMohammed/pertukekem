@@ -9,7 +9,6 @@ class BookRequestService {
 
   static const String _collection = 'book_requests';
 
-  /// Submit a book request from customer to store
   Future<String> submitBookRequest({
     required String storeId,
     required String storeName,
@@ -22,7 +21,6 @@ class BookRequestService {
     }
 
     try {
-      // Get customer information
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
 
@@ -38,7 +36,6 @@ class BookRequestService {
         throw Exception('Customer name not found in profile');
       }
 
-      // Create book request
       final bookRequest = BookRequest(
         id: '', // Will be set by Firestore
         customerId: currentUser.uid,
@@ -51,7 +48,6 @@ class BookRequestService {
         createdAt: DateTime.now(),
       );
 
-      // Add to Firestore
       final docRef = await _firestore
           .collection(_collection)
           .add(bookRequest.toFirestore());
@@ -62,7 +58,6 @@ class BookRequestService {
     }
   }
 
-  /// Get book requests for a customer
   Future<List<BookRequest>> getCustomerBookRequests() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -85,7 +80,6 @@ class BookRequestService {
     }
   }
 
-  /// Get book requests for a store
   Future<List<BookRequest>> getStoreBookRequests() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -93,7 +87,6 @@ class BookRequestService {
     }
 
     try {
-      // Get user's store ID
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
 
@@ -121,7 +114,6 @@ class BookRequestService {
     }
   }
 
-  /// Stream book requests for a customer (real-time updates)
   Stream<List<BookRequest>> streamCustomerBookRequests() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -141,7 +133,6 @@ class BookRequestService {
         );
   }
 
-  /// Stream book requests for a store (real-time updates)
   Stream<List<BookRequest>> streamStoreBookRequests() async* {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -150,7 +141,6 @@ class BookRequestService {
     }
 
     try {
-      // Get user's store ID
       final userDoc =
           await _firestore.collection('users').doc(currentUser.uid).get();
 
@@ -181,7 +171,6 @@ class BookRequestService {
     }
   }
 
-  /// Respond to a book request (store owner)
   Future<void> respondToBookRequest({
     required String requestId,
     required BookRequestStatus status,
@@ -204,7 +193,6 @@ class BookRequestService {
     }
   }
 
-  /// Cancel a book request (customer)
   Future<void> cancelBookRequest(String requestId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -212,7 +200,6 @@ class BookRequestService {
     }
 
     try {
-      // Verify the request belongs to the current user
       final requestDoc =
           await _firestore.collection(_collection).doc(requestId).get();
 
@@ -238,7 +225,6 @@ class BookRequestService {
     }
   }
 
-  /// Get all available stores for book requests
   Future<List<StoreModel>> getAvailableStores() async {
     try {
       final querySnapshot =
@@ -252,7 +238,6 @@ class BookRequestService {
     }
   }
 
-  /// Get pending requests count for store
   Future<int> getPendingRequestsCount() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return 0;
@@ -280,7 +265,6 @@ class BookRequestService {
     }
   }
 
-  /// Delete a book request (admin only or completed requests)
   Future<void> deleteBookRequest(String requestId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {

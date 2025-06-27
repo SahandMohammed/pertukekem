@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Widget for quick suggestion chips in AI chat
 class QuickSuggestionChips extends StatelessWidget {
   final List<String> suggestions;
   final Function(String) onSuggestionTapped;

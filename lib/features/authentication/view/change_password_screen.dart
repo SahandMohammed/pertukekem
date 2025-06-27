@@ -40,7 +40,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       );
 
       if (mounted) {
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Row(
@@ -64,7 +63,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       if (mounted) {
         String errorMessage = 'Failed to change password';
 
-        // Handle specific Firebase Auth errors
         if (e.toString().contains('wrong-password')) {
           errorMessage = 'Current password is incorrect';
         } else if (e.toString().contains('weak-password')) {
@@ -120,7 +118,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Section
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -172,7 +169,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
               const SizedBox(height: 32),
 
-              // Form Section
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -194,7 +190,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Current Password Field
                         _buildPasswordField(
                           controller: _currentPasswordController,
                           label: 'Current Password',
@@ -216,7 +211,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
                         const SizedBox(height: 20),
 
-                        // New Password Field
                         _buildPasswordField(
                           controller: _newPasswordController,
                           label: 'New Password',
@@ -244,7 +238,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Confirm Password Field
                         _buildPasswordField(
                           controller: _confirmPasswordController,
                           label: 'Confirm New Password',
@@ -269,7 +262,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
                         const SizedBox(height: 32),
 
-                        // Password Requirements
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -311,7 +303,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
                         const SizedBox(height: 32),
 
-                        // Submit Button
                         SizedBox(
                           height: 56,
                           child: ElevatedButton(
@@ -367,7 +358,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
               const SizedBox(height: 24),
 
-              // Security Tips
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(

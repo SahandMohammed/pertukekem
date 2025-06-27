@@ -33,7 +33,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
     });
 
     try {
-      // Fetch listings for this store using the store ID
       final listings = await _listingService.fetchSellerListings(
         widget.store.storeId,
         'store',
@@ -60,7 +59,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
       backgroundColor: colorScheme.surface,
       body: CustomScrollView(
         slivers: [
-          // App Bar with Store Header
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
@@ -84,7 +82,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
                       children: [
                         Row(
                           children: [
-                            // Store Logo
                             Container(
                               width: 80,
                               height: 80,
@@ -148,7 +145,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  // Rating
                                   Row(
                                     children: [
                                       Icon(
@@ -243,7 +239,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Description
             if (widget.store.description != null &&
                 widget.store.description!.isNotEmpty) ...[
               Text(
@@ -626,7 +621,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Book Cover
             Expanded(
               flex: 3,
               child: Container(
@@ -652,7 +646,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
               ),
             ),
 
-            // Book Details
             Expanded(
               flex: 2,
               child: Padding(
@@ -748,7 +741,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
   Widget _buildCurrentStatusBadge() {
     final textTheme = Theme.of(context).textTheme;
 
-    // Find today's hours
     final today = DateTime.now();
     final weekdays = [
       'monday',
@@ -849,7 +841,6 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
     }
 
     if (hours is String) {
-      // Handle simple string format like "09:00 - 17:00" or "Closed"
       if (hours.toLowerCase() == 'closed') {
         return {'isOpen': false, 'openTime': '', 'closeTime': ''};
       }
@@ -867,12 +858,10 @@ class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
     }
 
     if (hours is Map<String, dynamic>) {
-      // Handle the actual structure: {isOpen: true, closeTime: 18:00, openTime: 09:00}
       bool isOpen = hours['isOpen'] ?? false;
       String openTime = hours['openTime']?.toString() ?? '';
       String closeTime = hours['closeTime']?.toString() ?? '';
 
-      // Also check alternative key names
       openTime =
           openTime.isEmpty ? (hours['open']?.toString() ?? '') : openTime;
       closeTime =

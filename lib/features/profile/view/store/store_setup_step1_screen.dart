@@ -6,7 +6,6 @@ import '../../viewmodel/store_setup_viewmodel.dart';
 import 'widgets/category_chips.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Step 1: Store Basics
 class StoreSetupStep1Screen extends StatefulWidget {
   final VoidCallback onNext;
 
@@ -74,7 +73,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
             children: [
               Column(
                 children: [
-                  // Progress indicator
                   Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -122,13 +120,11 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                     ),
                   ),
 
-                  // Content
                   Expanded(
                     child: FadeTransition(
                       opacity: _fadeAnimation,
                       child: CustomScrollView(
                         slivers: [
-                          // Live preview
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -141,7 +137,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                             ),
                           ),
 
-                          // Form content
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -169,7 +164,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                                     ),
                                     const SizedBox(height: 24),
 
-                                    // Store Name
                                     FormBuilderTextField(
                                       name: 'storeName',
                                       decoration: InputDecoration(
@@ -194,7 +188,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                                     ),
                                     const SizedBox(height: 16),
 
-                                    // Description
                                     FormBuilderTextField(
                                       name: 'description',
                                       decoration: InputDecoration(
@@ -223,7 +216,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                                     ),
                                     const SizedBox(height: 24),
 
-                                    // Categories
                                     Text(
                                       'Categories *',
                                       style: textTheme.titleMedium?.copyWith(
@@ -249,7 +241,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                             ),
                           ),
 
-                          // Bottom padding for floating button
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 100),
                           ),
@@ -260,7 +251,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                 ],
               ),
 
-              // Sticky CTA button
               Positioned(
                 left: 16,
                 right: 16,
@@ -284,7 +274,6 @@ class _StoreSetupStep1ScreenState extends State<StoreSetupStep1Screen>
                 ),
               ),
 
-              // Loading overlay
               if (viewModel.isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),

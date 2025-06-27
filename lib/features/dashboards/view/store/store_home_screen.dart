@@ -433,7 +433,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
         }
 
         final allOrders = snapshot.data ?? [];
-        // Get only the 5 most recent orders for the dashboard
         final recentOrders = allOrders.take(5).toList();
 
         return Column(
@@ -452,7 +451,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                   onPressed:
                       widget.onNavigateToOrders ??
                       () {
-                        // Default: show a message if no callback provided
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(

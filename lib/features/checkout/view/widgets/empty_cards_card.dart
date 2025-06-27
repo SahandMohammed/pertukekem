@@ -53,8 +53,6 @@ class EmptyCardsCard extends StatelessWidget {
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: () {
-                  // TODO: Navigate to manage cards screen
-                  // This will be implemented when navigation is refactored
                 },
                 icon: const Icon(Icons.add_card_rounded),
                 label: const Text('Add Card'),

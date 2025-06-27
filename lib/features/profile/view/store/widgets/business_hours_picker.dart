@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Widget for selecting business hours for each day of the week
 class BusinessHoursPicker extends StatefulWidget {
   final Map<String, dynamic>? initialHours;
   final Function(Map<String, dynamic>) onHoursChanged;
@@ -43,7 +42,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
     super.initState();
     businessHours = Map.from(widget.initialHours ?? {});
 
-    // Initialize with default hours if empty
     for (final day in daysOfWeek) {
       businessHours[day] ??= {
         'isOpen': true,
@@ -52,7 +50,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
       };
     }
 
-    // Notify parent about the initial business hours after build completes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateHours();
     });
@@ -158,7 +155,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               children: [
-                                // Day name
                                 Expanded(
                                   flex: 2,
                                   child: Text(
@@ -169,7 +165,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
                                   ),
                                 ),
 
-                                // Status or hours
                                 Expanded(
                                   flex: 3,
                                   child: Text(
@@ -186,7 +181,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
                                   ),
                                 ),
 
-                                // Toggle switch
                                 Switch.adaptive(
                                   value: isOpen,
                                   onChanged: (value) => _toggleDay(day, value),
@@ -194,7 +188,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
                                       MaterialTapTargetSize.shrinkWrap,
                                 ),
 
-                                // Expand icon
                                 Icon(
                                   isExpanded
                                       ? Icons.expand_less
@@ -206,7 +199,6 @@ class _BusinessHoursPickerState extends State<BusinessHoursPicker> {
                           ),
                         ),
 
-                        // Expanded time picker
                         if (isExpanded && isOpen)
                           Container(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

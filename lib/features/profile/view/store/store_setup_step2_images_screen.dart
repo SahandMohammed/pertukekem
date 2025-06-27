@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../viewmodel/store_setup_viewmodel.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Step 2: Store Images
 class StoreSetupStep2Screen extends StatefulWidget {
   final VoidCallback onNext;
   final VoidCallback onBack;
@@ -81,7 +80,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
             children: [
               Column(
                 children: [
-                  // Progress indicator
                   Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -129,13 +127,11 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                     ),
                   ),
 
-                  // Content
                   Expanded(
                     child: FadeTransition(
                       opacity: _fadeAnimation,
                       child: CustomScrollView(
                         slivers: [
-                          // Live preview
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -148,7 +144,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                             ),
                           ),
 
-                          // Form content
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -170,7 +165,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                                   ),
                                   const SizedBox(height: 24),
 
-                                  // Store Logo Section
                                   Row(
                                     children: [
                                       Icon(
@@ -208,7 +202,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                                   ),
                                   const SizedBox(height: 32),
 
-                                  // Store Banner Section
                                   Row(
                                     children: [
                                       Icon(
@@ -247,7 +240,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                                   ),
                                   const SizedBox(height: 32),
 
-                                  // Optional note
                                   Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
@@ -285,7 +277,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                             ),
                           ),
 
-                          // Bottom padding for floating button
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 100),
                           ),
@@ -296,14 +287,12 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                 ],
               ),
 
-              // Sticky CTA buttons
               Positioned(
                 left: 16,
                 right: 16,
                 bottom: MediaQuery.of(context).padding.bottom + 16,
                 child: Row(
                   children: [
-                    // Back button
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
@@ -325,7 +314,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Continue button
                     Expanded(
                       flex: 2,
                       child: FilledButton(
@@ -350,7 +338,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                 ),
               ),
 
-              // Loading overlay
               if (viewModel.isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),
@@ -402,7 +389,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
           width: double.infinity,
           child: Column(
             children: [
-              // Image preview area
               AspectRatio(
                 aspectRatio: aspectRatio,
                 child: Container(
@@ -474,7 +460,6 @@ class _StoreSetupStep2ScreenState extends State<StoreSetupStep2Screen>
                 ),
               ),
 
-              // Info section
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(

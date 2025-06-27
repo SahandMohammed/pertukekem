@@ -11,14 +11,11 @@ import '../service/checkout_service.dart';
 import '../model/checkout_state.dart';
 
 class CheckoutViewModel extends ChangeNotifier implements StateClearable {
-  // Services
   final CheckoutService _checkoutService = CheckoutService();
 
-  // State
   CheckoutState _state = CheckoutState.initial();
   CheckoutState get state => _state;
 
-  // Getters for specific state properties
   int get currentStep => _state.currentStep;
   bool get isProcessing => _state.isProcessing;
   bool get isLoadingAddresses => _state.isLoadingAddresses;
@@ -30,7 +27,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
   PaymentCard? get selectedCard => _state.selectedCard;
   String get selectedPaymentMethod => _state.selectedPaymentMethod;
 
-  // Dependencies
   late AuthViewModel _authViewModel;
   late ProfileViewModel _profileViewModel;
   late PaymentCardViewModel _paymentCardViewModel;
@@ -48,7 +44,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
     _cartService = cartService;
   }
 
-  // Navigation methods
   void setCurrentStep(int step) {
     _state = _state.copyWith(currentStep: step);
     notifyListeners();
@@ -68,7 +63,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Selection methods
   void selectAddress(AddressModel address) {
     _state = _state.copyWith(selectedAddress: address);
     notifyListeners();
@@ -87,7 +81,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
     notifyListeners();
   }
 
-  // Data loading methods
   Future<void> loadInitialData() async {
     await Future.wait([loadUserAddresses(), loadUserCards()]);
   }
@@ -151,7 +144,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Validation methods
   bool canProceedToNextStep() {
     switch (_state.currentStep) {
       case 0:
@@ -170,7 +162,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
                 _state.selectedCard != null));
   }
 
-  // Order processing
   Future<List<dynamic>> processOrder(Cart cart) async {
     final user = _authViewModel.user;
     if (user == null) {
@@ -211,10 +202,8 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
         cardInfo: cardInfo,
       );
 
-      // Clear cart after successful order
       await _cartService.clearCart();
 
-      // Reset checkout state for next checkout session
       await clearState();
 
       return results;
@@ -228,7 +217,6 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
     }
   }
 
-  // Refresh data after navigation
   Future<void> refreshAddresses() async {
     await loadUserAddresses();
   }
@@ -237,13 +225,11 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
     await loadUserCards();
   }
 
-  // Clear errors
   void clearError() {
     _state = _state.copyWith(error: null);
     notifyListeners();
   }
 
-  // Reset checkout state to initial state
   void resetToInitialState() {
     _state = CheckoutState.initial();
     notifyListeners();

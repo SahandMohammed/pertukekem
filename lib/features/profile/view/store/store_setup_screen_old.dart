@@ -10,7 +10,6 @@ import 'widgets/category_chips.dart';
 import 'widgets/contact_info_list.dart';
 import 'widgets/store_preview_card.dart';
 
-/// Store Setup Screen with vertical stepper form
 class StoreSetupScreen extends StatefulWidget {
   const StoreSetupScreen({super.key});
 
@@ -66,7 +65,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
             children: [
               Column(
                 children: [
-                  // Progress indicator
                   Container(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -101,13 +99,11 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                     ),
                   ),
 
-                  // Content
                   Expanded(
                     child: FadeTransition(
                       opacity: _fadeAnimation,
                       child: CustomScrollView(
                         slivers: [
-                          // Live preview
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -120,7 +116,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                             ),
                           ),
 
-                          // Stepper content
                           SliverToBoxAdapter(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -139,7 +134,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                                     return const SizedBox.shrink(); // Hide default controls
                                   },
                                   onStepTapped: (step) {
-                                    // Allow navigation to completed or current step
                                     if (step <= viewModel.currentStep ||
                                         (step == viewModel.currentStep + 1 &&
                                             viewModel.isStepValid(
@@ -170,7 +164,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                             ),
                           ),
 
-                          // Bottom padding for floating button
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 100),
                           ),
@@ -181,7 +174,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                 ],
               ),
 
-              // Sticky CTA button
               Positioned(
                 left: 16,
                 right: 16,
@@ -189,7 +181,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                 child: _buildActionButton(viewModel, colorScheme),
               ),
 
-              // Loading overlay
               if (viewModel.isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),
@@ -235,7 +226,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Store Name
             FormBuilderTextField(
               name: 'storeName',
               decoration: InputDecoration(
@@ -255,7 +245,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                 FormBuilderValidators.minLength(3, errorText: 'Name too short'),
                 FormBuilderValidators.maxLength(50, errorText: 'Name too long'),
               ]),              onChanged: (value) {
-                // Only update if the value actually changed to avoid build-time notifications
                 if (value != viewModel.storeName) {
                   viewModel.setStoreName(value ?? '');
                 }
@@ -264,7 +253,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
             const SizedBox(height: 16),
 
-            // Description
             FormBuilderTextField(
               name: 'description',
               maxLines: 3,
@@ -279,7 +267,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
                 fillColor: colorScheme.surfaceContainer,
                 prefixIcon: const Icon(Icons.description),
               ),              onChanged: (value) {
-                // Only update if the value actually changed to avoid build-time notifications
                 if (value != viewModel.description) {
                   viewModel.setDescription(value ?? '');
                 }
@@ -288,7 +275,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
             const SizedBox(height: 24),
 
-            // Categories
             CategoryChips(
               selectedCategories: viewModel.categories,
               onCategoriesChanged: viewModel.setCategories,
@@ -314,7 +300,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Address Form
           AddressForm(
             formKey: _step2AddressFormKey,
             initialAddress: viewModel.storeAddress,
@@ -322,7 +307,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
           const SizedBox(height: 24),
 
-          // Contact Info
           ContactInfoList(
             initialContacts: viewModel.contactInfo,
             onContactsChanged: viewModel.setContactInfo,
@@ -348,12 +332,10 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image uploads
             _buildImageUploads(viewModel, colorScheme, textTheme),
 
             const SizedBox(height: 24),
 
-            // Business Hours
             BusinessHoursPicker(
               initialHours: viewModel.businessHours,
               onHoursChanged: viewModel.setBusinessHours,
@@ -361,7 +343,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
             const SizedBox(height: 24),
 
-            // Social Media
             _buildSocialMediaFields(viewModel, colorScheme, textTheme),
           ],
         ),
@@ -394,7 +375,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
         Row(
           children: [
-            // Logo upload
             Expanded(
               child: _buildImageUploadButton(
                 label: 'Store Logo',
@@ -409,7 +389,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
             const SizedBox(width: 16),
 
-            // Banner upload
             Expanded(
               child: _buildImageUploadButton(
                 label: 'Store Banner',
@@ -506,7 +485,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
         ),
         const SizedBox(height: 16),
 
-        // Facebook
         FormBuilderTextField(
           name: 'facebook',
           decoration: InputDecoration(
@@ -535,7 +513,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
         const SizedBox(height: 16),
 
-        // Instagram
         FormBuilderTextField(
           name: 'instagram',
           decoration: InputDecoration(
@@ -573,7 +550,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
     return Row(
       children: [
-        // Back button
         if (viewModel.currentStep > 0)
           Expanded(
             child: OutlinedButton(
@@ -592,7 +568,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
 
         if (viewModel.currentStep > 0) const SizedBox(width: 16),
 
-        // Next/Create button
         Expanded(
           flex: viewModel.currentStep > 0 ? 2 : 1,
           child: ElevatedButton.icon(
@@ -629,7 +604,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
   }
 
   void _proceedToNextStep(StoreSetupViewmodel viewModel) {
-    // Save current step data before proceeding
     _saveCurrentStepData(viewModel);
 
     if (viewModel.isStepValid(viewModel.currentStep)) {
@@ -656,10 +630,8 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
   }
 
   void _createStore(StoreSetupViewmodel viewModel) async {
-    // Save all form data
     _saveCurrentStepData(viewModel);
 
-    // Create the store
     await viewModel.createStoreFromForm(context: context);
 
     if (viewModel.error != null) {
@@ -674,7 +646,6 @@ class _StoreSetupScreenState extends State<StoreSetupScreen>
       }
     } else {
       if (mounted) {
-        // Show success message and navigate back
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('🎉 Store created successfully!'),

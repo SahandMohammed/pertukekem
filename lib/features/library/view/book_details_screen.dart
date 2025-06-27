@@ -55,7 +55,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Initialize BookDetailsViewModel if not already done
     if (_bookDetailsViewModel == null) {
       final libraryViewModel = context.read<LibraryViewModel>();
       _bookDetailsViewModel = BookDetailsViewModel(
@@ -63,7 +62,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
         widget.book,
       );
 
-      // Listen to ViewModel state changes
       _bookDetailsViewModel!.addListener(_onViewModelChanged);
     }
   }
@@ -73,14 +71,12 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
 
     final viewModel = _bookDetailsViewModel!;
 
-    // Handle download animation
     if (viewModel.isDownloading) {
       _downloadController.forward();
     } else {
       _downloadController.reset();
     }
 
-    // Handle messages
     if (viewModel.errorMessage != null) {
       _showErrorSnackBar(viewModel.errorMessage!);
       viewModel.clearMessages();
@@ -405,7 +401,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          // Primary Action Button
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -451,7 +446,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                     ),
           ),
           const SizedBox(height: 12),
-          // Secondary Actions
           Row(
             children: [
               if (book.isDownloaded)
@@ -509,7 +503,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
             ),
             child: Stack(
               children: [
-                // Progress Background
                 Container(
                   height: 56,
                   decoration: BoxDecoration(
@@ -517,7 +510,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                // Progress Fill
                 FractionallySizedBox(
                   widthFactor: viewModel.downloadProgress,
                   child: Container(
@@ -528,7 +520,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
                     ),
                   ),
                 ),
-                // Content
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -668,7 +659,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
 
     return Consumer<BookDetailsViewModel>(
       builder: (context, viewModel, child) {
-        // Mock description - in real app, this would come from the book data
         final description =
             'Immerse yourself in this captivating literary work that takes readers on an extraordinary journey through compelling narratives and rich character development. This book offers profound insights and entertainment that will keep you engaged from the first page to the last.';
 
@@ -886,14 +876,12 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
       return;
     }
 
-    // Navigate to the ebook reader
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EbookReaderScreen(book: viewModel.currentBook!),
       ),
     ).then((_) async {
-      // Refresh book data when returning from reader
       await viewModel.refreshBookData();
     });
   }
@@ -911,7 +899,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen>
 
   void _shareBook() {
     _showInfoSnackBar('Sharing book...');
-    // Implement share functionality
   }
 
   Future<bool?> _showConfirmationDialog(String title, String content) {

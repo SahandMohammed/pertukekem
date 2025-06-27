@@ -26,7 +26,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController();
 
-  // Animation controllers
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;

@@ -17,14 +17,12 @@ class CartItem {
   });
   factory CartItem.fromMap(Map<String, dynamic> map, String id) {
     final listingData = map['listing'] ?? {};
-    // Use the actual listing ID from the stored data, not the cart item ID
     final listingId = listingData['id'] ?? id;
 
     return CartItem(
       id: id,
       userId: map['userId'] ?? '',
       listing: Listing.fromFirestore(
-        // Create a mock DocumentSnapshot for fromFirestore method with correct listing ID
         MockDocumentSnapshot(listingData, listingId),
         null,
       ),
@@ -83,7 +81,6 @@ class Cart {
   }
 }
 
-// Mock DocumentSnapshot for serialization
 class MockDocumentSnapshot implements DocumentSnapshot<Map<String, dynamic>> {
   final Map<String, dynamic> _data;
   final String _id;

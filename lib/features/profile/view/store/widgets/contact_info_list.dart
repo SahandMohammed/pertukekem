@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
-/// Widget for managing store contact information
 class ContactInfoList extends StatefulWidget {
   final List<Map<String, String>> initialContacts;
   final Function(List<Map<String, String>>) onContactsChanged;
@@ -26,7 +25,6 @@ class _ContactInfoListState extends State<ContactInfoList> {
     super.initState();
     contacts = List.from(widget.initialContacts);
     if (contacts.isEmpty) {
-      // Add one default contact field
       _addContact();
     }
     _initializeFormKeys();
@@ -142,7 +140,6 @@ class _ContactInfoListState extends State<ContactInfoList> {
             children: [
               Row(
                 children: [
-                  // Contact type dropdown
                   Expanded(
                     flex: 2,
                     child: FormBuilderDropdown<String>(
@@ -181,7 +178,6 @@ class _ContactInfoListState extends State<ContactInfoList> {
 
                   const SizedBox(width: 12),
 
-                  // Contact value field
                   Expanded(
                     flex: 3,
                     child: FormBuilderTextField(
@@ -227,7 +223,6 @@ class _ContactInfoListState extends State<ContactInfoList> {
 
                   const SizedBox(width: 8),
 
-                  // Remove button
                   if (contacts.length > 1)
                     IconButton(
                       onPressed: () => _removeContact(index),
