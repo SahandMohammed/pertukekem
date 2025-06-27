@@ -25,14 +25,23 @@ The app aims to bridge the gap between readers and sellers with intuitive UI, fl
 ## Features
 
 - **AI Chat Assistant**: Get instant book recommendations, summaries, and bookstore navigation help powered by Google AI/Vertex AI. The AI assistant is context-aware and tailored for book-related queries.
+
 - **Multi-role Authentication**: Secure sign-up and login for customers, store owners, and admins, each with custom dashboards and flows.
+
 - **Order Management**: Place, track, and manage orders for both buyers and sellers, with real-time status updates and notifications.
+
 - **Store Setup & Management**: Guided onboarding for new stores, including image uploads, contact setup, and store profile management.
+
 - **Push Notifications**: Real-time updates for order status, new store creation, and more via Firebase Cloud Messaging and custom Cloud Functions.
+
 - **Digital Library**: Manage, read, and track eBooks and physical books. Includes a digital bookshelf, reading progress, and eBook reader integration.
+
 - **Community & Ratings**: Engage with other readers, rate stores, participate in discussions, and join the Pertukekem community.
+
 - **Secure Payment Cards**: Store and manage payment cards with advanced Firestore security rules and validation.
+
 - **Admin Dashboard**: Powerful tools for administrators to manage users, stores, and platform-wide settings.
+
 - **Mobile-First Design**: Responsive, beautiful UI for Android and iOS, with support for web and desktop coming soon.
 
 ---
