@@ -137,7 +137,6 @@ class _ListingDetailsScreenState extends State<ListingDetailsScreen> {
       if (userDoc.exists) {
         final userData = userDoc.data();
         final roles = userData?['roles'] as List<dynamic>?;
-
         setState(() {
           _isStoreAccount = roles?.contains('store') ?? false;
         });
