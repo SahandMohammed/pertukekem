@@ -7,6 +7,7 @@ Pertukekem is a Flutter-based mobile application that modernizes the book shoppi
 Built using Flutter and Firebase, Pertukekem integrates real-time data synchronization, secure authentication, and a modern MVVM architecture. Users can read e-books directly within the app through a built-in reader, which includes reading progress tracking.
 
 The app aims to bridge the gap between readers and sellers with intuitive UI, flexible payment options, and community-driven features.
+
 ---
 
 ## Table of Contents
