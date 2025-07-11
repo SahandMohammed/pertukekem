@@ -234,6 +234,17 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
   }
 
   Future<void> refreshAddresses() async {
+    debugPrint('CheckoutViewModel: Refreshing addresses...');
+
+    // First, refresh the user data from the database to get the latest addresses
+    try {
+      await _authViewModel.refreshUserData();
+      debugPrint('CheckoutViewModel: User data refreshed from database');
+    } catch (e) {
+      debugPrint('CheckoutViewModel: Error refreshing user data: $e');
+    }
+
+    // Then reload addresses using the refreshed user data
     await loadUserAddresses();
   }
 
