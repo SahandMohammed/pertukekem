@@ -24,7 +24,7 @@ The app aims to bridge the gap between readers and sellers with intuitive UI, fl
 
 ## Features
 
-- **AI Chat Assistant**: Get instant book recommendations, summaries, and bookstore navigation help powered by Google AI/Vertex AI. The AI assistant is context-aware and tailored for book-related queries.
+- **AI Chat Assistant**: Get instant book recommendations and summaries powered by Google AI/Vertex AI. The AI assistant is context-aware and tailored for book-related queries.
 
 - **Multi-role Authentication**: Secure sign-up and login for customers, store owners, and admins, each with custom dashboards and flows.
 
