@@ -87,8 +87,12 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
 
   Future<void> loadUserAddresses() async {
     final user = _authViewModel.user;
-    if (user == null) return;
+    if (user == null) {
+      debugPrint('CheckoutViewModel: Cannot load addresses - user is null');
+      return;
+    }
 
+    debugPrint('CheckoutViewModel: Loading addresses for user ${user.userId}');
     _state = _state.copyWith(isLoadingAddresses: true);
     notifyListeners();
 
@@ -97,6 +101,10 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
       await _profileViewModel.loadAddresses(user);
 
       final addresses = _profileViewModel.addresses;
+      debugPrint(
+        'CheckoutViewModel: Loaded ${addresses.length} addresses from ProfileViewModel',
+      );
+
       final selectedAddress =
           addresses.isNotEmpty
               ? addresses.firstWhere(
@@ -105,12 +113,20 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
               )
               : null;
 
+      if (selectedAddress != null) {
+        debugPrint(
+          'CheckoutViewModel: Selected default address: ${selectedAddress.id}',
+        );
+      } else {
+        debugPrint('CheckoutViewModel: No addresses available for selection');
+      }
+
       _state = _state.copyWith(
         userAddresses: addresses,
         selectedAddress: selectedAddress,
       );
     } catch (e) {
-      debugPrint('Error loading addresses: $e');
+      debugPrint('CheckoutViewModel: Error loading addresses: $e');
       _state = _state.copyWith(error: 'Failed to load addresses: $e');
     } finally {
       _state = _state.copyWith(isLoadingAddresses: false);
@@ -231,6 +247,7 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
   }
 
   void resetToInitialState() {
+    debugPrint('CheckoutViewModel: Resetting to initial state');
     _state = CheckoutState.initial();
     notifyListeners();
   }
@@ -239,10 +256,5 @@ class CheckoutViewModel extends ChangeNotifier implements StateClearable {
   Future<void> clearState() async {
     _state = CheckoutState.initial();
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
