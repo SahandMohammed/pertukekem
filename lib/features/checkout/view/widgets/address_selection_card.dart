@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/checkout_viewmodel.dart';
 import '../../../profile/model/address_model.dart';
-import '../../../authentication/viewmodel/auth_viewmodel.dart';
 import '../../../profile/viewmodel/store_profile_viewmodel.dart';
 import '../../../profile/view/customer/manage_address_screen.dart';
 import 'address_option_item.dart';
@@ -78,25 +77,22 @@ class AddressSelectionCard extends StatelessWidget {
   }
 
   Future<void> _navigateToManageAddresses(BuildContext context) async {
-    final result = await Navigator.push(
+    final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder:
-            (context) => ChangeNotifierProvider(
-              create: (context) {
-                final profileViewModel = ProfileViewModel();
-                profileViewModel.setAuthViewModel(
-                  context.read<AuthViewModel>(),
-                );
-                return profileViewModel;
-              },
+            (context) => ChangeNotifierProvider.value(
+              value: context.read<ProfileViewModel>(),
               child: const ManageAddressScreen(),
             ),
       ),
     );
 
-    if (result != null && context.mounted) {
-      context.read<CheckoutViewModel>().refreshAddresses();
+    if (context.mounted) {
+      // Refresh addresses if changes were made or if result is null (user might have made changes)
+      if (result == true || result == null) {
+        await context.read<CheckoutViewModel>().refreshAddresses();
+      }
     }
   }
 }

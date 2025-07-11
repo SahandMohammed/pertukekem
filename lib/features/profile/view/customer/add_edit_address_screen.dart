@@ -641,8 +641,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
             icon: Icons.flag,
             value: _selectedCountry,
             items: _countries,
-            onChanged: (value) {
-            },
+            onChanged: (value) {},
           ),
           const SizedBox(height: 24),
           _buildModernDropdown(
@@ -1270,7 +1269,7 @@ class _AddEditAddressScreenState extends State<AddEditAddressScreen>
           ),
         ),
       );
-      Navigator.pop(context);
+      Navigator.pop(context, true); // Return true to indicate successful save
     }
   }
 }

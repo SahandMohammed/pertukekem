@@ -80,13 +80,34 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     _safeNotifyListeners();
   }
 
+  /// Reinitializes the ProfileViewModel for a new user session
+  /// This is called when the view model was previously disposed but needs to be used again
+  void _reinitialize() {
+    debugPrint('Reinitializing ProfileViewModel...');
+    _isDisposed = false;
+    _isLoading = false;
+    _isUploadingImage = false;
+    _isRemovingImage = false;
+    _isUpdatingStore = false;
+    _uploadProgress = 0.0;
+    _error = null;
+    // Don't clear addresses here as they will be loaded fresh
+    debugPrint('ProfileViewModel reinitialized successfully');
+  }
+
   void clearError() {
     _error = null;
     _safeNotifyListeners();
   }
 
   Future<void> loadAddresses(UserModel user) async {
-    if (_isDisposed) return;
+    // If disposed, reinitialize the view model for the new user session
+    if (_isDisposed) {
+      debugPrint(
+        'ProfileViewModel was disposed, reinitializing for new user session...',
+      );
+      _reinitialize();
+    }
 
     try {
       _setLoading(true);
@@ -106,6 +127,10 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
         if (!a.isDefault && b.isDefault) return 1;
         return b.createdAt.compareTo(a.createdAt);
       });
+
+      debugPrint(
+        'Successfully loaded ${_addresses.length} addresses for user ${user.userId}',
+      );
     } catch (e) {
       if (!_isDisposed) {
         _setError('Failed to load addresses: $e');
@@ -716,7 +741,9 @@ class ProfileViewModel extends ChangeNotifier implements StateClearable {
     _storeProfilePicture = null;
     _storeData = null;
 
-    _isDisposed = true;
+    // Don't set _isDisposed = true here, as this prevents reinitialization
+    // after login/logout cycles. The dispose flag should only be set in dispose()
+    // _isDisposed = true;
 
     _safeNotifyListeners();
 

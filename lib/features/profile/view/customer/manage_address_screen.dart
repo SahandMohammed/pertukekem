@@ -14,6 +14,8 @@ class ManageAddressScreen extends StatefulWidget {
 }
 
 class _ManageAddressScreenState extends State<ManageAddressScreen> {
+  bool _hasChanges = false;
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +50,7 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _hasChanges),
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -479,7 +481,12 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => AddEditAddressScreen(user: user)),
-    ).then((_) => _loadAddresses());
+    ).then((result) {
+      _loadAddresses();
+      if (result == true) {
+        _hasChanges = true;
+      }
+    });
   }
 
   void _navigateToEditAddress(UserModel user, AddressModel address) {
@@ -489,7 +496,12 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
         builder:
             (context) => AddEditAddressScreen(user: user, address: address),
       ),
-    ).then((_) => _loadAddresses());
+    ).then((result) {
+      _loadAddresses();
+      if (result == true) {
+        _hasChanges = true;
+      }
+    });
   }
 
   Future<void> _setDefaultAddress(UserModel user, String addressId) async {
@@ -504,6 +516,7 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
         ),
       );
     } else if (mounted) {
+      _hasChanges = true;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Default address updated'),
@@ -584,6 +597,7 @@ class _ManageAddressScreenState extends State<ManageAddressScreen> {
         ),
       );
     } else if (mounted) {
+      _hasChanges = true;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Address deleted successfully'),
